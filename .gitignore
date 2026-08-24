@@ -32,3 +32,7 @@ lerna-debug.log*
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Documentos internos de desenvolvimento
+HISTORICO.md
+REGRAS.md
