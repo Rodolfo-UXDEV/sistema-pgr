@@ -15,7 +15,7 @@ import {
 import { Database, ShieldCheck, CheckCircle2, AlertCircle, Copy, Check, RefreshCw, Server, Key } from 'lucide-react';
 
 export const DatabaseSettingsPage: React.FC = () => {
-  const { resetToDefaultData } = usePgr();
+  const { clearAllData, loadDemoData } = usePgr();
   const [url, setUrl] = useState(supabaseUrl);
   const [key, setKey] = useState(supabaseAnonKey);
   const [copied, setCopied] = useState(false);
@@ -200,15 +200,15 @@ CREATE TABLE public.environmental_measurements (...);
             variant="destructive"
             size="sm"
             onClick={() => {
-              if (window.confirm('Restaurar todos os dados para os padrões de fábrica?')) {
-                resetToDefaultData();
-                alert('Dados restaurados com sucesso!');
+              if (window.confirm('Carregar os dados de demonstração da empresa modelo?')) {
+                loadDemoData();
+                alert('Dados de demonstração carregados com sucesso!');
               }
             }}
             className="text-xs font-semibold gap-1.5"
           >
             <RefreshCw className="h-3.5 w-3.5" />
-            <span>Restaurar Base Demo</span>
+            <span>Carregar Base Demo</span>
           </Button>
         </CardContent>
       </Card>

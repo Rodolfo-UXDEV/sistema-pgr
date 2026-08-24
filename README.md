@@ -47,16 +47,29 @@ Sistema web completo para elaboração, gestão, inventário de riscos com Matri
 
 ---
 
-## 🛠️ Como Executar o Projeto
+## ⚡ Deploy na Vercel (1-Click Deploy)
+
+O projeto já está configurado com `vercel.json` para suporte a rotas do React Router (SPA).
+
+### Passo a passo para subir na Vercel:
+
+1. Acesse o dashboard da **[Vercel](https://vercel.com/)** e clique em **"Add New... > Project"**.
+2. Importe o repositório **`Rodolfo-UXDEV/sistema-pgr`**.
+3. Em **Environment Variables**, adicione as seguintes variáveis de ambiente:
+   - `VITE_SUPABASE_URL`: URL do seu projeto no Supabase (ex: `https://sdtprjzrzcyjzvwkxqzz.supabase.co`)
+   - `VITE_SUPABASE_ANON_KEY`: Chave pública Anon do seu projeto Supabase
+4. Clique em **"Deploy"**.
+
+---
+
+## 🛠️ Como Executar Localmente
 
 ### Pré-requisitos
 - Node.js v18+ e npm
 
-### Instalação
-
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/sistema-pgr.git
+git clone https://github.com/Rodolfo-UXDEV/sistema-pgr.git
 
 # Acesse o diretório
 cd sistema-pgr
@@ -64,7 +77,7 @@ cd sistema-pgr
 # Instale as dependências
 npm install
 
-# Copie o arquivo de exemplo de ambiente
+# Configure as variáveis de ambiente
 cp .env.example .env
 
 # Inicie o servidor de desenvolvimento
