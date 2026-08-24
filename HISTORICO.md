@@ -66,16 +66,8 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
 - Aplicação das migrações com as 11 tabelas com Row Level Security (RLS).
 - Atualização do `.env` e reinicialização do servidor de desenvolvimento.
 
-### [2026-08-24] - Execução de Teste Automatizado Completo (Do Zero ao PDF)
-- Execução com sucesso do script automatizado E2E via Puppeteer simulando a empresa modelo **Metalúrgica Brasil Sul Ltda**.
-- Validação automática de 10 etapas:
-  1. Cadastro de Empresa (CNAE 25.39-0-01, Grau de Risco 3).
-  2. Cadastro de Unidade / Estabelecimento (Fábrica Matriz Curitiba).
-  3. Cadastro de Setores com características físicas (Usinagem e Solda).
-  4. Cadastro de Cargos com CBO 7212-15 e atividades rotineiras.
-  5. Cadastro de Responsável Técnico com CREA e ART.
-  6. Emissão do Documento Base do PGR.
-  7. Levantamento de Risco com a Matriz 5x5 (Ruído Contínuo - Score 12 Substancial) e inserção de EPCs e EPIs com CA (CA: 14235).
-  8. Gerenciamento do Plano de Ação 5W2H e transição de status no Quadro Kanban com Verificação de Eficácia.
-  9. Visualização do Documento Técnico Oficial do PGR.
-  10. Recálculo e conferência em tempo real dos indicadores do Dashboard e Mapa de Calor 5x5.
+### [2026-08-24] - Publicação do Repositório no GitHub
+- Criação e envio de todo o código fonte para o repositório público:
+  - **Repositório:** [https://github.com/Rodolfo-UXDEV/sistema-pgr](https://github.com/Rodolfo-UXDEV/sistema-pgr)
+  - **Branch Principal:** `main`
+  - **Documentação:** `README.md`, `REGRAS.md`, `HISTORICO.md` e `PLANO_DE_TESTES.md`.
