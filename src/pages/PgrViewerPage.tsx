@@ -22,7 +22,8 @@ import {
   Building2, 
   Calendar, 
   Award,
-  FileCode
+  FileCode,
+  Sliders
 } from 'lucide-react';
 
 export const PgrViewerPage: React.FC = () => {
@@ -110,6 +111,17 @@ export const PgrViewerPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/documentos-pgr/${pgr.id}/montagem`)}
+            className="text-xs gap-1.5 border-emerald-200 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 font-semibold"
+            title="Abrir o Construtor e Editor de Seções do PGR"
+          >
+            <Sliders className="h-3.5 w-3.5" />
+            <span>Montar / Editar Seções</span>
+          </Button>
+
           <Button
             variant="outline"
             size="sm"

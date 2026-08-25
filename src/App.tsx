@@ -8,6 +8,7 @@ import { RiskInventoryPage } from '@/pages/RiskInventoryPage';
 import { ActionPlansPage } from '@/pages/ActionPlansPage';
 import { PgrDocumentsPage } from '@/pages/PgrDocumentsPage';
 import { PgrViewerPage } from '@/pages/PgrViewerPage';
+import { PgrBuilderPage } from '@/pages/PgrBuilderPage';
 import { CompaniesPage } from '@/pages/CompaniesPage';
 import { EstablishmentsPage } from '@/pages/EstablishmentsPage';
 import { SectorsPage } from '@/pages/SectorsPage';
@@ -28,6 +29,7 @@ export function App() {
             <Route path="plano-de-acao" element={<ActionPlansPage />} />
             <Route path="documentos-pgr" element={<PgrDocumentsPage />} />
             <Route path="documentos-pgr/:id" element={<PgrViewerPage />} />
+            <Route path="documentos-pgr/:id/montagem" element={<PgrBuilderPage />} />
             
             {/* Estrutura Organizacional */}
             <Route path="empresas" element={<CompaniesPage />} />

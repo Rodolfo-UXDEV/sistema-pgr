@@ -31,7 +31,8 @@ import {
   ShieldCheck, 
   Award,
   Clock,
-  FileCode
+  FileCode,
+  Sliders
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -303,6 +304,20 @@ export const PgrDocumentsPage: React.FC = () => {
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setActivePgr(doc);
+                            navigate(`/documentos-pgr/${doc.id}/montagem`);
+                          }}
+                          className="h-8 text-xs gap-1 border-emerald-200 text-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 font-semibold"
+                          title="Montar e personalizar textos das seções do PGR"
+                        >
+                          <Sliders className="h-3.5 w-3.5" />
+                          <span>Montar Seções</span>
+                        </Button>
+
                         <Button
                           variant="outline"
                           size="sm"
