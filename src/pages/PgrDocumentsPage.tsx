@@ -188,10 +188,10 @@ export const PgrDocumentsPage: React.FC = () => {
       actionPlans,
     };
     try {
-      await generatePgrDocx(ctx);
+      await generatePgrFromMasterTemplate(ctx);
     } catch (err) {
-      console.error('Erro ao gerar DOCX:', err);
-      alert('Erro ao gerar arquivo Word.');
+      console.warn('Fallback para gerador alternativo docx:', err);
+      await generatePgrDocx(ctx);
     }
   };
 

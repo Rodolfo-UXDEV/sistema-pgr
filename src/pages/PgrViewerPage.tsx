@@ -76,10 +76,10 @@ export const PgrViewerPage: React.FC = () => {
   const handleDownloadDocx = async () => {
     setIsGeneratingDocx(true);
     try {
-      await generatePgrDocx(pgrContext);
+      await generatePgrFromMasterTemplate(pgrContext);
     } catch (err) {
-      console.error('Erro ao gerar DOCX:', err);
-      alert('Erro ao gerar arquivo Word.');
+      console.warn('Fallback para gerador alternativo docx:', err);
+      await generatePgrDocx(pgrContext);
     } finally {
       setIsGeneratingDocx(false);
     }
