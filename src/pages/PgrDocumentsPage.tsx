@@ -19,6 +19,7 @@ import {
 import { formatDate } from '@/lib/utils';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
+import { generatePgrFromMasterTemplate } from '@/lib/docx-template-engine';
 import { 
   FileText, 
   Plus, 
@@ -175,21 +176,22 @@ export const PgrDocumentsPage: React.FC = () => {
   const handleDownloadDocx = async (doc: PGRDocument) => {
     if (!activeCompany) return;
     const est = establishments.find(e => e.id === doc.establishmentId) || establishments[0];
+    const ctx = {
+      company: activeCompany,
+      establishment: est,
+      pgr: doc,
+      sectors,
+      positions,
+      ghes,
+      professionals,
+      riskInventory,
+      actionPlans,
+    };
     try {
-      await generatePgrDocx({
-        company: activeCompany,
-        establishment: est,
-        pgr: doc,
-        sectors,
-        positions,
-        ghes,
-        professionals,
-        riskInventory,
-        actionPlans,
-      });
+      await generatePgrFromMasterTemplate(ctx);
     } catch (err) {
-      console.error(err);
-      alert('Erro ao gerar arquivo Word.');
+      console.warn('Fallback para gerador estruturado docx:', err);
+      await generatePgrDocx(ctx);
     }
   };
 

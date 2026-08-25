@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
+import { generatePgrFromMasterTemplate } from '@/lib/docx-template-engine';
 import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { 
@@ -75,10 +76,10 @@ export const PgrViewerPage: React.FC = () => {
   const handleDownloadDocx = async () => {
     setIsGeneratingDocx(true);
     try {
-      await generatePgrDocx(pgrContext);
+      await generatePgrFromMasterTemplate(pgrContext);
     } catch (err) {
-      console.error('Erro ao gerar DOCX:', err);
-      alert('Erro ao gerar arquivo Word.');
+      console.warn('Fallback para gerador estruturado docx:', err);
+      await generatePgrDocx(pgrContext);
     } finally {
       setIsGeneratingDocx(false);
     }
