@@ -14,6 +14,7 @@ import {
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
 
@@ -202,9 +203,39 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
         );
       }
     } else if (section.type === 'text') {
-      const paras = section.content.split('\n\n');
-      for (const p of paras) {
-        children.push(new Paragraph({ text: p, spacing: { after: 150 } }));
+      const blocks = parseContentWithTables(section.content);
+      for (const block of blocks) {
+        if (block.type === 'table') {
+          const tableRows = [
+            new TableRow({
+              tableHeader: true,
+              children: block.headers.map((h) =>
+                new TableCell({
+                  children: [new Paragraph({ children: [new TextRun({ text: h, bold: true })] })],
+                  borders: cellBorder,
+                  shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' },
+                })
+              ),
+            }),
+            ...block.rows.map((row) =>
+              new TableRow({
+                children: row.map((cell) =>
+                  new TableCell({
+                    children: [new Paragraph({ text: cell })],
+                    borders: cellBorder,
+                  })
+                ),
+              })
+            ),
+          ];
+          children.push(new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+          children.push(new Paragraph({ text: '', spacing: { after: 150 } }));
+        } else {
+          const paras = block.content.split('\n\n');
+          for (const p of paras) {
+            children.push(new Paragraph({ text: p, spacing: { after: 150 } }));
+          }
+        }
       }
     } else if (section.type === 'responsibilities') {
       const c = section.content;

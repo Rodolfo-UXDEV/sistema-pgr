@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePgr } from '@/context/PgrContext';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
-import { PgrSectionDefinition } from '@/types/pgr-builder';
+import { PgrSectionDefinition, PgrCustomSectionData } from '@/types/pgr-builder';
+import { parseContentWithTables } from '@/lib/table-parser';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
@@ -23,12 +26,14 @@ import {
   Layers, 
   CheckCircle2, 
   Sliders, 
-  Building2, 
-  UserCheck, 
-  AlertTriangle, 
-  Calendar,
+  Table as TableIcon,
+  Bold,
+  Italic,
+  List,
+  Heading,
+  FileCode,
   Sparkles,
-  FileCode
+  Edit3
 } from 'lucide-react';
 
 export const PgrBuilderPage: React.FC = () => {
@@ -50,14 +55,15 @@ export const PgrBuilderPage: React.FC = () => {
   const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
 
   const [selectedSectionId, setSelectedSectionId] = useState<string>('sec-4'); // Default to Introdução
-  const [customSections, setCustomSections] = useState<Record<string, string>>({});
+  const [customSections, setCustomSections] = useState<Record<string, PgrCustomSectionData>>({});
+  const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isGeneratingDocx, setIsGeneratingDocx] = useState<boolean>(false);
 
   // Carrega customizações salvas do localStorage para este PGR
   useEffect(() => {
     if (pgr) {
-      const storageKey = `pgr_custom_sections_${pgr.id}`;
+      const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
       const saved = localStorage.getItem(storageKey);
       if (saved) {
         try {
@@ -80,23 +86,47 @@ export const PgrBuilderPage: React.FC = () => {
   }
 
   const selectedSection = DEFAULT_PGR_SECTIONS.find((s) => s.id === selectedSectionId) || DEFAULT_PGR_SECTIONS[0];
-  const currentText = customSections[selectedSection.id] !== undefined 
-    ? customSections[selectedSection.id] 
+  
+  const currentTitle = customSections[selectedSection.id]?.title !== undefined
+    ? customSections[selectedSection.id].title!
+    : selectedSection.title;
+
+  const currentSubtitle = customSections[selectedSection.id]?.subtitle !== undefined
+    ? customSections[selectedSection.id].subtitle!
+    : (selectedSection.subtitle || '');
+
+  const currentContent = customSections[selectedSection.id]?.content !== undefined
+    ? customSections[selectedSection.id].content
     : selectedSection.defaultContent;
 
-  const isCustomized = customSections[selectedSection.id] !== undefined && 
-    customSections[selectedSection.id] !== selectedSection.defaultContent;
+  const isCustomized = !!customSections[selectedSection.id]?.isModified;
 
-  const handleTextChange = (text: string) => {
-    setCustomSections((prev) => ({
-      ...prev,
-      [selectedSection.id]: text,
-    }));
+  const updateCurrentSection = (fields: Partial<PgrCustomSectionData>) => {
+    setCustomSections((prev) => {
+      const existing = prev[selectedSection.id] || {
+        title: selectedSection.title,
+        subtitle: selectedSection.subtitle || '',
+        content: selectedSection.defaultContent,
+        isModified: false,
+      };
+
+      const updated = {
+        ...existing,
+        ...fields,
+        isModified: true,
+        lastModifiedAt: new Date().toISOString(),
+      };
+
+      return {
+        ...prev,
+        [selectedSection.id]: updated,
+      };
+    });
     setIsSaved(false);
   };
 
   const handleResetSection = () => {
-    if (window.confirm(`Restaurar o texto padrão oficial da Seção ${selectedSection.number} (${selectedSection.title})?`)) {
+    if (window.confirm(`Restaurar o título e texto padrão oficial da Seção ${selectedSection.number}?`)) {
       setCustomSections((prev) => {
         const next = { ...prev };
         delete next[selectedSection.id];
@@ -107,10 +137,47 @@ export const PgrBuilderPage: React.FC = () => {
   };
 
   const handleSaveAll = () => {
-    const storageKey = `pgr_custom_sections_${pgr.id}`;
+    const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
     localStorage.setItem(storageKey, JSON.stringify(customSections));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
+  };
+
+  // Inserção de templates de tabelas e formatações no texto
+  const insertFormatting = (template: string) => {
+    const textarea = document.getElementById('section-textarea') as HTMLTextAreaElement;
+    if (!textarea) {
+      updateCurrentSection({ content: currentContent + '\n\n' + template });
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = currentContent.substring(0, start);
+    const after = currentContent.substring(end);
+    const newContent = before + template + after;
+
+    updateCurrentSection({ content: newContent });
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + template.length, start + template.length);
+    }, 50);
+  };
+
+  const insertTable = (cols: number, rows: number) => {
+    let tableMd = '\n\n';
+    // Header
+    const headers = Array.from({ length: cols }, (_, i) => `Coluna ${i + 1}`);
+    tableMd += `| ${headers.join(' | ')} |\n`;
+    tableMd += `| ${headers.map(() => ':---').join(' | ')} |\n`;
+    // Rows
+    for (let r = 1; r <= rows; r++) {
+      const cells = Array.from({ length: cols }, (_, c) => `Item ${r}.${c + 1}`);
+      tableMd += `| ${cells.join(' | ')} |\n`;
+    }
+    tableMd += '\n';
+    insertFormatting(tableMd);
   };
 
   const pgrContext = {
@@ -151,6 +218,9 @@ export const PgrBuilderPage: React.FC = () => {
     { key: 'posttextual', label: '7. Emergências & Termos' },
   ];
 
+  // Renderiza blocos de texto e tabelas no modo preview
+  const parsedBlocks = parseContentWithTables(currentContent);
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
       {/* Barra Superior de Ações */}
@@ -163,21 +233,21 @@ export const PgrBuilderPage: React.FC = () => {
             className="text-xs"
           >
             <ArrowLeft className="h-4 w-4 mr-1.5" />
-            <span>Voltar ao Documento</span>
+            <span>Voltar</span>
           </Button>
 
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-foreground flex items-center gap-1.5">
                 <Sliders className="h-4 w-4 text-emerald-600" />
-                Construtor & Editor de Seções do PGR
+                Construtor de Seções & Editor de Tabelas do PGR
               </h1>
               <Badge variant="outline" className="text-[10px] font-mono font-bold">
                 {pgr.code} (v{pgr.version})
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground">
-              Personalize textos técnicos ou visualize blocos integrados do sistema para a empresa <strong className="text-foreground">{activeCompany.name}</strong>
+              Altere nomes das seções, edite textos e insira tabelas personalizadas para a empresa <strong className="text-foreground">{activeCompany.name}</strong>
             </p>
           </div>
         </div>
@@ -190,7 +260,7 @@ export const PgrBuilderPage: React.FC = () => {
             className="text-xs gap-1.5"
           >
             <Eye className="h-3.5 w-3.5" />
-            <span>Ver Documento Montado</span>
+            <span>Ver Documento</span>
           </Button>
 
           <Button
@@ -225,10 +295,10 @@ export const PgrBuilderPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid Principal: 2 Colunas (Menu Lateral de Seções + Editor Central) */}
+      {/* Grid Principal: 2 Colunas */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* COLUNA ESQUERDA: LISTA DE 18 SEÇÕES (4 COLUNAS EM TELAS GRANDES) */}
+        {/* COLUNA ESQUERDA: LISTA DE 18 CAPÍTULOS */}
         <div className="lg:col-span-4 bg-card border border-border rounded-xl p-3 shadow-xs space-y-4 max-h-[calc(100vh-160px)] overflow-y-auto sticky top-40">
           <div className="flex items-center justify-between px-2 pt-1">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -236,7 +306,7 @@ export const PgrBuilderPage: React.FC = () => {
               Capítulos do Documento (18)
             </span>
             <span className="text-[10px] text-muted-foreground font-medium">
-              {Object.keys(customSections).length} editadas
+              {Object.keys(customSections).filter(k => customSections[k]?.isModified).length} editadas
             </span>
           </div>
 
@@ -256,7 +326,9 @@ export const PgrBuilderPage: React.FC = () => {
                   <div className="space-y-1">
                     {catSections.map((sec) => {
                       const isSelected = sec.id === selectedSectionId;
-                      const hasCustom = customSections[sec.id] !== undefined && customSections[sec.id] !== sec.defaultContent;
+                      const custom = customSections[sec.id];
+                      const titleToShow = custom?.title || sec.title;
+                      const hasCustom = !!custom?.isModified;
 
                       return (
                         <button
@@ -273,9 +345,9 @@ export const PgrBuilderPage: React.FC = () => {
                               {sec.number}.
                             </span>
                             <div>
-                              <div className="line-clamp-1">{sec.title}</div>
+                              <div className="line-clamp-1">{titleToShow}</div>
                               <div className="text-[10px] text-muted-foreground line-clamp-1 font-normal">
-                                {sec.subtitle}
+                                {custom?.subtitle || sec.subtitle}
                               </div>
                             </div>
                           </div>
@@ -305,43 +377,86 @@ export const PgrBuilderPage: React.FC = () => {
           </div>
         </div>
 
-        {/* COLUNA DIREITA: PAINEL DE EDIÇÃO DA SEÇÃO SELECIONADA */}
+        {/* COLUNA DIREITA: PAINEL DE EDIÇÃO & INSERÇÃO DE TABELAS */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="border border-border shadow-sm">
-            <CardHeader className="border-b border-border pb-4 bg-muted/20">
+            <CardHeader className="border-b border-border pb-4 bg-muted/20 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="font-mono font-bold text-xs bg-background">
-                      Seção {selectedSection.number}
-                    </Badge>
-                    <CardTitle className="text-lg font-bold text-foreground">
-                      {selectedSection.title}
-                    </CardTitle>
-                  </div>
-                  <CardDescription className="text-xs mt-1">
-                    {selectedSection.description}
-                  </CardDescription>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="font-mono font-bold text-xs bg-background">
+                    Capítulo {selectedSection.number}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">Configuração e Edição da Seção</span>
                 </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto">
+                <div className="flex items-center gap-2">
                   {!selectedSection.isSystemData && isCustomized && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleResetSection}
                       className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-8"
-                      title="Restaurar o texto padrão original da ES Engenharia"
+                      title="Restaurar o título e texto padrão original da ES Engenharia"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                       <span>Restaurar Padrão</span>
                     </Button>
                   )}
+
+                  {!selectedSection.isSystemData && (
+                    <div className="flex items-center border border-border rounded-lg p-0.5 bg-background text-xs">
+                      <button
+                        onClick={() => setViewMode('edit')}
+                        className={`px-3 py-1 rounded-md font-medium transition-all ${
+                          viewMode === 'edit'
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Edit3 className="h-3.5 w-3.5 inline mr-1" />
+                        Editor
+                      </button>
+                      <button
+                        onClick={() => setViewMode('preview')}
+                        className={`px-3 py-1 rounded-md font-medium transition-all ${
+                          viewMode === 'preview'
+                            ? 'bg-emerald-600 text-white shadow-2xs'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        <Eye className="h-3.5 w-3.5 inline mr-1" />
+                        Preview da Tabela / Texto
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* CAMPOS PARA TROCAR O NOME E SUBTÍTULO DA SEÇÃO */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div>
+                  <Label className="text-xs font-semibold">Nome / Título da Seção</Label>
+                  <Input
+                    value={currentTitle}
+                    onChange={(e) => updateCurrentSection({ title: e.target.value })}
+                    placeholder="Ex: 5. OBJETIVOS DO PROGRAMA"
+                    className="h-9 mt-1 text-xs font-bold bg-background"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold">Subtítulo / Descrição Curta</Label>
+                  <Input
+                    value={currentSubtitle}
+                    onChange={(e) => updateCurrentSection({ subtitle: e.target.value })}
+                    placeholder="Ex: Diretrizes e metas de prevenção..."
+                    className="h-9 mt-1 text-xs bg-background"
+                  />
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-6 space-y-4">
               {/* CASO 1: SEÇÃO DE DADOS DO SISTEMA */}
               {selectedSection.isSystemData ? (
                 <div className="space-y-4">
@@ -355,7 +470,6 @@ export const PgrBuilderPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* PREVIEWS ESPECÍFICOS POR SEÇÃO DE SISTEMA */}
                   {selectedSection.id === 'sec-2' && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs p-4 bg-muted/20 border border-border rounded-xl">
                       <div><strong className="text-muted-foreground">Razão Social:</strong> <span className="font-semibold text-foreground">{activeCompany.name}</span></div>
@@ -364,20 +478,6 @@ export const PgrBuilderPage: React.FC = () => {
                       <div><strong className="text-muted-foreground">Grau de Risco:</strong> <span className="font-semibold text-foreground">Grau {activeCompany.riskGrade} (NR-04)</span></div>
                       <div className="sm:col-span-2"><strong className="text-muted-foreground">CNAE:</strong> <span className="text-foreground">{activeCompany.cnae} - {activeCompany.cnaeDescription}</span></div>
                       <div className="sm:col-span-2"><strong className="text-muted-foreground">Endereço Matriz:</strong> <span className="text-foreground">{activeCompany.address.street}, {activeCompany.address.number} - {activeCompany.address.city}/{activeCompany.address.state}</span></div>
-                    </div>
-                  )}
-
-                  {selectedSection.id === 'sec-3' && (
-                    <div className="p-4 bg-muted/20 border border-border rounded-xl text-xs space-y-2">
-                      {professionals.length > 0 ? (
-                        <>
-                          <div><strong>Responsável Técnico (RT):</strong> {professionals[0].name} ({professionals[0].role})</div>
-                          <div><strong>Registro de Classe:</strong> {professionals[0].registrationCouncil}: {professionals[0].registrationNumber}/{professionals[0].registrationState}</div>
-                          <div><strong>ART / RRT:</strong> {professionals[0].artRrt || 'Emitida'}</div>
-                        </>
-                      ) : (
-                        <p className="text-muted-foreground">Nenhum profissional RT cadastrado.</p>
-                      )}
                     </div>
                   )}
 
@@ -391,23 +491,6 @@ export const PgrBuilderPage: React.FC = () => {
                             <p className="text-muted-foreground text-[11px]">
                               Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
                             </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedSection.id === 'sec-12' && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-muted-foreground">Cargos & Funções ({positions.length}):</p>
-                      <div className="space-y-2">
-                        {positions.map((p) => (
-                          <div key={p.id} className="p-3 bg-muted/20 border border-border rounded-lg text-xs space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-foreground">{p.title} (CBO: {p.cbo})</span>
-                              <Badge variant="outline" className="text-[10px]">{p.workerCount} expostos</Badge>
-                            </div>
-                            <p className="text-muted-foreground text-[11px]"><strong>Rotina:</strong> {p.routineActivities}</p>
                           </div>
                         ))}
                       </div>
@@ -441,72 +524,160 @@ export const PgrBuilderPage: React.FC = () => {
                       </div>
                     </div>
                   )}
-
-                  {selectedSection.id === 'sec-15' && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-muted-foreground">Ações 5W2H Programadas ({pgrContext.actionPlans.length}):</p>
-                      <div className="border border-border rounded-lg overflow-hidden">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50 text-[11px]">
-                              <TableHead>O que (Ação)</TableHead>
-                              <TableHead>Responsável</TableHead>
-                              <TableHead>Prazo</TableHead>
-                              <TableHead>Status</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {pgrContext.actionPlans.map((a) => (
-                              <TableRow key={a.id} className="text-xs">
-                                <TableCell className="font-semibold">{a.what}</TableCell>
-                                <TableCell>{a.who}</TableCell>
-                                <TableCell className="font-mono">{a.whenDate}</TableCell>
-                                <TableCell><Badge variant="outline">{a.status}</Badge></TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
-                /* CASO 2: SEÇÃO DE TEXTO TÉCNICO EDITÁVEL */
+                /* CASO 2: SEÇÃO DE TEXTO EDITÁVEL COM INSERÇÃO DE TABELAS */
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <FileText className="h-3.5 w-3.5 text-emerald-600" />
-                      Texto Técnico da Seção (100% editável)
-                    </span>
-                    <span>
-                      {currentText.length} caracteres | {currentText.split(/\s+/).filter(Boolean).length} palavras
-                    </span>
-                  </div>
+                  {/* BARRA DE FERRAMENTAS PARA INSERIR TABELAS E FORMATAÇÃO */}
+                  {viewMode === 'edit' && (
+                    <div className="flex flex-wrap items-center gap-1.5 p-2 bg-muted/40 border border-border rounded-xl">
+                      <span className="text-[11px] font-bold text-muted-foreground px-2 flex items-center gap-1">
+                        <TableIcon className="h-3.5 w-3.5 text-emerald-600" />
+                        Inserir Tabelas:
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertTable(3, 3)}
+                        className="h-7 text-[11px] gap-1 bg-background hover:bg-emerald-50 hover:text-emerald-700 font-semibold"
+                        title="Inserir tabela com 3 colunas e 3 linhas"
+                      >
+                        + Tabela 3x3
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertTable(2, 4)}
+                        className="h-7 text-[11px] gap-1 bg-background hover:bg-emerald-50 hover:text-emerald-700 font-semibold"
+                        title="Inserir tabela com 2 colunas e 4 linhas"
+                      >
+                        + Tabela 2x4
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => insertTable(4, 3)}
+                        className="h-7 text-[11px] gap-1 bg-background hover:bg-emerald-50 hover:text-emerald-700 font-semibold"
+                        title="Inserir tabela com 4 colunas e 3 linhas"
+                      >
+                        + Tabela 4x3
+                      </Button>
 
-                  <Textarea
-                    value={currentText}
-                    onChange={(e) => handleTextChange(e.target.value)}
-                    className="min-h-[360px] font-sans text-xs leading-relaxed p-4 border border-input focus:ring-1 focus:ring-ring resize-y rounded-xl"
-                    placeholder="Digite ou personalize o texto técnico desta seção..."
-                  />
+                      <Separator orientation="vertical" className="h-4 mx-1" />
 
-                  <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
-                    <span>
-                      {isCustomized ? (
-                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">● Modificações personalizadas ativas nesta seção.</span>
-                      ) : (
-                        <span>Utilizando o texto padrão oficial da ES Engenharia / EMEPE.</span>
-                      )}
-                    </span>
-                    <Button
-                      size="sm"
-                      onClick={handleSaveAll}
-                      className="text-xs gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white h-8"
-                    >
-                      <Save className="h-3.5 w-3.5" />
-                      <span>{isSaved ? 'Salvo com Sucesso!' : 'Salvar Alterações'}</span>
-                    </Button>
-                  </div>
+                      <span className="text-[11px] font-bold text-muted-foreground px-1">Formatação:</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => insertFormatting('**Texto em Negrito**')}
+                        className="h-7 px-2 text-xs font-bold"
+                        title="Negrito"
+                      >
+                        <Bold className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => insertFormatting('*Texto em Itálico*')}
+                        className="h-7 px-2 text-xs italic"
+                        title="Itálico"
+                      >
+                        <Italic className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => insertFormatting('\n### Subtítulo do Tópico\n')}
+                        className="h-7 px-2 text-xs font-semibold"
+                        title="Título de Subseção"
+                      >
+                        <Heading className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => insertFormatting('\n• Item da lista\n• Segundo item\n')}
+                        className="h-7 px-2 text-xs"
+                        title="Lista com Marcadores"
+                      >
+                        <List className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* VISUALIZAÇÃO OU EDITOR */}
+                  {viewMode === 'edit' ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        id="section-textarea"
+                        value={currentContent}
+                        onChange={(e) => updateCurrentSection({ content: e.target.value })}
+                        className="min-h-[400px] font-mono text-xs leading-relaxed p-4 border border-input focus:ring-1 focus:ring-ring resize-y rounded-xl bg-background"
+                        placeholder="Digite ou personalize o texto técnico desta seção. Você pode inserir tabelas usando o formato Markdown..."
+                      />
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
+                        <span>
+                          {currentContent.length} caracteres | {currentContent.split(/\s+/).filter(Boolean).length} palavras
+                        </span>
+                        <Button
+                          size="sm"
+                          onClick={handleSaveAll}
+                          className="text-xs gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white h-8"
+                        >
+                          <Save className="h-3.5 w-3.5" />
+                          <span>{isSaved ? 'Salvo com Sucesso!' : 'Salvar Alterações'}</span>
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* MODO PREVIEW COM TABELAS RENDERIZADAS VISUALMENTE */
+                    <div className="p-6 bg-muted/20 border border-border rounded-xl space-y-6 text-xs text-foreground leading-relaxed">
+                      <div className="border-b border-border pb-3">
+                        <h2 className="text-base font-bold text-foreground">{currentTitle}</h2>
+                        {currentSubtitle && <p className="text-xs text-muted-foreground">{currentSubtitle}</p>}
+                      </div>
+
+                      {parsedBlocks.map((block, idx) => {
+                        if (block.type === 'table') {
+                          return (
+                            <div key={idx} className="border border-border rounded-lg overflow-hidden shadow-xs my-4 bg-background">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="bg-muted/70">
+                                    {block.headers.map((h, hIdx) => (
+                                      <TableHead key={hIdx} className="font-bold text-foreground text-xs">{h}</TableHead>
+                                    ))}
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {block.rows.map((row, rIdx) => (
+                                    <TableRow key={rIdx}>
+                                      {row.map((cell, cIdx) => (
+                                        <TableCell key={cIdx} className="text-xs">{cell}</TableCell>
+                                      ))}
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div key={idx} className="whitespace-pre-line text-muted-foreground leading-relaxed">
+                              {block.content}
+                            </div>
+                          );
+                        }
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

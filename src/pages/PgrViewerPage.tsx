@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePgr } from '@/context/PgrContext';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -9,9 +9,11 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
-import { generatePgrFromMasterTemplate } from '@/lib/docx-template-engine';
 import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
+import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { 
   ArrowLeft, 
   Download, 
@@ -42,9 +44,24 @@ export const PgrViewerPage: React.FC = () => {
   } = usePgr();
 
   const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
+  const [customSections, setCustomSections] = useState<Record<string, PgrCustomSectionData>>({});
 
   const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
   const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
+
+  useEffect(() => {
+    if (pgr) {
+      const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        try {
+          setCustomSections(JSON.parse(saved));
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [pgr]);
 
   if (!pgr || !activeCompany) {
     return (
@@ -70,6 +87,14 @@ export const PgrViewerPage: React.FC = () => {
 
   const docData = buildPgrFullDocument(pgrContext);
 
+  const getSectionTitle = (secId: string, defaultTitle: string) => {
+    return customSections[secId]?.title || defaultTitle;
+  };
+
+  const getSectionContent = (secId: string, defaultContent: string) => {
+    return customSections[secId]?.content || defaultContent;
+  };
+
   const handleDownloadPdf = () => {
     generatePgrPdf(pgrContext);
   };
@@ -77,13 +102,54 @@ export const PgrViewerPage: React.FC = () => {
   const handleDownloadDocx = async () => {
     setIsGeneratingDocx(true);
     try {
-      await generatePgrFromMasterTemplate(pgrContext);
-    } catch (err) {
-      console.warn('Fallback para gerador alternativo docx:', err);
       await generatePgrDocx(pgrContext);
+    } catch (err) {
+      console.error('Erro ao gerar DOCX:', err);
+      alert('Erro ao gerar arquivo Word.');
     } finally {
       setIsGeneratingDocx(false);
     }
+  };
+
+  // Renderizador de blocos de texto e tabelas customizadas
+  const renderFormattedSection = (text: string) => {
+    const blocks = parseContentWithTables(text);
+    return (
+      <div className="space-y-4">
+        {blocks.map((block, idx) => {
+          if (block.type === 'table') {
+            return (
+              <div key={idx} className="border border-border rounded-lg overflow-hidden shadow-xs my-3 bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/70">
+                      {block.headers.map((h, hIdx) => (
+                        <TableHead key={hIdx} className="font-bold text-foreground text-xs">{h}</TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {block.rows.map((row, rIdx) => (
+                      <TableRow key={rIdx}>
+                        {row.map((cell, cIdx) => (
+                          <TableCell key={cIdx} className="text-xs">{cell}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          } else {
+            return (
+              <p key={idx} className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+                {block.content}
+              </p>
+            );
+          }
+        })}
+      </div>
+    );
   };
 
   return (
@@ -196,7 +262,7 @@ export const PgrViewerPage: React.FC = () => {
         {/* 1. CONTROLE DE REVISÕES */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">1.</span> CONTROLE DE REVISÕES DO DOCUMENTO
+            <span className="text-emerald-600 font-mono">1.</span> {getSectionTitle('sec-1', 'CONTROLE DE REVISÕES DO DOCUMENTO')}
           </h2>
           <div className="border border-border rounded-lg overflow-hidden">
             <Table>
@@ -221,7 +287,7 @@ export const PgrViewerPage: React.FC = () => {
         {/* 2. DADOS CADASTRAIS */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">2.</span> INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO
+            <span className="text-emerald-600 font-mono">2.</span> {getSectionTitle('sec-2', 'INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO')}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
@@ -254,7 +320,7 @@ export const PgrViewerPage: React.FC = () => {
         {/* 3. RESPONSABILIDADE TÉCNICA */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">3.</span> RESPONSABILIDADE TÉCNICA E LEGAL
+            <span className="text-emerald-600 font-mono">3.</span> {getSectionTitle('sec-3', 'RESPONSABILIDADE TÉCNICA E LEGAL')}
           </h2>
           <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-2 text-xs">
             <div>
@@ -269,40 +335,108 @@ export const PgrViewerPage: React.FC = () => {
         {/* 4. INTRODUÇÃO E OBJETIVOS */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">4.</span> INTRODUÇÃO E OBJETIVOS DO PROGRAMA
+            <span className="text-emerald-600 font-mono">4.</span> {getSectionTitle('sec-4', 'INTRODUÇÃO E DIRETRIZES GERAIS')}
           </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
-            {OFFICIAL_PGR_TEXTS.introducao}
-          </p>
-          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line mt-2">
-            {OFFICIAL_PGR_TEXTS.objetivo}
-          </p>
+          {renderFormattedSection(getSectionContent('sec-4', OFFICIAL_PGR_TEXTS.introducao))}
         </section>
 
-        {/* 5. FUNDAMENTAÇÃO LEGAL */}
+        {/* 5. OBJETIVOS DO PROGRAMA */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">5.</span> FUNDAMENTAÇÃO LEGAL E NORMAS APLICÁVEIS
+            <span className="text-emerald-600 font-mono">5.</span> {getSectionTitle('sec-5', 'OBJETIVOS DO PROGRAMA')}
           </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
-            {OFFICIAL_PGR_TEXTS.fundamentacaoLegal}
-          </p>
+          {renderFormattedSection(getSectionContent('sec-5', OFFICIAL_PGR_TEXTS.objetivo))}
         </section>
 
-        {/* 6. GERENCIAMENTO DE RISCOS (GRO) & MATRIZ 5X5 */}
+        {/* 6. FUNDAMENTAÇÃO LEGAL */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">6.</span> ESTRUTURA DO GRO E METODOLOGIA DA MATRIZ 5X5
+            <span className="text-emerald-600 font-mono">6.</span> {getSectionTitle('sec-6', 'FUNDAMENTAÇÃO LEGAL E NORMAS APLICÁVEIS')}
           </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
-            {OFFICIAL_PGR_TEXTS.metodologiaGro}
-          </p>
+          {renderFormattedSection(getSectionContent('sec-6', OFFICIAL_PGR_TEXTS.fundamentacaoLegal))}
         </section>
 
-        {/* 7. INVENTÁRIO DE RISCOS */}
+        {/* 7. RESPONSABILIDADES LEGAIS */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">7.</span> INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)
+            <span className="text-emerald-600 font-mono">7.</span> {getSectionTitle('sec-7', 'RESPONSABILIDADES E ATRIBUIÇÕES LEGAIS')}
+          </h2>
+          {renderFormattedSection(getSectionContent('sec-7', `${OFFICIAL_PGR_TEXTS.responsabilidades.empregador}\n\n${OFFICIAL_PGR_TEXTS.responsabilidades.trabalhadores}\n\n${OFFICIAL_PGR_TEXTS.responsabilidades.sesmt}`))}
+        </section>
+
+        {/* 8. GRO & METODOLOGIA */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">8.</span> {getSectionTitle('sec-8', 'ESTRUTURA DO GRO E METODOLOGIA (CICLO PDCA)')}
+          </h2>
+          {renderFormattedSection(getSectionContent('sec-8', OFFICIAL_PGR_TEXTS.metodologiaGro))}
+        </section>
+
+        {/* 9. MATRIZ 5X5 */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">9.</span> {getSectionTitle('sec-9', 'METODOLOGIA DA MATRIZ DE RISCO 5X5')}
+          </h2>
+          {renderFormattedSection(getSectionContent('sec-9', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-9')?.defaultContent || ''))}
+        </section>
+
+        {/* 10. DIRETRIZES DE AGENTES */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">10.</span> {getSectionTitle('sec-10', 'DIRETRIZES DE RECONHECIMENTO DOS AGENTES OCUPACIONAIS')}
+          </h2>
+          {renderFormattedSection(getSectionContent('sec-10', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-10')?.defaultContent || ''))}
+        </section>
+
+        {/* 11. SETORES E AMBIENTES */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">11.</span> {getSectionTitle('sec-11', 'CARACTERIZAÇÃO DOS SETORES E AMBIENTES FÍSICOS')}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {sectors.map((s) => (
+              <div key={s.id} className="p-3 bg-muted/20 border border-border rounded-xl text-xs space-y-1">
+                <span className="font-bold text-foreground block text-sm">{s.name}</span>
+                <p className="text-muted-foreground">{s.description || 'Ambiente operacional'}</p>
+                <div className="pt-1 text-[11px] text-muted-foreground font-mono">
+                  Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 12. CARGOS E ATIVIDADES */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">12.</span> {getSectionTitle('sec-12', 'FUNÇÕES, CBO E DESCRIÇÃO DAS ATIVIDADES OCUPACIONAIS')}
+          </h2>
+          <div className="space-y-3">
+            {positions.map((p) => (
+              <div key={p.id} className="p-3.5 bg-muted/20 border border-border rounded-xl text-xs space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-foreground text-sm">{p.title} (CBO: {p.cbo})</span>
+                  <Badge variant="outline" className="text-[10px]">{p.workerCount} expostos</Badge>
+                </div>
+                <p className="text-muted-foreground"><strong>Atividades Rotineiras:</strong> {p.routineActivities}</p>
+                {p.nonRoutineActivities && <p className="text-muted-foreground"><strong>Atividades Não Rotineiras:</strong> {p.nonRoutineActivities}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 13. EMERGÊNCIAS E SAÚDE */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">13.</span> {getSectionTitle('sec-13', 'PREPARAÇÃO PARA EMERGÊNCIAS E SAÚDE OCUPACIONAL')}
+          </h2>
+          {renderFormattedSection(getSectionContent('sec-13', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-13')?.defaultContent || ''))}
+        </section>
+
+        {/* 14. INVENTÁRIO DE RISCOS */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">14.</span> {getSectionTitle('sec-14', 'INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)')}
           </h2>
           <div className="border border-border rounded-xl overflow-hidden shadow-xs">
             <Table>
@@ -361,10 +495,10 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 8. PLANO DE AÇÃO */}
+        {/* 15. PLANO DE AÇÃO */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">8.</span> PLANO DE AÇÃO E CRONOGRAMA (NR-01.5.5 - 5W2H)
+            <span className="text-emerald-600 font-mono">15.</span> {getSectionTitle('sec-15', 'PLANO DE AÇÃO E CRONOGRAMA (NR-01.5.5 - 5W2H)')}
           </h2>
           <div className="border border-border rounded-xl overflow-hidden shadow-xs">
             <Table>
@@ -400,14 +534,12 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 9. TERMO DE ENCERRAMENTO E ASSINATURAS */}
+        {/* 16. TERMO DE ENCERRAMENTO E ASSINATURAS */}
         <section className="space-y-6 pt-6 border-t border-border">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">9.</span> TERMO DE ENCERRAMENTO E RESPONSABILIDADE
+            <span className="text-emerald-600 font-mono">16.</span> {getSectionTitle('sec-16', 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE')}
           </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {OFFICIAL_PGR_TEXTS.termoEncerramento}
-          </p>
+          {renderFormattedSection(getSectionContent('sec-16', OFFICIAL_PGR_TEXTS.termoEncerramento))}
 
           <p className="text-xs text-right text-muted-foreground">
             {activeCompany.address.city}/{activeCompany.address.state}, {docData.header.elaborationDate}.
@@ -428,6 +560,14 @@ export const PgrViewerPage: React.FC = () => {
               <p className="text-[11px] text-muted-foreground">{activeCompany.name}</p>
             </div>
           </div>
+        </section>
+
+        {/* 17. RECIBO DE EPI */}
+        <section className="space-y-3 pt-6 border-t border-border">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">17.</span> {getSectionTitle('sec-17', 'MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)')}
+          </h2>
+          {renderFormattedSection(getSectionContent('sec-17', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-17')?.defaultContent || ''))}
         </section>
 
       </div>

@@ -22,9 +22,10 @@ export interface PgrSectionDefinition {
   systemDataSummary?: string;
 }
 
-export interface PgrCustomSectionContent {
-  sectionId: string;
-  customContent: string;
+export interface PgrCustomSectionData {
+  title?: string;
+  subtitle?: string;
+  content: string;
   isModified: boolean;
   lastModifiedAt?: string;
 }
