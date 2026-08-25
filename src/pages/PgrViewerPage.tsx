@@ -1,346 +1,422 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { usePgr } from '@/context/PgrContext';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
-import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { generatePgrPdf } from '@/lib/pdf-generator';
-import { formatDate, formatCNPJ, formatCurrency } from '@/lib/utils';
+import { generatePgrDocx } from '@/lib/docx-generator';
+import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { 
   ArrowLeft, 
   Download, 
   Printer, 
+  FileText, 
   ShieldCheck, 
+  CheckCircle2, 
   Building2, 
-  Award, 
-  Layers, 
-  CheckSquare, 
-  FileText 
+  Calendar, 
+  Award,
+  FileCode
 } from 'lucide-react';
 
 export const PgrViewerPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { 
-    pgrDocuments, 
-    companies, 
+    activeCompany, 
     establishments, 
     sectors, 
     positions, 
     ghes, 
     professionals, 
+    pgrDocuments, 
     riskInventory, 
     actionPlans 
   } = usePgr();
 
-  const pgr = pgrDocuments.find(d => d.id === id) || pgrDocuments[0];
-  const company = companies.find(c => c.id === pgr?.companyId) || companies[0];
-  const establishment = establishments.find(e => e.id === pgr?.establishmentId) || establishments[0];
+  const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
 
-  if (!pgr || !company || !establishment) {
+  const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
+  const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
+
+  if (!pgr || !activeCompany) {
     return (
-      <div className="p-12 text-center space-y-4">
-        <p className="text-muted-foreground text-sm">Documento do PGR não encontrado.</p>
+      <div className="p-8 text-center space-y-4">
+        <h2 className="text-xl font-bold">Documento PGR não encontrado</h2>
+        <p className="text-muted-foreground text-sm">Selecione uma empresa com um PGR cadastrado.</p>
         <Button onClick={() => navigate('/documentos-pgr')}>Voltar para Documentos</Button>
       </div>
     );
   }
 
-  const techResp = professionals.find(p => p.id === pgr.technicalResponsibleId);
-  const medResp = professionals.find(p => p.id === pgr.medicalResponsibleId);
-  const companyRisks = riskInventory.filter(r => r.companyId === company.id);
-  const companyActions = actionPlans.filter(a => a.companyId === company.id);
-  const unitSectors = sectors.filter(s => s.establishmentId === establishment.id);
-  const unitPositions = positions.filter(p => p.establishmentId === establishment.id);
-
-  const handleDownloadPdf = () => {
-    const pdf = generatePgrPdf({
-      company,
-      establishment,
-      pgr,
-      sectors,
-      positions,
-      ghes,
-      professionals,
-      risks: riskInventory,
-      actions: actionPlans,
-    });
-    pdf.save(`${pgr.code}_PGR_${company.name.replace(/\s+/g, '_')}.pdf`);
+  const pgrContext = {
+    company: activeCompany,
+    establishment,
+    sectors,
+    positions,
+    ghes,
+    professionals,
+    pgr,
+    riskInventory: riskInventory.filter(r => r.pgrId === pgr.id || r.companyId === activeCompany.id),
+    actionPlans: actionPlans.filter(a => a.pgrId === pgr.id || a.companyId === activeCompany.id),
   };
 
-  const handlePrint = () => {
-    window.print();
+  const docData = buildPgrFullDocument(pgrContext);
+
+  const handleDownloadPdf = () => {
+    generatePgrPdf(pgrContext);
+  };
+
+  const handleDownloadDocx = async () => {
+    setIsGeneratingDocx(true);
+    try {
+      await generatePgrDocx(pgrContext);
+    } catch (err) {
+      console.error('Erro ao gerar DOCX:', err);
+      alert('Erro ao gerar arquivo Word.');
+    } finally {
+      setIsGeneratingDocx(false);
+    }
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-12">
-      {/* Top action toolbar (hidden on print) */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-4 rounded-xl border border-border shadow-xs print:hidden">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/documentos-pgr')}
-          className="gap-2 text-xs"
-        >
-          <ArrowLeft className="h-4 w-4" /> Voltar para Lista
-        </Button>
+    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+      {/* Top action bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border shadow-xs sticky top-20 z-20 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/documentos-pgr')}
+            className="text-xs"
+          >
+            <ArrowLeft className="h-4 w-4 mr-1.5" />
+            <span>Voltar</span>
+          </Button>
+
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-bold text-foreground">{pgr.code} — Versão {pgr.version}</h1>
+              <Badge variant="success" className="text-[10px]">Modelo Oficial EMEPE</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{pgr.title}</p>
+          </div>
+        </div>
 
         <div className="flex items-center gap-2">
-          <Badge variant="success" className="text-xs">
-            {pgr.status === 'APPROVED' ? 'Vigente Oficial' : 'Rascunho Técnico'}
-          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.print()}
+            className="text-xs gap-1.5"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            <span className="hidden md:inline">Imprimir</span>
+          </Button>
 
           <Button
             variant="outline"
             size="sm"
-            onClick={handlePrint}
-            className="gap-1.5 text-xs"
+            disabled={isGeneratingDocx}
+            onClick={handleDownloadDocx}
+            className="text-xs gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300 font-semibold"
           >
-            <Printer className="h-3.5 w-3.5" /> Imprimir
+            <FileCode className="h-3.5 w-3.5" />
+            <span>{isGeneratingDocx ? 'Gerando Word...' : 'Baixar Word (.docx)'}</span>
           </Button>
 
           <Button
             size="sm"
             onClick={handleDownloadPdf}
-            className="gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+            className="text-xs gap-1.5 font-semibold shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white"
           >
-            <Download className="h-3.5 w-3.5" /> Baixar PDF Oficial
+            <Download className="h-3.5 w-3.5" />
+            <span>Baixar PDF Oficial</span>
           </Button>
         </div>
       </div>
 
-      {/* Document Sheet Container */}
-      <div className="bg-card border border-border shadow-md rounded-2xl p-6 sm:p-10 space-y-8 text-foreground">
-        {/* Capa / Cabeçalho Documental */}
-        <div className="border-b-4 border-emerald-600 pb-6 text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 mb-2">
-            <ShieldCheck className="h-10 w-10" />
+      {/* DOCUMENT SHEET VIEW */}
+      <div className="bg-card border border-border shadow-md rounded-2xl p-6 sm:p-12 space-y-10 text-foreground">
+        
+        {/* CAPA FORMAL */}
+        <div className="text-center space-y-6 border-b border-border pb-12">
+          <div className="space-y-1">
+            <p className="text-xs font-bold tracking-widest text-emerald-700 dark:text-emerald-400 uppercase">
+              {OFFICIAL_PGR_TEXTS.consultingCompany}
+            </p>
+            <p className="text-[11px] text-muted-foreground font-mono">
+              {OFFICIAL_PGR_TEXTS.consultingCrea}
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase">
-            Programa de Gerenciamento de Riscos (PGR)
-          </h1>
-          <p className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-muted-foreground">
-            Norma Regulamentadora nº 01 (NR-01) • MTE
-          </p>
-          <div className="inline-block bg-muted px-4 py-1.5 rounded-full text-xs font-mono font-bold mt-2">
-            {pgr.code} • Versão {pgr.version} • Ano {pgr.year}
+
+          <div className="py-6 space-y-2">
+            <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+              PROGRAMA DE GERENCIAMENTO DE RISCOS
+            </h1>
+            <p className="text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+              PGR / GRO — NORMA REGULAMENTADORA Nº 01
+            </p>
+          </div>
+
+          <div className="space-y-1.5 py-4 bg-muted/40 rounded-xl border border-border/60 max-w-xl mx-auto">
+            <p className="text-lg font-bold text-foreground">{docData.header.companyName.toUpperCase()}</p>
+            <p className="text-xs text-muted-foreground">CNPJ: {docData.header.cnpj} | {docData.header.establishmentName}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-left max-w-xl mx-auto p-4 bg-background border border-border rounded-xl font-medium">
+            <div><strong>Código:</strong> {docData.header.code} (v{docData.header.version})</div>
+            <div><strong>Ano de Vigência:</strong> {docData.header.year}</div>
+            <div><strong>Período:</strong> {docData.header.validityPeriod}</div>
+            <div><strong>Elaboração:</strong> {docData.header.elaborationDate}</div>
+            <div className="sm:col-span-2">
+              <strong>Responsável Técnico:</strong> {docData.header.techRespName} ({docData.header.techRespCouncil})
+            </div>
           </div>
         </div>
 
-        {/* 1. Identificação da Empresa */}
+        {/* 1. CONTROLE DE REVISÕES */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-foreground border-b border-border pb-1.5 flex items-center gap-2">
-            <Building2 className="h-4 w-4 text-emerald-600" />
-            1. Identificação do Empregador e Estabelecimento
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">1.</span> CONTROLE DE REVISÕES DO DOCUMENTO
           </h2>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-24 text-center">Revisão</TableHead>
+                  <TableHead className="w-32 text-center">Data</TableHead>
+                  <TableHead>Descrição / Motivo da Revisão</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-center font-bold font-mono">{docData.header.version}</TableCell>
+                  <TableCell className="text-center text-xs font-mono">{docData.header.elaborationDate}</TableCell>
+                  <TableCell className="text-xs">{pgr.revisionReason || 'Emissão Oficial do PGR e Inventário de Riscos Ocupacionais'}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs bg-muted/30 p-4 rounded-xl border border-border">
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Razão Social:</span>
-              <strong className="text-foreground text-sm">{company.name}</strong>
+        {/* 2. DADOS CADASTRAIS */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">2.</span> INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
+              <span className="text-muted-foreground font-semibold block">Razão Social:</span>
+              <span className="font-bold text-foreground">{activeCompany.name}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Nome Fantasia:</span>
-              <strong className="text-foreground text-sm">{company.tradeName || '-'}</strong>
+            <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
+              <span className="text-muted-foreground font-semibold block">Nome Fantasia:</span>
+              <span className="font-bold text-foreground">{activeCompany.tradeName || activeCompany.name}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">CNPJ:</span>
-              <span className="font-mono font-bold">{formatCNPJ(company.cnpj)}</span>
+            <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
+              <span className="text-muted-foreground font-semibold block">CNPJ:</span>
+              <span className="font-bold font-mono text-foreground">{docData.header.cnpj}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">CNAE & Grau de Risco (NR-04):</span>
-              <span className="font-semibold">{company.cnae} - Grau de Risco {company.riskGrade}</span>
+            <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
+              <span className="text-muted-foreground font-semibold block">Grau de Risco (NR-04):</span>
+              <span className="font-bold text-foreground">Grau {activeCompany.riskGrade}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Endereço da Unidade:</span>
-              <span>{establishment.address.street}, {establishment.address.number} - {establishment.address.city}/{establishment.address.state}</span>
+            <div className="p-2.5 bg-muted/20 border border-border rounded-lg md:col-span-2">
+              <span className="text-muted-foreground font-semibold block">Atividade Principal (CNAE):</span>
+              <span className="font-bold text-foreground">{activeCompany.cnae} — {activeCompany.cnaeDescription}</span>
             </div>
-            <div>
-              <span className="text-muted-foreground block text-[11px]">Vigência do Programa:</span>
-              <span className="font-semibold text-emerald-600">{formatDate(pgr.validityStart)} até {formatDate(pgr.validityEnd)}</span>
+            <div className="p-2.5 bg-muted/20 border border-border rounded-lg md:col-span-2">
+              <span className="text-muted-foreground font-semibold block">Endereço da Matriz:</span>
+              <span className="text-foreground">{activeCompany.address.street}, {activeCompany.address.number} - {activeCompany.address.city}/{activeCompany.address.state}</span>
             </div>
           </div>
         </section>
 
-        {/* 2. Responsabilidade Técnica */}
+        {/* 3. RESPONSABILIDADE TÉCNICA */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-foreground border-b border-border pb-1.5 flex items-center gap-2">
-            <Award className="h-4 w-4 text-emerald-600" />
-            2. Responsabilidade Técnica (RT)
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">3.</span> RESPONSABILIDADE TÉCNICA E LEGAL
           </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-            <div className="p-3 rounded-xl border border-border bg-card space-y-1">
-              <span className="text-muted-foreground block text-[11px]">Elaboração Técnica SST:</span>
-              <strong className="text-foreground">{techResp?.name || 'Profissional Legalmente Habilitado'}</strong>
-              <p className="text-[11px] text-muted-foreground">
-                {techResp ? `${techResp.registrationCouncil}: ${techResp.registrationNumber}/${techResp.registrationState} (ART: ${techResp.artRrt || 'Emitida'})` : 'Registro MTE / CREA'}
-              </p>
+          <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-2 text-xs">
+            <div>
+              <strong>Responsável Técnico pela Elaboração:</strong> {docData.header.techRespName} ({docData.header.techRespCouncil})
             </div>
-
-            <div className="p-3 rounded-xl border border-border bg-card space-y-1">
-              <span className="text-muted-foreground block text-[11px]">Médico Coordenador do PCMSO:</span>
-              <strong className="text-foreground">{medResp?.name || 'Médico do Trabalho'}</strong>
-              <p className="text-[11px] text-muted-foreground">
-                {medResp ? `${medResp.registrationCouncil}: ${medResp.registrationNumber}/${medResp.registrationState}` : 'CRM / RQE'}
-              </p>
+            <div>
+              <strong>ART / RRT:</strong> {docData.header.techRespArt} | <strong>Consultoria SST:</strong> {OFFICIAL_PGR_TEXTS.consultingCompany}
             </div>
           </div>
         </section>
 
-        {/* 3. Metodologia e Diretrizes */}
+        {/* 4. INTRODUÇÃO E OBJETIVOS */}
         <section className="space-y-3">
-          <h2 className="text-base font-bold text-foreground border-b border-border pb-1.5 flex items-center gap-2">
-            <FileText className="h-4 w-4 text-emerald-600" />
-            3. Objetivos & Metodologia da Matriz de Risco (NR-01)
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">4.</span> INTRODUÇÃO E OBJETIVOS DO PROGRAMA
           </h2>
-          <div className="text-xs text-muted-foreground space-y-2 leading-relaxed bg-muted/20 p-4 rounded-xl border border-border">
-            <p><strong>Objetivos Gerais: </strong>{pgr.generalObjectives}</p>
-            <p><strong>Metodologia Aplicada: </strong>{pgr.methodologyDescription}</p>
-          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+            {OFFICIAL_PGR_TEXTS.introducao}
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line mt-2">
+            {OFFICIAL_PGR_TEXTS.objetivo}
+          </p>
         </section>
 
-        {/* 4. Inventário de Riscos Ocupacionais (NR-01.5.7) */}
+        {/* 5. FUNDAMENTAÇÃO LEGAL */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between border-b border-border pb-1.5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-600" />
-              4. Inventário de Riscos Ocupacionais
-            </h2>
-            <Badge variant="outline" className="text-xs">
-              {companyRisks.length} Perigos Avaliados
-            </Badge>
-          </div>
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">5.</span> FUNDAMENTAÇÃO LEGAL E NORMAS APLICÁVEIS
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+            {OFFICIAL_PGR_TEXTS.fundamentacaoLegal}
+          </p>
+        </section>
 
-          <div className="border border-border rounded-xl overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/80 border-b border-border text-muted-foreground">
-                  <th className="p-3 font-bold">Setor / Posto</th>
-                  <th className="p-3 font-bold">Perigo / Grupo</th>
-                  <th className="p-3 font-bold">Fonte Geradora & Danos</th>
-                  <th className="p-3 font-bold text-center">P × S</th>
-                  <th className="p-3 font-bold text-center">Nível de Risco</th>
-                  <th className="p-3 font-bold">Medidas de Controle</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {companyRisks.map((risk) => {
-                  const s = sectors.find(sec => sec.id === risk.sectorId);
-                  const catConfig = HAZARD_CATEGORY_CONFIG[risk.hazardCategory];
+        {/* 6. GERENCIAMENTO DE RISCOS (GRO) & MATRIZ 5X5 */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">6.</span> ESTRUTURA DO GRO E METODOLOGIA DA MATRIZ 5X5
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line">
+            {OFFICIAL_PGR_TEXTS.metodologiaGro}
+          </p>
+        </section>
+
+        {/* 7. INVENTÁRIO DE RISCOS */}
+        <section className="space-y-3">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">7.</span> INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)
+          </h2>
+          <div className="border border-border rounded-xl overflow-hidden shadow-xs">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 text-xs">
+                  <TableHead>Setor & Função</TableHead>
+                  <TableHead>Perigo / Agente</TableHead>
+                  <TableHead>Fontes & Danos</TableHead>
+                  <TableHead className="text-center">Matriz 5x5</TableHead>
+                  <TableHead>Controles (EPC / EPI)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pgrContext.riskInventory.map((item) => {
+                  const sec = sectors.find(s => s.id === item.sectorId);
+                  const pos = positions.find(p => p.id === item.positionId);
+                  const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
 
                   return (
-                    <tr key={risk.id} className="hover:bg-muted/30">
-                      <td className="p-3 font-semibold text-foreground align-top">
-                        {s?.name || 'Geral'}
-                      </td>
-                      <td className="p-3 align-top">
-                        <div className="font-bold text-foreground">{risk.hazardName}</div>
-                        <span className="text-[10px] font-semibold" style={{ color: catConfig.color }}>
-                          [{catConfig.label}]
-                        </span>
-                      </td>
-                      <td className="p-3 text-[11px] text-muted-foreground align-top space-y-1">
-                        <div><strong>Fonte:</strong> {risk.sourceDescription}</div>
-                        <div><strong>Danos:</strong> {risk.healthDamage}</div>
-                      </td>
-                      <td className="p-3 text-center align-top font-mono font-bold">
-                        P{risk.probability} × S{risk.severity}
-                        <span className="block text-[10px] text-muted-foreground font-normal">Score: {risk.riskScore}</span>
-                      </td>
-                      <td className="p-3 text-center align-top">
-                        <RiskLevelBadge level={risk.riskLevel} size="sm" />
-                      </td>
-                      <td className="p-3 text-[11px] text-muted-foreground align-top space-y-0.5">
-                        {risk.epcExisting.length > 0 && <div><strong>EPC:</strong> {risk.epcExisting.join(', ')}</div>}
-                        {risk.epiExisting.length > 0 && (
-                          <div>
-                            <strong>EPI:</strong> {risk.epiExisting.map(e => `${e.name} (CA ${e.ca})`).join(', ')}
+                    <TableRow key={item.id} className="text-xs">
+                      <TableCell className="font-semibold">
+                        <div>{sec?.name || '-'}</div>
+                        <div className="text-[11px] text-muted-foreground font-normal">{pos?.title || '-'}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[9px] mb-1" style={{ color: catConfig?.color }}>
+                          {catConfig?.label || item.hazardCategory}
+                        </Badge>
+                        <div className="font-bold text-foreground">{item.hazardName}</div>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] text-muted-foreground">
+                        <div><strong>Fonte:</strong> {item.sourceDescription}</div>
+                        <div><strong>Danos:</strong> {item.healthDamage}</div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="font-mono font-bold text-[11px] mb-1">
+                          P:{item.probability} × S:{item.severity} = {item.riskScore}
+                        </div>
+                        <RiskLevelBadge level={item.riskLevel} />
+                      </TableCell>
+                      <TableCell className="text-muted-foreground max-w-[220px]">
+                        {item.epcExisting && item.epcExisting.length > 0 && (
+                          <div><strong>EPC:</strong> {item.epcExisting.join(', ')}</div>
+                        )}
+                        {item.epiExisting && item.epiExisting.length > 0 && (
+                          <div className="mt-0.5">
+                            <strong>EPI:</strong> {item.epiExisting.map(e => `${e.name} (CA:${e.ca || 'S/N'})`).join('; ')}
                           </div>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </section>
 
-        {/* 5. Plano de Ação 5W2H */}
+        {/* 8. PLANO DE AÇÃO */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between border-b border-border pb-1.5">
-            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-              <CheckSquare className="h-4 w-4 text-emerald-600" />
-              5. Plano de Ação & Cronograma de Melhorias (5W2H)
-            </h2>
-            <Badge variant="outline" className="text-xs">
-              {companyActions.length} Ações Planejadas
-            </Badge>
-          </div>
-
-          <div className="border border-border rounded-xl overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-muted/80 border-b border-border text-muted-foreground">
-                  <th className="p-3 font-bold">O Que Fazer? (What)</th>
-                  <th className="p-3 font-bold">Por Que? (Why)</th>
-                  <th className="p-3 font-bold">Onde & Quem</th>
-                  <th className="p-3 font-bold text-center">Prazo (When)</th>
-                  <th className="p-3 font-bold text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {companyActions.map((action) => (
-                  <tr key={action.id} className="hover:bg-muted/30">
-                    <td className="p-3 font-semibold text-foreground align-top">
-                      {action.what}
-                    </td>
-                    <td className="p-3 text-[11px] text-muted-foreground align-top">
-                      {action.why}
-                    </td>
-                    <td className="p-3 text-[11px] align-top">
-                      <div><strong>Local:</strong> {action.whereLoc}</div>
-                      <div><strong>Resp:</strong> {action.who}</div>
-                    </td>
-                    <td className="p-3 text-center align-top font-mono">
-                      {formatDate(action.whenDate)}
-                    </td>
-                    <td className="p-3 text-center align-top">
-                      <Badge variant={action.status === 'CONCLUIDA' ? 'success' : 'info'} className="text-[10px]">
-                        {action.status.replace('_', ' ')}
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">8.</span> PLANO DE AÇÃO E CRONOGRAMA (NR-01.5.5 - 5W2H)
+          </h2>
+          <div className="border border-border rounded-xl overflow-hidden shadow-xs">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50 text-xs">
+                  <TableHead>O que (Ação)</TableHead>
+                  <TableHead>Por que (Motivo)</TableHead>
+                  <TableHead>Quem (Responsável)</TableHead>
+                  <TableHead>Prazo</TableHead>
+                  <TableHead>Custo</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pgrContext.actionPlans.map((act) => (
+                  <TableRow key={act.id} className="text-xs">
+                    <TableCell className="font-semibold text-foreground">{act.what}</TableCell>
+                    <TableCell className="text-muted-foreground">{act.why}</TableCell>
+                    <TableCell className="text-muted-foreground">{act.who}</TableCell>
+                    <TableCell className="font-mono text-muted-foreground">{act.whenDate}</TableCell>
+                    <TableCell className="font-mono font-bold text-foreground">
+                      R$ {Number(act.howMuch || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+                        {act.status.replace('_', ' ')}
                       </Badge>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </section>
 
-        {/* 6. Encerramento e Assinaturas */}
-        <section className="pt-8 border-t-2 border-border space-y-10">
-          <div className="text-center text-xs text-muted-foreground max-w-xl mx-auto">
-            Este Programa de Gerenciamento de Riscos (PGR) foi elaborado em estrita conformidade com a Norma Regulamentadora nº 01 (Portaria MTP nº 6.730/2020 e atualizações).
-          </div>
+        {/* 9. TERMO DE ENCERRAMENTO E ASSINATURAS */}
+        <section className="space-y-6 pt-6 border-t border-border">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
+            <span className="text-emerald-600 font-mono">9.</span> TERMO DE ENCERRAMENTO E RESPONSABILIDADE
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {OFFICIAL_PGR_TEXTS.termoEncerramento}
+          </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-4">
+          <p className="text-xs text-right text-muted-foreground">
+            {activeCompany.address.city}/{activeCompany.address.state}, {docData.header.elaborationDate}.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8">
             <div className="text-center space-y-1">
-              <div className="border-t border-foreground/40 w-4/5 mx-auto pt-2" />
-              <p className="font-bold text-xs text-foreground">{company.legalRepresentative}</p>
-              <p className="text-[11px] text-muted-foreground">{company.representativeRole} • {company.name}</p>
+              <div className="border-t border-foreground/30 pt-2 w-3/4 mx-auto" />
+              <p className="text-xs font-bold text-foreground">{docData.header.techRespName}</p>
+              <p className="text-[11px] text-muted-foreground">{docData.header.techRespCouncil} | {docData.header.techRespArt}</p>
+              <p className="text-[11px] text-muted-foreground">Responsável Técnico SST</p>
             </div>
 
             <div className="text-center space-y-1">
-              <div className="border-t border-foreground/40 w-4/5 mx-auto pt-2" />
-              <p className="font-bold text-xs text-foreground">{techResp?.name || 'Responsável Técnico em SST'}</p>
-              <p className="text-[11px] text-muted-foreground">
-                {techResp ? `${techResp.registrationCouncil}: ${techResp.registrationNumber}/${techResp.registrationState}` : 'Engenheiro / Técnico de Segurança'}
-              </p>
+              <div className="border-t border-foreground/30 pt-2 w-3/4 mx-auto" />
+              <p className="text-xs font-bold text-foreground">{activeCompany.legalRepresentative}</p>
+              <p className="text-[11px] text-muted-foreground">{activeCompany.representativeRole}</p>
+              <p className="text-[11px] text-muted-foreground">{activeCompany.name}</p>
             </div>
           </div>
         </section>
+
       </div>
     </div>
   );

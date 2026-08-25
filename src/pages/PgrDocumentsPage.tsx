@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { formatDate } from '@/lib/utils';
 import { generatePgrPdf } from '@/lib/pdf-generator';
+import { generatePgrDocx } from '@/lib/docx-generator';
 import { 
   FileText, 
   Plus, 
@@ -28,7 +29,8 @@ import {
   Trash2, 
   ShieldCheck, 
   Award,
-  Clock
+  Clock,
+  FileCode
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -157,7 +159,7 @@ export const PgrDocumentsPage: React.FC = () => {
   const handleDownloadPdf = (doc: PGRDocument) => {
     if (!activeCompany) return;
     const est = establishments.find(e => e.id === doc.establishmentId) || establishments[0];
-    const pdf = generatePgrPdf({
+    generatePgrPdf({
       company: activeCompany,
       establishment: est,
       pgr: doc,
@@ -165,10 +167,30 @@ export const PgrDocumentsPage: React.FC = () => {
       positions,
       ghes,
       professionals,
-      risks: riskInventory,
-      actions: actionPlans,
+      riskInventory,
+      actionPlans,
     });
-    pdf.save(`${doc.code}_PGR_${activeCompany.name.replace(/\s+/g, '_')}.pdf`);
+  };
+
+  const handleDownloadDocx = async (doc: PGRDocument) => {
+    if (!activeCompany) return;
+    const est = establishments.find(e => e.id === doc.establishmentId) || establishments[0];
+    try {
+      await generatePgrDocx({
+        company: activeCompany,
+        establishment: est,
+        pgr: doc,
+        sectors,
+        positions,
+        ghes,
+        professionals,
+        riskInventory,
+        actionPlans,
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao gerar arquivo Word.');
+    }
   };
 
   const getStatusBadge = (status: PgrDocumentStatus) => {
@@ -301,6 +323,17 @@ export const PgrDocumentsPage: React.FC = () => {
                         >
                           <Download className="h-3.5 w-3.5" />
                           <span>PDF</span>
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadDocx(doc)}
+                          className="h-8 text-xs gap-1 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 font-semibold"
+                          title="Baixar Word (.docx)"
+                        >
+                          <FileCode className="h-3.5 w-3.5" />
+                          <span>DOCX</span>
                         </Button>
 
                         <Button
