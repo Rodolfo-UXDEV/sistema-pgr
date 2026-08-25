@@ -26,13 +26,16 @@ Este documento estabelece as diretrizes e requisitos para o gerenciamento de ris
     title: 'CONTROLE DE REVISÕES DO DOCUMENTO',
     subtitle: 'Histórico de versões e motivos de atualização',
     category: 'pretextual',
-    type: 'hybrid',
+    type: 'text',
     description: 'Registro cronológico de emissões e revisões conforme item 1.5.3 da NR-01.',
     defaultContent: `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.
 
-As revisões e emissões históricas deste documento ficam registradas para controle da fiscalização e rastreabilidade técnica.`,
+| Revisão | Data | Descrição / Motivo da Revisão |
+| :--- | :--- | :--- |
+| 00 | 01/01/2026 | Emissão Inicial do Programa de Gerenciamento de Riscos (PGR) |
+| 01 | 25/08/2026 | Atualização e Inclusão de Novos Postos de Trabalho |`,
     isSystemData: false,
-    systemDataSummary: 'Inclui a tabela de controle de versões cadastradas no sistema.'
+    systemDataSummary: 'Inclui o texto de diretrizes e a tabela de controle de revisões editável.'
   },
   {
     id: 'sec-2',

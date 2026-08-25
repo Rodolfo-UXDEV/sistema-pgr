@@ -270,24 +270,12 @@ export const PgrViewerPage: React.FC = () => {
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
             <span className="text-emerald-600 font-mono">1.</span> {getSectionTitle('sec-1', 'CONTROLE DE REVISÕES DO DOCUMENTO')}
           </h2>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-24 text-center">Revisão</TableHead>
-                  <TableHead className="w-32 text-center">Data</TableHead>
-                  <TableHead>Descrição / Motivo da Revisão</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="text-center font-bold font-mono">{docData.header.version}</TableCell>
-                  <TableCell className="text-center text-xs font-mono">{docData.header.elaborationDate}</TableCell>
-                  <TableCell className="text-xs">{pgr.revisionReason || 'Emissão Oficial do PGR e Inventário de Riscos Ocupacionais'}</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
+          {renderFormattedSection(
+            getSectionContent(
+              'sec-1',
+              `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.\n\n| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${docData.header.version} | ${docData.header.elaborationDate} | ${pgr.revisionReason || 'Emissão Oficial do PGR e Inventário de Riscos Ocupacionais'} |`
+            )
+          )}
         </section>
 
         {/* 2. DADOS CADASTRAIS */}

@@ -104,44 +104,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
       })
     );
 
-    if (section.type === 'revision_table') {
-      const rows = [
-        new TableRow({
-          tableHeader: true,
-          children: [
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Revisão', bold: true })], alignment: AlignmentType.CENTER })],
-              width: { size: 2000, type: WidthType.DXA },
-              shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' },
-              borders: cellBorder,
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Data', bold: true })], alignment: AlignmentType.CENTER })],
-              width: { size: 2500, type: WidthType.DXA },
-              shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' },
-              borders: cellBorder,
-            }),
-            new TableCell({
-              children: [new Paragraph({ children: [new TextRun({ text: 'Descrição / Motivo da Revisão', bold: true })] })],
-              width: { size: 5500, type: WidthType.DXA },
-              shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' },
-              borders: cellBorder,
-            }),
-          ],
-        }),
-        ...section.revisions.map((r) =>
-          new TableRow({
-            children: [
-              new TableCell({ children: [new Paragraph({ text: r.rev, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-              new TableCell({ children: [new Paragraph({ text: r.date, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-              new TableCell({ children: [new Paragraph({ text: r.description })], borders: cellBorder }),
-            ],
-          })
-        ),
-      ];
-
-      children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
-    } else if (section.type === 'company_info') {
+    if (section.type === 'company_info') {
       const d = section.data;
       const rows = [
         ['Razão Social:', d.razaoSocial],

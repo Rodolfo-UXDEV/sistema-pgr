@@ -143,10 +143,8 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
         id: 'sec-1',
         number: '1',
         title: getSec('sec-1')?.title || 'CONTROLE DE REVISÕES DO DOCUMENTO',
-        type: 'revision_table' as const,
-        revisions: [
-          { rev: pgr.version, date: formatDate(pgr.elaborationDate), description: pgr.revisionReason || 'Emissão Oficial do PGR / Atualização Periódica' }
-        ]
+        type: 'text' as const,
+        content: getSec('sec-1')?.content || `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.\n\n| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${pgr.version} | ${formatDate(pgr.elaborationDate)} | ${pgr.revisionReason || 'Emissão Oficial do PGR e Inventário de Riscos Ocupacionais'} |`
       },
       {
         id: 'sec-2',

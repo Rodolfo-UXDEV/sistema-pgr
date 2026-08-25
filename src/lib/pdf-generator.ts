@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 
 export function generatePgrPdf(ctx: PgrDocumentContext): void {
@@ -83,22 +84,43 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
   // ==========================================
   doc.addPage();
   let currentY = 20;
-
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('1. CONTROLE DE REVISÕES DO DOCUMENTO', 14, currentY);
+  const sec1 = docData.sections.find(s => s.id === 'sec-1');
+  const sec1Title = sec1?.title || '1. CONTROLE DE REVISÕES DO DOCUMENTO';
+  doc.text(sec1Title, 14, currentY);
 
-  autoTable(doc, {
-    startY: currentY + 4,
-    head: [['Revisão', 'Data', 'Descrição / Motivo da Revisão']],
-    body: [[docData.header.version, docData.header.elaborationDate, ctx.pgr.revisionReason || 'Emissão Inicial do PGR e Inventário de Riscos']],
-    theme: 'grid',
-    headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-    styles: { fontSize: 8, cellPadding: 3 },
-  });
+  const sec1Content = (sec1 as any)?.content || `| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${docData.header.version} | ${docData.header.elaborationDate} | ${ctx.pgr.revisionReason || 'Emissão Oficial do PGR'} |`;
+  const sec1Blocks = parseContentWithTables(sec1Content);
+  let tableRendered = false;
 
-  currentY = (doc as any).lastAutoTable.finalY + 10;
+  for (const block of sec1Blocks) {
+    if (block.type === 'table') {
+      tableRendered = true;
+      autoTable(doc, {
+        startY: currentY + 4,
+        head: [block.headers],
+        body: block.rows,
+        theme: 'grid',
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 3 },
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+    }
+  }
+
+  if (!tableRendered) {
+    autoTable(doc, {
+      startY: currentY + 4,
+      head: [['Revisão', 'Data', 'Descrição / Motivo da Revisão']],
+      body: [[docData.header.version, docData.header.elaborationDate, ctx.pgr.revisionReason || 'Emissão Inicial do PGR e Inventário de Riscos']],
+      theme: 'grid',
+      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 8, cellPadding: 3 },
+    });
+    currentY = (doc as any).lastAutoTable.finalY + 8;
+  }
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
