@@ -10,6 +10,7 @@ import {
   ActionPlanItem 
 } from '@/types/pgr';
 import { formatDate, formatCNPJ } from '@/lib/utils';
+import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { SEVERITY_SCALE, PROBABILITY_SCALE, RISK_LEVEL_CONFIG } from '@/lib/risk-matrix';
 
 export interface PgrDocumentContext {
@@ -118,29 +119,30 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
 
   const techResp = professionals.find(p => p.id === pgr.technicalResponsibleId) || professionals[0];
   const medResp = professionals.find(p => p.id === pgr.medicalResponsibleId);
+  const resolvedSections = getResolvedPgrSections(pgr.id);
+  const getSec = (id: string) => resolvedSections.find(s => s.id === id);
 
   return {
     header: {
-      title: OFFICIAL_PGR_TEXTS.documentTitle,
-      subTitle: OFFICIAL_PGR_TEXTS.subTitle,
       companyName: company.name,
-      tradeName: company.tradeName || company.name,
+      establishmentName: establishment ? establishment.name : 'Unidade Matriz',
       cnpj: formatCNPJ(company.cnpj),
-      establishmentName: establishment?.name || 'Unidade Matriz',
+      cnae: `${company.cnae} - ${company.cnaeDescription}`,
+      riskGrade: `Grau ${company.riskGrade}`,
       code: pgr.code,
       version: pgr.version,
-      year: pgr.year,
+      year: new Date(pgr.validityStart).getFullYear().toString(),
       validityPeriod: `${formatDate(pgr.validityStart)} a ${formatDate(pgr.validityEnd)}`,
       elaborationDate: formatDate(pgr.elaborationDate),
-      techRespName: techResp ? techResp.name : 'Eng. Responsável Técnico',
-      techRespCouncil: techResp ? `${techResp.registrationCouncil}: ${techResp.registrationNumber}/${techResp.registrationState}` : '',
-      techRespArt: techResp?.artRrt || 'Emitida',
+      techRespName: techResp ? techResp.name : 'Engenheiro de Segurança do Trabalho',
+      techRespCouncil: techResp ? `${techResp.registrationCouncil} ${techResp.registrationNumber}/${techResp.registrationState}` : 'CREA/CRM',
+      techRespArt: techResp ? (techResp.artRrt || 'ART Emitida') : 'ART Emitida'
     },
     sections: [
       {
         id: 'sec-1',
         number: '1',
-        title: 'CONTROLE DE REVISÕES DO DOCUMENTO',
+        title: getSec('sec-1')?.title || 'CONTROLE DE REVISÕES DO DOCUMENTO',
         type: 'revision_table' as const,
         revisions: [
           { rev: pgr.version, date: formatDate(pgr.elaborationDate), description: pgr.revisionReason || 'Emissão Oficial do PGR / Atualização Periódica' }
@@ -149,7 +151,7 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-2',
         number: '2',
-        title: 'INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
+        title: getSec('sec-2')?.title || 'INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
         type: 'company_info' as const,
         data: {
           razaoSocial: company.name,
@@ -167,7 +169,7 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-3',
         number: '3',
-        title: 'RESPONSABILIDADE TÉCNICA PELA ELABORAÇÃO',
+        title: getSec('sec-3')?.title || 'RESPONSABILIDADE TÉCNICA PELA ELABORAÇÃO',
         type: 'responsibles_info' as const,
         elaborador: techResp ? {
           nome: techResp.name,
@@ -187,52 +189,56 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-4',
         number: '4',
-        title: 'INTRODUÇÃO E DIRETRIZES GERAIS',
+        title: getSec('sec-4')?.title || 'INTRODUÇÃO E DIRETRIZES GERAIS',
         type: 'text' as const,
-        content: OFFICIAL_PGR_TEXTS.introducao
+        content: getSec('sec-4')?.content || OFFICIAL_PGR_TEXTS.introducao
       },
       {
         id: 'sec-5',
         number: '5',
-        title: 'OBJETIVOS DO PROGRAMA',
+        title: getSec('sec-5')?.title || 'OBJETIVOS DO PROGRAMA',
         type: 'text' as const,
-        content: OFFICIAL_PGR_TEXTS.objetivo
+        content: getSec('sec-5')?.content || OFFICIAL_PGR_TEXTS.objetivo
       },
       {
         id: 'sec-6',
         number: '6',
-        title: 'FUNDAMENTAÇÃO LEGAL E NORMAS APLICÁVEIS',
+        title: getSec('sec-6')?.title || 'FUNDAMENTAÇÃO LEGAL E NORMAS APLICÁVEIS',
         type: 'text' as const,
-        content: OFFICIAL_PGR_TEXTS.fundamentacaoLegal
+        content: getSec('sec-6')?.content || OFFICIAL_PGR_TEXTS.fundamentacaoLegal
       },
       {
         id: 'sec-7',
         number: '7',
-        title: 'RESPONSABILIDADES E ATRIBUIÇÕES',
-        type: 'responsibilities' as const,
-        content: OFFICIAL_PGR_TEXTS.responsabilidades
+        title: getSec('sec-7')?.title || 'RESPONSABILIDADES E ATRIBUIÇÕES',
+        type: 'text' as const,
+        content: getSec('sec-7')?.content || `${OFFICIAL_PGR_TEXTS.responsabilidades.empregador}\n\n${OFFICIAL_PGR_TEXTS.responsabilidades.trabalhadores}\n\n${OFFICIAL_PGR_TEXTS.responsabilidades.sesmt}`
       },
       {
         id: 'sec-8',
         number: '8',
-        title: 'ESTRUTURA DO GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)',
+        title: getSec('sec-8')?.title || 'ESTRUTURA DO GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)',
         type: 'text' as const,
-        content: OFFICIAL_PGR_TEXTS.metodologiaGro
+        content: getSec('sec-8')?.content || OFFICIAL_PGR_TEXTS.metodologiaGro
       },
       {
         id: 'sec-9',
         number: '9',
-        title: 'METODOLOGIA DA MATRIZ DE RISCO 5X5 (SEVERIDADE X PROBABILIDADE)',
-        type: 'matrix_explanation' as const,
-        description: 'A organização adota a Matriz Bidimensional de Risco 5x5 em consonância com os preceitos da NR-01. O nível de risco é obtido pelo produto da Severidade da possível lesão pela Probabilidade de ocorrência:',
-        severities: SEVERITY_SCALE,
-        probabilities: PROBABILITY_SCALE,
-        riskLevels: Object.values(RISK_LEVEL_CONFIG)
+        title: getSec('sec-9')?.title || 'METODOLOGIA DA MATRIZ DE RISCO 5X5 (SEVERIDADE X PROBABILIDADE)',
+        type: 'text' as const,
+        content: getSec('sec-9')?.content || 'A organização adota a Matriz Bidimensional de Risco 5x5 em consonância com os preceitos da NR-01.'
       },
       {
         id: 'sec-10',
         number: '10',
-        title: 'CARACTERIZAÇÃO DOS SETORES E AMBIENTES DE TRABALHO',
+        title: getSec('sec-10')?.title || 'DIRETRIZES DE RECONHECIMENTO DOS AGENTES OCUPACIONAIS',
+        type: 'text' as const,
+        content: getSec('sec-10')?.content || ''
+      },
+      {
+        id: 'sec-11',
+        number: '11',
+        title: getSec('sec-11')?.title || 'CARACTERIZAÇÃO DOS SETORES E AMBIENTES DE TRABALHO',
         type: 'sectors_list' as const,
         sectors: sectors.map(s => ({
           name: s.name,
@@ -241,9 +247,9 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
         }))
       },
       {
-        id: 'sec-11',
-        number: '11',
-        title: 'FUNÇÕES, CBO E DESCRIÇÃO DAS ATIVIDADES OCUPACIONAIS',
+        id: 'sec-12',
+        number: '12',
+        title: getSec('sec-12')?.title || 'FUNÇÕES, CBO E DESCRIÇÃO DAS ATIVIDADES OCUPACIONAIS',
         type: 'positions_list' as const,
         positions: positions.map(p => ({
           title: p.title,
@@ -255,32 +261,32 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
         }))
       },
       {
-        id: 'sec-12',
-        number: '12',
-        title: 'PREPARAÇÃO PARA EMERGÊNCIAS, TREINAMENTOS E SAÚDE OCUPACIONAL',
-        type: 'text' as const,
-        content: `${OFFICIAL_PGR_TEXTS.preparacaoEmergencias}\n\n${OFFICIAL_PGR_TEXTS.acompanhamentoSaude}`
-      },
-      {
         id: 'sec-13',
         number: '13',
-        title: 'INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)',
-        type: 'risk_inventory_table' as const,
-        items: riskInventory
+        title: getSec('sec-13')?.title || 'PREPARAÇÃO PARA EMERGÊNCIAS, TREINAMENTOS E SAÚDE OCUPACIONAL',
+        type: 'text' as const,
+        content: getSec('sec-13')?.content || `${OFFICIAL_PGR_TEXTS.preparacaoEmergencias}\n\n${OFFICIAL_PGR_TEXTS.acompanhamentoSaude}`
       },
       {
         id: 'sec-14',
         number: '14',
-        title: 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (NR-01.5.5 - 5W2H)',
-        type: 'action_plan_table' as const,
-        items: actionPlans
+        title: getSec('sec-14')?.title || 'INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)',
+        type: 'risk_inventory_table' as const,
+        items: riskInventory
       },
       {
         id: 'sec-15',
         number: '15',
-        title: 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE TÉCNICA',
+        title: getSec('sec-15')?.title || 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (NR-01.5.5 - 5W2H)',
+        type: 'action_plan_table' as const,
+        items: actionPlans
+      },
+      {
+        id: 'sec-16',
+        number: '16',
+        title: getSec('sec-16')?.title || 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE TÉCNICA',
         type: 'closing_signatures' as const,
-        text: OFFICIAL_PGR_TEXTS.termoEncerramento,
+        text: getSec('sec-16')?.content || OFFICIAL_PGR_TEXTS.termoEncerramento,
         date: formatDate(pgr.elaborationDate),
         city: company.address.city,
         state: company.address.state

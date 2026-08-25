@@ -81,12 +81,19 @@ export const GlobalPgrTemplatePage: React.FC = () => {
         lastModifiedAt: new Date().toISOString(),
       };
 
-      return {
+      const next = {
         ...prev,
         [selectedSection.id]: updated,
       };
+
+      // Auto-salva imediatamente no Modelo Base Global
+      localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(next));
+      window.dispatchEvent(new Event('pgr_template_updated'));
+
+      return next;
     });
-    setIsSaved(false);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
   };
 
   const handleResetSection = () => {
@@ -94,9 +101,12 @@ export const GlobalPgrTemplatePage: React.FC = () => {
       setGlobalSections((prev) => {
         const next = { ...prev };
         delete next[selectedSection.id];
+        localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(next));
+        window.dispatchEvent(new Event('pgr_template_updated'));
         return next;
       });
-      setIsSaved(false);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
     }
   };
 
@@ -104,6 +114,7 @@ export const GlobalPgrTemplatePage: React.FC = () => {
     if (window.confirm('Atenção: Deseja restaurar TODAS as seções do Modelo Base para os textos originais de fábrica da ES Engenharia?')) {
       localStorage.removeItem(GLOBAL_STORAGE_KEY);
       setGlobalSections({});
+      window.dispatchEvent(new Event('pgr_template_updated'));
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     }
@@ -111,6 +122,7 @@ export const GlobalPgrTemplatePage: React.FC = () => {
 
   const handleSaveGlobal = () => {
     localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(globalSections));
+    window.dispatchEvent(new Event('pgr_template_updated'));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };

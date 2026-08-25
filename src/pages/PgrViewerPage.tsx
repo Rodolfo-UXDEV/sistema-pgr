@@ -11,6 +11,7 @@ import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
 import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
+import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
@@ -49,18 +50,21 @@ export const PgrViewerPage: React.FC = () => {
   const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
   const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
 
+  const [resolvedList, setResolvedList] = useState(() => getResolvedPgrSections(pgr?.id));
+
   useEffect(() => {
-    if (pgr) {
-      const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          setCustomSections(JSON.parse(saved));
-        } catch (e) {
-          console.error(e);
-        }
+    const refresh = () => {
+      if (pgr) {
+        setResolvedList(getResolvedPgrSections(pgr.id));
       }
-    }
+    };
+    refresh();
+    window.addEventListener('pgr_template_updated', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      window.removeEventListener('pgr_template_updated', refresh);
+      window.removeEventListener('focus', refresh);
+    };
   }, [pgr]);
 
   if (!pgr || !activeCompany) {
@@ -88,11 +92,13 @@ export const PgrViewerPage: React.FC = () => {
   const docData = buildPgrFullDocument(pgrContext);
 
   const getSectionTitle = (secId: string, defaultTitle: string) => {
-    return customSections[secId]?.title || defaultTitle;
+    const found = resolvedList.find(s => s.id === secId);
+    return found?.title || defaultTitle;
   };
 
   const getSectionContent = (secId: string, defaultContent: string) => {
-    return customSections[secId]?.content || defaultContent;
+    const found = resolvedList.find(s => s.id === secId);
+    return found?.content || defaultContent;
   };
 
   const handleDownloadPdf = () => {

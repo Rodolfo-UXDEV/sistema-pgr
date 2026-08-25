@@ -128,19 +128,27 @@ export const PgrBuilderPage: React.FC = () => {
         isModified: false,
       };
 
-      const updated = {
+      const updatedSection = {
         ...existing,
         ...fields,
         isModified: true,
         lastModifiedAt: new Date().toISOString(),
       };
 
-      return {
+      const next = {
         ...prev,
-        [selectedSection.id]: updated,
+        [selectedSection.id]: updatedSection,
       };
+
+      // Auto-salva imediatamente no localStorage
+      const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      window.dispatchEvent(new Event('pgr_template_updated'));
+
+      return next;
     });
-    setIsSaved(false);
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
   };
 
   const handleResetSection = () => {
@@ -148,15 +156,20 @@ export const PgrBuilderPage: React.FC = () => {
       setCustomSections((prev) => {
         const next = { ...prev };
         delete next[selectedSection.id];
+        const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
+        localStorage.setItem(storageKey, JSON.stringify(next));
+        window.dispatchEvent(new Event('pgr_template_updated'));
         return next;
       });
-      setIsSaved(false);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 2000);
     }
   };
 
   const handleSaveAll = () => {
     const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
     localStorage.setItem(storageKey, JSON.stringify(customSections));
+    window.dispatchEvent(new Event('pgr_template_updated'));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };

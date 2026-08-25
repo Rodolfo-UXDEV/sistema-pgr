@@ -237,29 +237,6 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
           }
         }
       }
-    } else if (section.type === 'responsibilities') {
-      const c = section.content;
-      children.push(
-        new Paragraph({ children: [new TextRun({ text: '8.1 Do Empregador', bold: true })], spacing: { before: 150, after: 100 } }),
-        ...c.empregador.split('\n').map((l: string) => new Paragraph({ text: l, spacing: { after: 50 } })),
-        new Paragraph({ children: [new TextRun({ text: '8.2 Dos Trabalhadores', bold: true })], spacing: { before: 150, after: 100 } }),
-        ...c.trabalhadores.split('\n').map((l: string) => new Paragraph({ text: l, spacing: { after: 50 } })),
-        new Paragraph({ children: [new TextRun({ text: '8.3 Dos Responsáveis Técnicos e SESMT', bold: true })], spacing: { before: 150, after: 100 } }),
-        ...c.sesmt.split('\n').map((l: string) => new Paragraph({ text: l, spacing: { after: 50 } }))
-      );
-    } else if (section.type === 'matrix_explanation') {
-      children.push(
-        new Paragraph({ text: section.description, spacing: { after: 200 } }),
-        new Paragraph({
-          children: [new TextRun({ text: 'Tabela de Gradação de Risco (Severidade x Probabilidade):', bold: true })],
-          spacing: { after: 100 },
-        }),
-        new Paragraph({ text: '• TRIVIAL (1 a 2): Ação não necessária além de manter controles operacionais.' }),
-        new Paragraph({ text: '• TOLERÁVEL (3 a 4): Monitoramento periódico. Não exige ação imediata.' }),
-        new Paragraph({ text: '• MODERADO (5 a 9): Esforços necessários para redução. Prazo de adequação: 90 dias.' }),
-        new Paragraph({ text: '• SUBSTANCIAL (10 a 16): Trabalho não deve iniciar sem medidas mitigadoras. Prazo: 30 dias.' }),
-        new Paragraph({ text: '• INTOLERÁVEL (20 a 25): Trabalho não deve continuar até redução urgente do risco.' })
-      );
     } else if (section.type === 'sectors_list') {
       for (const s of section.sectors) {
         children.push(
