@@ -9,6 +9,7 @@ import { ActionPlansPage } from '@/pages/ActionPlansPage';
 import { PgrDocumentsPage } from '@/pages/PgrDocumentsPage';
 import { PgrViewerPage } from '@/pages/PgrViewerPage';
 import { PgrBuilderPage } from '@/pages/PgrBuilderPage';
+import { GlobalPgrTemplatePage } from '@/pages/GlobalPgrTemplatePage';
 import { CompaniesPage } from '@/pages/CompaniesPage';
 import { EstablishmentsPage } from '@/pages/EstablishmentsPage';
 import { SectorsPage } from '@/pages/SectorsPage';
@@ -40,6 +41,7 @@ export function App() {
             <Route path="profissionais" element={<ProfessionalsPage />} />
             
             {/* Apoio e Configurações */}
+            <Route path="modelo-base-pgr" element={<GlobalPgrTemplatePage />} />
             <Route path="catalogo-perigos" element={<HazardCatalogPage />} />
             <Route path="config-banco" element={<DatabaseSettingsPage />} />
 

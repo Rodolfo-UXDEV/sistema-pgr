@@ -15,7 +15,8 @@ import {
   Database,
   ShieldCheck,
   ChevronRight,
-  Flame
+  Flame,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +63,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => void }> 
   ];
 
   const supportNav: NavItem[] = [
+    { label: 'Modelo Base do PGR', path: '/modelo-base-pgr', icon: BookOpen },
     { label: 'Catálogo de Perigos', path: '/catalogo-perigos', icon: AlertTriangle },
     { 
       label: 'Banco de Dados (Supabase)', 

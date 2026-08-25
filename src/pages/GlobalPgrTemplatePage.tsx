@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { usePgr } from '@/context/PgrContext';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { PgrSectionDefinition, PgrCustomSectionData } from '@/types/pgr-builder';
 import { parseContentWithTables } from '@/lib/table-parser';
@@ -12,16 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
-import { generatePgrDocx } from '@/lib/docx-generator';
-import { generatePgrPdf } from '@/lib/pdf-generator';
-import { formatCNPJ, formatDate } from '@/lib/utils';
-import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { 
-  ArrowLeft, 
   Save, 
   RotateCcw, 
   Eye, 
-  Download, 
   FileText, 
   Layers, 
   CheckCircle2, 
@@ -31,100 +23,54 @@ import {
   Italic,
   List,
   Heading,
-  FileCode,
   Sparkles,
-  Edit3
+  Edit3,
+  BookOpen,
+  Info
 } from 'lucide-react';
 
-export const PgrBuilderPage: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { 
-    activeCompany, 
-    establishments, 
-    sectors, 
-    positions, 
-    ghes, 
-    professionals, 
-    pgrDocuments, 
-    riskInventory, 
-    actionPlans 
-  } = usePgr();
+const GLOBAL_STORAGE_KEY = 'pgr_global_master_template_v1';
 
-  const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
-  const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
-
-  const [selectedSectionId, setSelectedSectionId] = useState<string>('sec-4'); // Default to Introdução
+export const GlobalPgrTemplatePage: React.FC = () => {
+  const [selectedSectionId, setSelectedSectionId] = useState<string>('sec-4'); // Default: Introdução
   const [globalSections, setGlobalSections] = useState<Record<string, PgrCustomSectionData>>({});
-  const [customSections, setCustomSections] = useState<Record<string, PgrCustomSectionData>>({});
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [isSaved, setIsSaved] = useState<boolean>(false);
-  const [isGeneratingDocx, setIsGeneratingDocx] = useState<boolean>(false);
 
-  // Carrega o Modelo Base Global e customizações salvas do documento
+  // Carrega o template global do localStorage na inicialização
   useEffect(() => {
-    // 1. Carrega Modelo Base Global
-    const globalSaved = localStorage.getItem('pgr_global_master_template_v1');
-    if (globalSaved) {
+    const saved = localStorage.getItem(GLOBAL_STORAGE_KEY);
+    if (saved) {
       try {
-        setGlobalSections(JSON.parse(globalSaved));
+        setGlobalSections(JSON.parse(saved));
       } catch (e) {
         console.error(e);
       }
     }
-
-    // 2. Carrega ajustes específicos deste PGR
-    if (pgr) {
-      const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        try {
-          setCustomSections(JSON.parse(saved));
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-  }, [pgr]);
-
-  if (!pgr || !activeCompany) {
-    return (
-      <div className="p-8 text-center space-y-4">
-        <h2 className="text-xl font-bold">Documento PGR não encontrado</h2>
-        <p className="text-muted-foreground text-sm">Selecione uma empresa com um PGR cadastrado.</p>
-        <Button onClick={() => navigate('/documentos-pgr')}>Voltar para Documentos</Button>
-      </div>
-    );
-  }
+  }, []);
 
   const selectedSection = DEFAULT_PGR_SECTIONS.find((s) => s.id === selectedSectionId) || DEFAULT_PGR_SECTIONS[0];
-  
-  // Base global (ou default de fábrica)
-  const baseTitle = globalSections[selectedSection.id]?.title || selectedSection.title;
-  const baseSubtitle = globalSections[selectedSection.id]?.subtitle !== undefined ? globalSections[selectedSection.id].subtitle! : (selectedSection.subtitle || '');
-  const baseContent = globalSections[selectedSection.id]?.content || selectedSection.defaultContent;
 
-  // Valor atual (específico do documento ou herdado do global)
-  const currentTitle = customSections[selectedSection.id]?.title !== undefined
-    ? customSections[selectedSection.id].title!
-    : baseTitle;
+  const currentTitle = globalSections[selectedSection.id]?.title !== undefined
+    ? globalSections[selectedSection.id].title!
+    : selectedSection.title;
 
-  const currentSubtitle = customSections[selectedSection.id]?.subtitle !== undefined
-    ? customSections[selectedSection.id].subtitle!
-    : baseSubtitle;
+  const currentSubtitle = globalSections[selectedSection.id]?.subtitle !== undefined
+    ? globalSections[selectedSection.id].subtitle!
+    : (selectedSection.subtitle || '');
 
-  const currentContent = customSections[selectedSection.id]?.content !== undefined
-    ? customSections[selectedSection.id].content
-    : baseContent;
+  const currentContent = globalSections[selectedSection.id]?.content !== undefined
+    ? globalSections[selectedSection.id].content
+    : selectedSection.defaultContent;
 
-  const isCustomizedLocally = !!customSections[selectedSection.id]?.isModified;
+  const isCustomized = !!globalSections[selectedSection.id]?.isModified;
 
   const updateCurrentSection = (fields: Partial<PgrCustomSectionData>) => {
-    setCustomSections((prev) => {
+    setGlobalSections((prev) => {
       const existing = prev[selectedSection.id] || {
-        title: baseTitle,
-        subtitle: baseSubtitle,
-        content: baseContent,
+        title: selectedSection.title,
+        subtitle: selectedSection.subtitle || '',
+        content: selectedSection.defaultContent,
         isModified: false,
       };
 
@@ -144,8 +90,8 @@ export const PgrBuilderPage: React.FC = () => {
   };
 
   const handleResetSection = () => {
-    if (window.confirm(`Restaurar a Seção ${selectedSection.number} para o texto do Modelo Base Global?`)) {
-      setCustomSections((prev) => {
+    if (window.confirm(`Restaurar o título e texto padrão de fábrica da Seção ${selectedSection.number}?`)) {
+      setGlobalSections((prev) => {
         const next = { ...prev };
         delete next[selectedSection.id];
         return next;
@@ -154,16 +100,24 @@ export const PgrBuilderPage: React.FC = () => {
     }
   };
 
-  const handleSaveAll = () => {
-    const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
-    localStorage.setItem(storageKey, JSON.stringify(customSections));
+  const handleResetAllToFactory = () => {
+    if (window.confirm('Atenção: Deseja restaurar TODAS as seções do Modelo Base para os textos originais de fábrica da ES Engenharia?')) {
+      localStorage.removeItem(GLOBAL_STORAGE_KEY);
+      setGlobalSections({});
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    }
+  };
+
+  const handleSaveGlobal = () => {
+    localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(globalSections));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
 
-  // Inserção de templates de tabelas e formatações no texto
+  // Inserção de tabelas e formatação
   const insertFormatting = (template: string) => {
-    const textarea = document.getElementById('section-textarea') as HTMLTextAreaElement;
+    const textarea = document.getElementById('global-section-textarea') as HTMLTextAreaElement;
     if (!textarea) {
       updateCurrentSection({ content: currentContent + '\n\n' + template });
       return;
@@ -185,45 +139,15 @@ export const PgrBuilderPage: React.FC = () => {
 
   const insertTable = (cols: number, rows: number) => {
     let tableMd = '\n\n';
-    // Header
     const headers = Array.from({ length: cols }, (_, i) => `Coluna ${i + 1}`);
     tableMd += `| ${headers.join(' | ')} |\n`;
     tableMd += `| ${headers.map(() => ':---').join(' | ')} |\n`;
-    // Rows
     for (let r = 1; r <= rows; r++) {
-      const cells = Array.from({ length: cols }, (_, c) => `Item ${r}.${c + 1}`);
+      const cells = Array.from({ length: cols }, (_, c) => `Dado ${r}.${c + 1}`);
       tableMd += `| ${cells.join(' | ')} |\n`;
     }
     tableMd += '\n';
     insertFormatting(tableMd);
-  };
-
-  const pgrContext = {
-    company: activeCompany,
-    establishment,
-    sectors,
-    positions,
-    ghes,
-    professionals,
-    pgr,
-    riskInventory: riskInventory.filter((r) => r.pgrId === pgr.id || r.companyId === activeCompany.id),
-    actionPlans: actionPlans.filter((a) => a.pgrId === pgr.id || a.companyId === activeCompany.id),
-  };
-
-  const handleDownloadDocx = async () => {
-    setIsGeneratingDocx(true);
-    try {
-      await generatePgrDocx(pgrContext);
-    } catch (err) {
-      console.error(err);
-      alert('Erro ao gerar arquivo Word.');
-    } finally {
-      setIsGeneratingDocx(false);
-    }
-  };
-
-  const handleDownloadPdf = () => {
-    generatePgrPdf(pgrContext);
   };
 
   const categories = [
@@ -236,95 +160,73 @@ export const PgrBuilderPage: React.FC = () => {
     { key: 'posttextual', label: '7. Emergências & Termos' },
   ];
 
-  // Renderiza blocos de texto e tabelas no modo preview
   const parsedBlocks = parseContentWithTables(currentContent);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-16">
-      {/* Barra Superior de Ações */}
+      {/* Barra de Topo */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border shadow-xs sticky top-20 z-20 backdrop-blur">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(`/documentos-pgr/${pgr.id}`)}
-            className="text-xs"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-            <span>Voltar</span>
-          </Button>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold text-foreground flex items-center gap-1.5">
-                <Sliders className="h-4 w-4 text-emerald-600" />
-                Construtor de Seções & Editor de Tabelas do PGR
-              </h1>
-              <Badge variant="outline" className="text-[10px] font-mono font-bold">
-                {pgr.code} (v{pgr.version})
-              </Badge>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Altere nomes das seções, edite textos e insira tabelas personalizadas para a empresa <strong className="text-foreground">{activeCompany.name}</strong>
-            </p>
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-emerald-600" />
+              Modelo Base & Textos Padrão do PGR
+            </h1>
+            <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 font-semibold">
+              Template Mestre Global
+            </Badge>
           </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Configure os textos técnicos e títulos padrão que servirão de molde para <strong>todos os novos PGRs</strong> gerados no sistema.
+          </p>
         </div>
 
-        <div className="flex items-center flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/documentos-pgr/${pgr.id}`)}
-            className="text-xs gap-1.5"
+            onClick={handleResetAllToFactory}
+            className="text-xs text-muted-foreground hover:text-destructive gap-1.5 h-9"
+            title="Restaurar todo o template para o padrão original de fábrica"
           >
-            <Eye className="h-3.5 w-3.5" />
-            <span>Ver Documento</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isGeneratingDocx}
-            onClick={handleDownloadDocx}
-            className="text-xs gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 font-semibold"
-          >
-            <FileCode className="h-3.5 w-3.5" />
-            <span>{isGeneratingDocx ? 'Gerando Word...' : 'Baixar Word (.docx)'}</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadPdf}
-            className="text-xs gap-1.5 text-emerald-700 border-emerald-200 bg-emerald-50/50 hover:bg-emerald-100 font-semibold"
-          >
-            <Download className="h-3.5 w-3.5" />
-            <span>Baixar PDF</span>
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Restaurar Padrão de Fábrica</span>
           </Button>
 
           <Button
             size="sm"
-            onClick={handleSaveAll}
-            className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
+            onClick={handleSaveGlobal}
+            className="text-xs gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white h-9 shadow-xs"
           >
             <Save className="h-3.5 w-3.5" />
-            <span>{isSaved ? '✓ Salvo!' : 'Salvar Alterações'}</span>
+            <span>{isSaved ? '✓ Modelo Base Salvo!' : 'Salvar Modelo Base'}</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Alerta Explicativo */}
+      <div className="p-3.5 bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs flex items-start gap-2.5">
+        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+        <div>
+          <strong className="text-blue-950 dark:text-blue-200">Como funciona o Modelo Base Global:</strong>
+          <p className="text-blue-700 dark:text-blue-300 leading-relaxed mt-0.5">
+            Os textos e tabelas configurados nesta tela serão utilizados automaticamente como ponto de partida em todos os novos PGRs. Quando você abrir o documento de uma empresa específica, ele já virá com esse conteúdo preenchido, permitindo que você faça apenas ajustes pontuais se necessário.
+          </p>
         </div>
       </div>
 
       {/* Grid Principal: 2 Colunas */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* COLUNA ESQUERDA: LISTA DE 18 CAPÍTULOS */}
-        <div className="lg:col-span-4 bg-card border border-border rounded-xl p-3 shadow-xs space-y-4 max-h-[calc(100vh-160px)] overflow-y-auto sticky top-40">
+        {/* COLUNA ESQUERDA: LISTA DE SEÇÕES DO TEMPLATE MESTRE */}
+        <div className="lg:col-span-4 bg-card border border-border rounded-xl p-3 shadow-xs space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto sticky top-40">
           <div className="flex items-center justify-between px-2 pt-1">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Layers className="h-3.5 w-3.5" />
-              Capítulos do Documento (18)
+              Seções do Modelo Base (18)
             </span>
             <span className="text-[10px] text-muted-foreground font-medium">
-              {Object.keys(customSections).filter(k => customSections[k]?.isModified).length} editadas
+              {Object.keys(globalSections).filter(k => globalSections[k]?.isModified).length} personalizadas
             </span>
           </div>
 
@@ -344,7 +246,7 @@ export const PgrBuilderPage: React.FC = () => {
                   <div className="space-y-1">
                     {catSections.map((sec) => {
                       const isSelected = sec.id === selectedSectionId;
-                      const custom = customSections[sec.id];
+                      const custom = globalSections[sec.id];
                       const titleToShow = custom?.title || sec.title;
                       const hasCustom = !!custom?.isModified;
 
@@ -395,7 +297,7 @@ export const PgrBuilderPage: React.FC = () => {
           </div>
         </div>
 
-        {/* COLUNA DIREITA: PAINEL DE EDIÇÃO & INSERÇÃO DE TABELAS */}
+        {/* COLUNA DIREITA: EDITOR DO MODELO BASE */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="border border-border shadow-sm">
             <CardHeader className="border-b border-border pb-4 bg-muted/20 space-y-4">
@@ -404,20 +306,20 @@ export const PgrBuilderPage: React.FC = () => {
                   <Badge variant="outline" className="font-mono font-bold text-xs bg-background">
                     Capítulo {selectedSection.number}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">Configuração e Edição da Seção</span>
+                  <span className="text-xs text-muted-foreground">Texto Mestre do Modelo Base</span>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {!selectedSection.isSystemData && isCustomizedLocally && (
+                  {!selectedSection.isSystemData && isCustomized && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={handleResetSection}
                       className="text-xs text-muted-foreground hover:text-foreground gap-1.5 h-8"
-                      title="Desfazer customização pontual e voltar ao Modelo Base Global"
+                      title="Restaurar o texto padrão de fábrica da ES Engenharia"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
-                      <span>Voltar ao Modelo Base</span>
+                      <span>Restaurar Esta Seção</span>
                     </Button>
                   )}
 
@@ -443,17 +345,17 @@ export const PgrBuilderPage: React.FC = () => {
                         }`}
                       >
                         <Eye className="h-3.5 w-3.5 inline mr-1" />
-                        Preview da Tabela / Texto
+                        Preview Formatado
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* CAMPOS PARA TROCAR O NOME E SUBTÍTULO DA SEÇÃO */}
+              {/* CAMPOS DE TÍTULO E SUBTÍTULO PADRÃO */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 <div>
-                  <Label className="text-xs font-semibold">Nome / Título da Seção</Label>
+                  <Label className="text-xs font-semibold">Título Padrão da Seção</Label>
                   <Input
                     value={currentTitle}
                     onChange={(e) => updateCurrentSection({ title: e.target.value })}
@@ -463,7 +365,7 @@ export const PgrBuilderPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs font-semibold">Subtítulo / Descrição Curta</Label>
+                  <Label className="text-xs font-semibold">Subtítulo Padrão</Label>
                   <Input
                     value={currentSubtitle}
                     onChange={(e) => updateCurrentSection({ subtitle: e.target.value })}
@@ -475,83 +377,26 @@ export const PgrBuilderPage: React.FC = () => {
             </CardHeader>
 
             <CardContent className="p-6 space-y-4">
-              {/* CASO 1: SEÇÃO DE DADOS DO SISTEMA */}
+              {/* CASO 1: SEÇÃO DE DADOS DINÂMICOS DO SISTEMA */}
               {selectedSection.isSystemData ? (
-                <div className="space-y-4">
-                  <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 rounded-xl text-xs flex items-start gap-2.5">
-                    <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="text-blue-900 dark:text-blue-300 block mb-0.5">Preenchimento Automático do Sistema</strong>
-                      <p className="text-blue-700 dark:text-blue-400 leading-relaxed">
-                        {selectedSection.systemDataSummary}
-                      </p>
-                    </div>
+                <div className="space-y-3 p-4 bg-muted/20 border border-border rounded-xl text-xs">
+                  <div className="flex items-center gap-2 font-bold text-foreground">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <span>Seção Dinâmica de Sistema</span>
                   </div>
-
-                  {selectedSection.id === 'sec-2' && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs p-4 bg-muted/20 border border-border rounded-xl">
-                      <div><strong className="text-muted-foreground">Razão Social:</strong> <span className="font-semibold text-foreground">{activeCompany.name}</span></div>
-                      <div><strong className="text-muted-foreground">Nome Fantasia:</strong> <span className="font-semibold text-foreground">{activeCompany.tradeName || activeCompany.name}</span></div>
-                      <div><strong className="text-muted-foreground">CNPJ:</strong> <span className="font-mono font-semibold text-foreground">{formatCNPJ(activeCompany.cnpj)}</span></div>
-                      <div><strong className="text-muted-foreground">Grau de Risco:</strong> <span className="font-semibold text-foreground">Grau {activeCompany.riskGrade} (NR-04)</span></div>
-                      <div className="sm:col-span-2"><strong className="text-muted-foreground">CNAE:</strong> <span className="text-foreground">{activeCompany.cnae} - {activeCompany.cnaeDescription}</span></div>
-                      <div className="sm:col-span-2"><strong className="text-muted-foreground">Endereço Matriz:</strong> <span className="text-foreground">{activeCompany.address.street}, {activeCompany.address.number} - {activeCompany.address.city}/{activeCompany.address.state}</span></div>
-                    </div>
-                  )}
-
-                  {selectedSection.id === 'sec-11' && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-muted-foreground">Setores Cadastrados ({sectors.length}):</p>
-                      <div className="space-y-2">
-                        {sectors.map((s) => (
-                          <div key={s.id} className="p-3 bg-muted/20 border border-border rounded-lg text-xs space-y-1">
-                            <span className="font-bold text-foreground">{s.name}</span>
-                            <p className="text-muted-foreground text-[11px]">
-                              Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedSection.id === 'sec-14' && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-muted-foreground">Riscos Ocupacionais no Inventário ({pgrContext.riskInventory.length}):</p>
-                      <div className="border border-border rounded-lg overflow-hidden">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50 text-[11px]">
-                              <TableHead>Perigo / Agente</TableHead>
-                              <TableHead>Categoria</TableHead>
-                              <TableHead className="text-center">Matriz 5x5</TableHead>
-                              <TableHead>Nível de Risco</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {pgrContext.riskInventory.map((r) => (
-                              <TableRow key={r.id} className="text-xs">
-                                <TableCell className="font-semibold">{r.hazardName}</TableCell>
-                                <TableCell>{HAZARD_CATEGORY_CONFIG[r.hazardCategory]?.label || r.hazardCategory}</TableCell>
-                                <TableCell className="text-center font-mono font-bold">P:{r.probability} × S:{r.severity} = {r.riskScore}</TableCell>
-                                <TableCell><Badge variant="outline">{r.riskLevel}</Badge></TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-muted-foreground leading-relaxed">
+                    Esta seção ({selectedSection.title}) é alimentada automaticamente com os dados cadastrais da empresa ativa (CNPJ, CNAE, Setores, Cargos CBO, Matriz de Riscos 5x5 ou Ações 5W2H). Não requer edição de texto fixo no modelo base.
+                  </p>
                 </div>
               ) : (
-                /* CASO 2: SEÇÃO DE TEXTO EDITÁVEL COM INSERÇÃO DE TABELAS */
+                /* CASO 2: SEÇÃO DE TEXTO PADRÃO COM INSERÇÃO DE TABELAS */
                 <div className="space-y-4">
-                  {/* BARRA DE FERRAMENTAS PARA INSERIR TABELAS E FORMATAÇÃO */}
+                  {/* BARRA DE FERRAMENTAS */}
                   {viewMode === 'edit' && (
                     <div className="flex flex-wrap items-center gap-1.5 p-2 bg-muted/40 border border-border rounded-xl">
                       <span className="text-[11px] font-bold text-muted-foreground px-2 flex items-center gap-1">
                         <TableIcon className="h-3.5 w-3.5 text-emerald-600" />
-                        Inserir Tabelas:
+                        Tabelas Padrão:
                       </span>
                       <Button
                         type="button"
@@ -559,7 +404,6 @@ export const PgrBuilderPage: React.FC = () => {
                         size="sm"
                         onClick={() => insertTable(3, 3)}
                         className="h-7 text-[11px] gap-1 bg-background hover:bg-emerald-50 hover:text-emerald-700 font-semibold"
-                        title="Inserir tabela com 3 colunas e 3 linhas"
                       >
                         + Tabela 3x3
                       </Button>
@@ -569,7 +413,6 @@ export const PgrBuilderPage: React.FC = () => {
                         size="sm"
                         onClick={() => insertTable(2, 4)}
                         className="h-7 text-[11px] gap-1 bg-background hover:bg-emerald-50 hover:text-emerald-700 font-semibold"
-                        title="Inserir tabela com 2 colunas e 4 linhas"
                       >
                         + Tabela 2x4
                       </Button>
@@ -579,7 +422,6 @@ export const PgrBuilderPage: React.FC = () => {
                         size="sm"
                         onClick={() => insertTable(4, 3)}
                         className="h-7 text-[11px] gap-1 bg-background hover:bg-emerald-50 hover:text-emerald-700 font-semibold"
-                        title="Inserir tabela com 4 colunas e 3 linhas"
                       >
                         + Tabela 4x3
                       </Button>
@@ -630,37 +472,31 @@ export const PgrBuilderPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* VISUALIZAÇÃO OU EDITOR */}
                   {viewMode === 'edit' ? (
                     <div className="space-y-2">
                       <Textarea
-                        id="section-textarea"
+                        id="global-section-textarea"
                         value={currentContent}
                         onChange={(e) => updateCurrentSection({ content: e.target.value })}
-                        className="min-h-[400px] font-mono text-xs leading-relaxed p-4 border border-input focus:ring-1 focus:ring-ring resize-y rounded-xl bg-background"
-                        placeholder="Digite ou personalize o texto técnico desta seção. Você pode inserir tabelas usando o formato Markdown..."
+                        className="min-h-[420px] font-mono text-xs leading-relaxed p-4 border border-input focus:ring-1 focus:ring-ring resize-y rounded-xl bg-background"
+                        placeholder="Digite o texto base oficial que será utilizado por padrão em todos os novos PGRs..."
                       />
                       <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-1">
                         <span>
-                          {isCustomizedLocally ? (
-                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold">● Ajuste específico ativo para este documento.</span>
-                          ) : (
-                            <span className="text-muted-foreground">✓ Herdando do Modelo Base Global.</span>
-                          )}
-                          <span className="ml-2 font-mono text-[10px]">({currentContent.length} caracteres | {currentContent.split(/\s+/).filter(Boolean).length} palavras)</span>
+                          {currentContent.length} caracteres | {currentContent.split(/\s+/).filter(Boolean).length} palavras
                         </span>
                         <Button
                           size="sm"
-                          onClick={handleSaveAll}
+                          onClick={handleSaveGlobal}
                           className="text-xs gap-1.5 font-semibold bg-emerald-600 hover:bg-emerald-700 text-white h-8"
                         >
                           <Save className="h-3.5 w-3.5" />
-                          <span>{isSaved ? 'Salvo com Sucesso!' : 'Salvar Alterações'}</span>
+                          <span>{isSaved ? 'Modelo Salvo!' : 'Salvar Modelo Base'}</span>
                         </Button>
                       </div>
                     </div>
                   ) : (
-                    /* MODO PREVIEW COM TABELAS RENDERIZADAS VISUALMENTE */
+                    /* PREVIEW FORMATADO */
                     <div className="p-6 bg-muted/20 border border-border rounded-xl space-y-6 text-xs text-foreground leading-relaxed">
                       <div className="border-b border-border pb-3">
                         <h2 className="text-base font-bold text-foreground">{currentTitle}</h2>
