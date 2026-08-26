@@ -15,11 +15,29 @@ import {
 import { Database, ShieldCheck, CheckCircle2, AlertCircle, Copy, Check, RefreshCw, Server, Key } from 'lucide-react';
 
 export const DatabaseSettingsPage: React.FC = () => {
-  const { clearAllData, loadDemoData } = usePgr();
+  const { 
+    clearAllData, 
+    loadDemoData, 
+    refreshFromSupabase, 
+    isLoadingDb, 
+    companies, 
+    sectors, 
+    positions, 
+    riskInventory, 
+    actionPlans 
+  } = usePgr();
   const [url, setUrl] = useState(supabaseUrl);
   const [key, setKey] = useState(supabaseAnonKey);
   const [copied, setCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    await refreshFromSupabase();
+    setIsSyncing(false);
+    alert('Dados sincronizados com o Supabase com sucesso!');
+  };
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,16 +151,67 @@ CREATE TABLE public.environmental_measurements (...);
                 Limpar & Voltar para Local
               </Button>
 
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isSaving}
-                className="font-semibold text-xs shadow-xs"
-              >
-                {isSaving ? 'Salvando...' : 'Salvar e Conectar'}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSync}
+                  disabled={isSyncing || isLoadingDb}
+                  className="text-xs gap-1.5 border-emerald-300 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isSyncing || isLoadingDb ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing || isLoadingDb ? 'Sincronizando...' : 'Sincronizar com Nuvem'}</span>
+                </Button>
+
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isSaving}
+                  className="font-semibold text-xs shadow-xs"
+                >
+                  {isSaving ? 'Salvando...' : 'Salvar e Conectar'}
+                </Button>
+              </div>
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Registros Carregados */}
+      <Card className="border-border shadow-xs">
+        <CardHeader>
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-emerald-600" />
+            Dados em Memória / Sincronizados
+          </CardTitle>
+          <CardDescription className="text-xs">
+            Contagem de registros ativos e disponíveis para visualização, relatórios e documentos.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
+              <div className="text-xl font-bold text-foreground">{companies.length}</div>
+              <div className="text-[11px] text-muted-foreground">Empresas</div>
+            </div>
+            <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
+              <div className="text-xl font-bold text-foreground">{sectors.length}</div>
+              <div className="text-[11px] text-muted-foreground">Setores</div>
+            </div>
+            <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
+              <div className="text-xl font-bold text-foreground">{positions.length}</div>
+              <div className="text-[11px] text-muted-foreground">Cargos</div>
+            </div>
+            <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
+              <div className="text-xl font-bold text-foreground">{riskInventory.length}</div>
+              <div className="text-[11px] text-muted-foreground">Riscos (5x5)</div>
+            </div>
+            <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
+              <div className="text-xl font-bold text-foreground">{actionPlans.length}</div>
+              <div className="text-[11px] text-muted-foreground">Ações (5W2H)</div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
