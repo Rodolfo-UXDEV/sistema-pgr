@@ -27,19 +27,14 @@ import {
 } from '@/lib/initial-data';
 import { DEFAULT_HAZARDS } from '@/lib/default-hazards';
 import { generateId } from '@/lib/utils';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { isFirebaseConfigured } from '@/lib/firebase';
 import { 
-  fetchAllFromSupabase,
-  mapCompanyToDb,
-  mapEstablishmentToDb,
-  mapSectorToDb,
-  mapPositionToDb,
-  mapGheToDb,
-  mapProfessionalToDb,
-  mapPgrDocumentToDb,
-  mapRiskInventoryToDb,
-  mapActionPlanToDb,
-} from '@/lib/supabase-service';
+  fetchAllFromFirestore,
+  saveToFirestore,
+  deleteFromFirestore,
+  COLLECTIONS,
+  seedFirestoreDatabase,
+} from '@/lib/firebase-service';
 
 interface PgrContextType {
   // Estado ativo
@@ -62,9 +57,10 @@ interface PgrContextType {
   riskInventory: RiskInventoryItem[];
   actionPlans: ActionPlanItem[];
 
-  // Estado da Conexão
+  // Estado da Conexão Firebase
   isLoadingDb: boolean;
-  refreshFromSupabase: () => Promise<void>;
+  refreshFromFirebase: () => Promise<void>;
+  seedDatabase: () => Promise<boolean>;
 
   // CRUD Empresas
   addCompany: (company: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Company>;
@@ -190,12 +186,20 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activePgrId, setActivePgrId] = useState<string>(() => loadStorage(STORAGE_KEYS.ACTIVE_PGR_ID, ''));
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(false);
 
-  // Carrega e sincroniza dados do Supabase
-  const refreshFromSupabase = async () => {
-    if (!isSupabaseConfigured) return;
+  // Carrega e sincroniza dados do Firebase Firestore
+  const refreshFromFirebase = async () => {
+    if (!isFirebaseConfigured) return;
     setIsLoadingDb(true);
     try {
-      const data = await fetchAllFromSupabase();
+      let data = await fetchAllFromFirestore();
+
+      // Se o banco estiver vazio no Firestore, executa auto-seed
+      if (data && data.companies.length === 0) {
+        console.log('Banco Firestore vazio. Executando seed inicial automático...');
+        await seedFirestoreDatabase();
+        data = await fetchAllFromFirestore();
+      }
+
       if (data && data.companies.length > 0) {
         setCompanies(data.companies);
         setEstablishments(data.establishments);
@@ -217,14 +221,24 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     } catch (err) {
-      console.warn('Erro ao carregar dados do Supabase:', err);
+      console.warn('Erro ao carregar dados do Firebase Firestore:', err);
     } finally {
       setIsLoadingDb(false);
     }
   };
 
+  const seedDatabase = async (): Promise<boolean> => {
+    setIsLoadingDb(true);
+    const success = await seedFirestoreDatabase();
+    if (success) {
+      await refreshFromFirebase();
+    }
+    setIsLoadingDb(false);
+    return success;
+  };
+
   useEffect(() => {
-    refreshFromSupabase();
+    refreshFromFirebase();
   }, []);
 
   // Sync to local storage
@@ -274,25 +288,16 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setCompanies(prev => [newCompany, ...prev]);
     setActiveCompanyId(newCompany.id);
-
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('companies').insert(mapCompanyToDb(newCompany));
-      } catch (err) {
-        console.error('Erro ao inserir empresa no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.COMPANIES, newCompany);
     return newCompany;
   };
 
   const updateCompany = async (id: string, data: Partial<Company>) => {
-    setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('companies').update(mapCompanyToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar empresa no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...updated } : c));
+    const target = companies.find(c => c.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.COMPANIES, { ...target, ...updated, id });
     }
   };
 
@@ -302,13 +307,7 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const remaining = companies.filter(c => c.id !== id);
       setActiveCompany(remaining[0] || null);
     }
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('companies').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir empresa no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.COMPANIES, id);
   };
 
   // CRUD ESTABELECIMENTOS
@@ -321,36 +320,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setEstablishments(prev => [newEst, ...prev]);
     setActiveEstablishmentId(newEst.id);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('establishments').insert(mapEstablishmentToDb(newEst));
-      } catch (err) {
-        console.error('Erro ao inserir estabelecimento no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.ESTABLISHMENTS, newEst);
     return newEst;
   };
 
   const updateEstablishment = async (id: string, data: Partial<Establishment>) => {
-    setEstablishments(prev => prev.map(e => e.id === id ? { ...e, ...data, updatedAt: new Date().toISOString() } : e));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('establishments').update(mapEstablishmentToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar estabelecimento no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setEstablishments(prev => prev.map(e => e.id === id ? { ...e, ...updated } : e));
+    const target = establishments.find(e => e.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.ESTABLISHMENTS, { ...target, ...updated, id });
     }
   };
 
   const deleteEstablishment = async (id: string) => {
     setEstablishments(prev => prev.filter(e => e.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('establishments').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir estabelecimento no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.ESTABLISHMENTS, id);
   };
 
   // CRUD SETORES
@@ -362,36 +347,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setSectors(prev => [newSector, ...prev]);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('sectors').insert(mapSectorToDb(newSector));
-      } catch (err) {
-        console.error('Erro ao inserir setor no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.SECTORS, newSector);
     return newSector;
   };
 
   const updateSector = async (id: string, data: Partial<Sector>) => {
-    setSectors(prev => prev.map(s => s.id === id ? { ...s, ...data, updatedAt: new Date().toISOString() } : s));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('sectors').update(mapSectorToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar setor no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setSectors(prev => prev.map(s => s.id === id ? { ...s, ...updated } : s));
+    const target = sectors.find(s => s.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.SECTORS, { ...target, ...updated, id });
     }
   };
 
   const deleteSector = async (id: string) => {
     setSectors(prev => prev.filter(s => s.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('sectors').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir setor no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.SECTORS, id);
   };
 
   // CRUD CARGOS
@@ -403,36 +374,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setPositions(prev => [newPos, ...prev]);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('positions').insert(mapPositionToDb(newPos));
-      } catch (err) {
-        console.error('Erro ao inserir cargo no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.POSITIONS, newPos);
     return newPos;
   };
 
   const updatePosition = async (id: string, data: Partial<Position>) => {
-    setPositions(prev => prev.map(p => p.id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('positions').update(mapPositionToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar cargo no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setPositions(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const target = positions.find(p => p.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.POSITIONS, { ...target, ...updated, id });
     }
   };
 
   const deletePosition = async (id: string) => {
     setPositions(prev => prev.filter(p => p.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('positions').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir cargo no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.POSITIONS, id);
   };
 
   // CRUD GHES
@@ -444,36 +401,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setGhes(prev => [newGhe, ...prev]);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('ghes').insert(mapGheToDb(newGhe));
-      } catch (err) {
-        console.error('Erro ao inserir GHE no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.GHES, newGhe);
     return newGhe;
   };
 
   const updateGhe = async (id: string, data: Partial<GHE>) => {
-    setGhes(prev => prev.map(g => g.id === id ? { ...g, ...data, updatedAt: new Date().toISOString() } : g));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('ghes').update(mapGheToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar GHE no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setGhes(prev => prev.map(g => g.id === id ? { ...g, ...updated } : g));
+    const target = ghes.find(g => g.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.GHES, { ...target, ...updated, id });
     }
   };
 
   const deleteGhe = async (id: string) => {
     setGhes(prev => prev.filter(g => g.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('ghes').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir GHE no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.GHES, id);
   };
 
   // CRUD PROFISSIONAIS
@@ -485,36 +428,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setProfessionals(prev => [newProf, ...prev]);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('professionals').insert(mapProfessionalToDb(newProf));
-      } catch (err) {
-        console.error('Erro ao inserir profissional no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.PROFESSIONALS, newProf);
     return newProf;
   };
 
   const updateProfessional = async (id: string, data: Partial<Professional>) => {
-    setProfessionals(prev => prev.map(p => p.id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('professionals').update(mapProfessionalToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar profissional no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setProfessionals(prev => prev.map(p => p.id === id ? { ...p, ...updated } : p));
+    const target = professionals.find(p => p.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.PROFESSIONALS, { ...target, ...updated, id });
     }
   };
 
   const deleteProfessional = async (id: string) => {
     setProfessionals(prev => prev.filter(p => p.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('professionals').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir profissional no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.PROFESSIONALS, id);
   };
 
   // CRUD CATÁLOGO DE PERIGOS
@@ -525,6 +454,7 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isCustom: true,
     };
     setHazards(prev => [newHazard, ...prev]);
+    await saveToFirestore(COLLECTIONS.HAZARDS_CATALOG, newHazard);
     return newHazard;
   };
 
@@ -538,36 +468,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setPgrDocuments(prev => [newDoc, ...prev]);
     setActivePgrId(newDoc.id);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('pgr_documents').insert(mapPgrDocumentToDb(newDoc));
-      } catch (err) {
-        console.error('Erro ao inserir documento PGR no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.PGR_DOCUMENTS, newDoc);
     return newDoc;
   };
 
   const updatePgrDocument = async (id: string, data: Partial<PGRDocument>) => {
-    setPgrDocuments(prev => prev.map(d => d.id === id ? { ...d, ...data, updatedAt: new Date().toISOString() } : d));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('pgr_documents').update(mapPgrDocumentToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar documento PGR no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setPgrDocuments(prev => prev.map(d => d.id === id ? { ...d, ...updated } : d));
+    const target = pgrDocuments.find(d => d.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.PGR_DOCUMENTS, { ...target, ...updated, id });
     }
   };
 
   const deletePgrDocument = async (id: string) => {
     setPgrDocuments(prev => prev.filter(d => d.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('pgr_documents').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir documento PGR no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.PGR_DOCUMENTS, id);
   };
 
   // CRUD INVENTÁRIO DE RISCOS
@@ -579,14 +495,7 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setRiskInventory(prev => [newItem, ...prev]);
-
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('risk_inventory').insert(mapRiskInventoryToDb(newItem));
-      } catch (err) {
-        console.error('Erro ao inserir risco no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.RISK_INVENTORY, newItem);
 
     // Se o risco requer ação, criar automaticamente uma ação sugerida no Plano de Ação
     if (newItem.actionRequired) {
@@ -608,38 +517,24 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updatedAt: new Date().toISOString(),
       };
       setActionPlans(prev => [suggestedAction, ...prev]);
-      if (isSupabaseConfigured) {
-        try {
-          await supabase.from('action_plans').insert(mapActionPlanToDb(suggestedAction));
-        } catch (err) {
-          console.error('Erro ao inserir ação sugerida no Supabase:', err);
-        }
-      }
+      await saveToFirestore(COLLECTIONS.ACTION_PLANS, suggestedAction);
     }
 
     return newItem;
   };
 
   const updateRiskItem = async (id: string, data: Partial<RiskInventoryItem>) => {
-    setRiskInventory(prev => prev.map(r => r.id === id ? { ...r, ...data, updatedAt: new Date().toISOString() } : r));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('risk_inventory').update(mapRiskInventoryToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar risco no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setRiskInventory(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+    const target = riskInventory.find(r => r.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.RISK_INVENTORY, { ...target, ...updated, id });
     }
   };
 
   const deleteRiskItem = async (id: string) => {
     setRiskInventory(prev => prev.filter(r => r.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('risk_inventory').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir risco no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, id);
   };
 
   // CRUD PLANO DE AÇÃO
@@ -651,36 +546,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     };
     setActionPlans(prev => [newAction, ...prev]);
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('action_plans').insert(mapActionPlanToDb(newAction));
-      } catch (err) {
-        console.error('Erro ao inserir ação no Supabase:', err);
-      }
-    }
+    await saveToFirestore(COLLECTIONS.ACTION_PLANS, newAction);
     return newAction;
   };
 
   const updateActionPlan = async (id: string, data: Partial<ActionPlanItem>) => {
-    setActionPlans(prev => prev.map(a => a.id === id ? { ...a, ...data, updatedAt: new Date().toISOString() } : a));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('action_plans').update(mapActionPlanToDb(data)).eq('id', id);
-      } catch (err) {
-        console.error('Erro ao atualizar ação no Supabase:', err);
-      }
+    const updated = { ...data, updatedAt: new Date().toISOString() };
+    setActionPlans(prev => prev.map(a => a.id === id ? { ...a, ...updated } : a));
+    const target = actionPlans.find(a => a.id === id);
+    if (target) {
+      await saveToFirestore(COLLECTIONS.ACTION_PLANS, { ...target, ...updated, id });
     }
   };
 
   const deleteActionPlan = async (id: string) => {
     setActionPlans(prev => prev.filter(a => a.id !== id));
-    if (isSupabaseConfigured) {
-      try {
-        await supabase.from('action_plans').delete().eq('id', id);
-      } catch (err) {
-        console.error('Erro ao excluir ação no Supabase:', err);
-      }
-    }
+    await deleteFromFirestore(COLLECTIONS.ACTION_PLANS, id);
   };
 
   // LIMPEZA TOTAL (RESET DO ZERO)
@@ -755,7 +636,8 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         riskInventory,
         actionPlans,
         isLoadingDb,
-        refreshFromSupabase,
+        refreshFromFirebase,
+        seedDatabase,
         addCompany,
         updateCompany,
         deleteCompany,

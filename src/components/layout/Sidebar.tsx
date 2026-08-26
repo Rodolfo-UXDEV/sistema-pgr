@@ -21,7 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { usePgr } from '@/context/PgrContext';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isFirebaseConfigured } from '@/lib/firebase';
 
 interface NavItem {
   label: string;
@@ -66,11 +66,11 @@ export const Sidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => void }> 
     { label: 'Modelo Base do PGR', path: '/modelo-base-pgr', icon: BookOpen },
     { label: 'Catálogo de Perigos', path: '/catalogo-perigos', icon: AlertTriangle },
     { 
-      label: 'Banco de Dados (Supabase)', 
+      label: 'Banco de Dados & Firebase', 
       path: '/config-banco', 
       icon: Database,
-      badge: isSupabaseConfigured ? 'Conectado' : 'Local Mock',
-      badgeVariant: isSupabaseConfigured ? 'success' : 'warning'
+      badge: isFirebaseConfigured ? 'Firebase' : 'Local',
+      badgeVariant: isFirebaseConfigured ? 'success' : 'warning'
     },
   ];
 

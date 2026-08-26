@@ -36,6 +36,7 @@
     "docx": "^9.7.1",
     "docxtemplater": "^3.69.3",
     "file-saver": "^2.0.5",
+    "firebase": "^12.18.0",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^3.8.3",
     "lucide-react": "^0.441.0",
