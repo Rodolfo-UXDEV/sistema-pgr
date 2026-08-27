@@ -35,6 +35,11 @@ import {
   Sparkles,
   Edit3
 } from 'lucide-react';
+import { 
+  fetchGlobalTemplateFromFirestore, 
+  fetchDocumentSectionsFromFirestore, 
+  saveDocumentSectionsToFirestore 
+} from '@/lib/firebase-service';
 
 export const PgrBuilderPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,30 +66,55 @@ export const PgrBuilderPage: React.FC = () => {
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isGeneratingDocx, setIsGeneratingDocx] = useState<boolean>(false);
 
-  // Carrega o Modelo Base Global e customizações salvas do documento
+  // Carrega o Modelo Base Global e customizações salvas do documento (LocalStorage + Firestore)
   useEffect(() => {
-    // 1. Carrega Modelo Base Global
-    const globalSaved = localStorage.getItem('pgr_global_master_template_v1');
-    if (globalSaved) {
-      try {
-        setGlobalSections(JSON.parse(globalSaved));
-      } catch (e) {
-        console.error(e);
-      }
-    }
-
-    // 2. Carrega ajustes específicos deste PGR
-    if (pgr) {
-      const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
+    const loadAllTemplates = async () => {
+      // 1. Carrega Modelo Base Global do cache local
+      const globalSaved = localStorage.getItem('pgr_global_master_template_v1');
+      if (globalSaved) {
         try {
-          setCustomSections(JSON.parse(saved));
+          setGlobalSections(JSON.parse(globalSaved));
         } catch (e) {
           console.error(e);
         }
       }
-    }
+
+      // 2. Busca Modelo Base Global do Firestore
+      try {
+        const cloudGlobal = await fetchGlobalTemplateFromFirestore();
+        if (cloudGlobal && Object.keys(cloudGlobal).length > 0) {
+          setGlobalSections(cloudGlobal as Record<string, PgrCustomSectionData>);
+          localStorage.setItem('pgr_global_master_template_v1', JSON.stringify(cloudGlobal));
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      // 3. Carrega ajustes específicos deste PGR (Cache Local + Firestore)
+      if (pgr) {
+        const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
+        const saved = localStorage.getItem(storageKey);
+        if (saved) {
+          try {
+            setCustomSections(JSON.parse(saved));
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        try {
+          const cloudDocSections = await fetchDocumentSectionsFromFirestore(pgr.id);
+          if (cloudDocSections && Object.keys(cloudDocSections).length > 0) {
+            setCustomSections(cloudDocSections as Record<string, PgrCustomSectionData>);
+            localStorage.setItem(storageKey, JSON.stringify(cloudDocSections));
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+
+    loadAllTemplates();
   }, [pgr]);
 
   if (!pgr || !activeCompany) {
@@ -140,9 +170,10 @@ export const PgrBuilderPage: React.FC = () => {
         [selectedSection.id]: updatedSection,
       };
 
-      // Auto-salva imediatamente no localStorage
+      // Salva no LocalStorage e no Cloud Firestore
       const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
       localStorage.setItem(storageKey, JSON.stringify(next));
+      saveDocumentSectionsToFirestore(pgr.id, next);
       window.dispatchEvent(new Event('pgr_template_updated'));
 
       return next;
@@ -158,6 +189,7 @@ export const PgrBuilderPage: React.FC = () => {
         delete next[selectedSection.id];
         const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
         localStorage.setItem(storageKey, JSON.stringify(next));
+        saveDocumentSectionsToFirestore(pgr.id, next);
         window.dispatchEvent(new Event('pgr_template_updated'));
         return next;
       });
@@ -169,6 +201,7 @@ export const PgrBuilderPage: React.FC = () => {
   const handleSaveAll = () => {
     const storageKey = `pgr_custom_sections_v2_${pgr.id}`;
     localStorage.setItem(storageKey, JSON.stringify(customSections));
+    saveDocumentSectionsToFirestore(pgr.id, customSections);
     window.dispatchEvent(new Event('pgr_template_updated'));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);

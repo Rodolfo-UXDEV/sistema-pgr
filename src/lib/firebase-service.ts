@@ -1,6 +1,7 @@
 import { 
   collection, 
   getDocs, 
+  getDoc,
   doc, 
   setDoc, 
   deleteDoc, 
@@ -33,6 +34,8 @@ export const COLLECTIONS = {
   PGR_DOCUMENTS: 'pgr_documents',
   RISK_INVENTORY: 'risk_inventory',
   ACTION_PLANS: 'action_plans',
+  TEMPLATES: 'pgr_templates',
+  DOCUMENT_SECTIONS: 'pgr_document_sections',
 };
 
 // ==========================================
@@ -135,6 +138,66 @@ export async function deleteFromFirestore(collectionName: string, id: string): P
     await deleteDoc(docRef);
   } catch (error) {
     console.error(`Erro ao deletar documento em ${collectionName}/${id}:`, error);
+  }
+}
+
+// ------------------------------------------
+// 2.1 TEMPLATES DO PGR & SEÇÕES PERSONALIZADAS
+// ------------------------------------------
+
+export async function fetchGlobalTemplateFromFirestore(): Promise<Record<string, any> | null> {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'global_master');
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data()?.sections || null;
+    }
+  } catch (err) {
+    console.error('Erro ao ler template global do Firestore:', err);
+  }
+  return null;
+}
+
+export async function saveGlobalTemplateToFirestore(sections: Record<string, any>): Promise<void> {
+  if (!isFirebaseConfigured) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.TEMPLATES, 'global_master');
+    await setDoc(docRef, { 
+      id: 'global_master', 
+      sections: cleanForFirestore(sections), 
+      updatedAt: new Date().toISOString() 
+    }, { merge: true });
+  } catch (err) {
+    console.error('Erro ao salvar template global no Firestore:', err);
+  }
+}
+
+export async function fetchDocumentSectionsFromFirestore(docId: string): Promise<Record<string, any> | null> {
+  if (!isFirebaseConfigured) return null;
+  try {
+    const docRef = doc(db, COLLECTIONS.DOCUMENT_SECTIONS, docId);
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data()?.sections || null;
+    }
+  } catch (err) {
+    console.error('Erro ao ler seções do documento do Firestore:', err);
+  }
+  return null;
+}
+
+export async function saveDocumentSectionsToFirestore(docId: string, sections: Record<string, any>): Promise<void> {
+  if (!isFirebaseConfigured) return;
+  try {
+    const docRef = doc(db, COLLECTIONS.DOCUMENT_SECTIONS, docId);
+    await setDoc(docRef, { 
+      id: docId, 
+      sections: cleanForFirestore(sections), 
+      updatedAt: new Date().toISOString() 
+    }, { merge: true });
+  } catch (err) {
+    console.error('Erro ao salvar seções do documento no Firestore:', err);
   }
 }
 

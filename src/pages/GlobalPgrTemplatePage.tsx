@@ -28,6 +28,10 @@ import {
   BookOpen,
   Info
 } from 'lucide-react';
+import { 
+  fetchGlobalTemplateFromFirestore, 
+  saveGlobalTemplateToFirestore 
+} from '@/lib/firebase-service';
 
 const GLOBAL_STORAGE_KEY = 'pgr_global_master_template_v1';
 
@@ -37,16 +41,32 @@ export const GlobalPgrTemplatePage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
   const [isSaved, setIsSaved] = useState<boolean>(false);
 
-  // Carrega o template global do localStorage na inicialização
+  // Carrega o template global do Firestore (com fallback para localStorage) na inicialização
   useEffect(() => {
-    const saved = localStorage.getItem(GLOBAL_STORAGE_KEY);
-    if (saved) {
-      try {
-        setGlobalSections(JSON.parse(saved));
-      } catch (e) {
-        console.error(e);
+    const loadTemplate = async () => {
+      // 1. Tenta carregar do cache local primeiro para resposta instantânea
+      const saved = localStorage.getItem(GLOBAL_STORAGE_KEY);
+      if (saved) {
+        try {
+          setGlobalSections(JSON.parse(saved));
+        } catch (e) {
+          console.error(e);
+        }
       }
-    }
+
+      // 2. Busca a versão mais atualizada na nuvem do Firestore
+      try {
+        const cloudData = await fetchGlobalTemplateFromFirestore();
+        if (cloudData && Object.keys(cloudData).length > 0) {
+          setGlobalSections(cloudData as Record<string, PgrCustomSectionData>);
+          localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(cloudData));
+        }
+      } catch (err) {
+        console.error('Erro ao sincronizar template do Firestore:', err);
+      }
+    };
+
+    loadTemplate();
   }, []);
 
   const selectedSection = DEFAULT_PGR_SECTIONS.find((s) => s.id === selectedSectionId) || DEFAULT_PGR_SECTIONS[0];
@@ -86,8 +106,9 @@ export const GlobalPgrTemplatePage: React.FC = () => {
         [selectedSection.id]: updated,
       };
 
-      // Auto-salva imediatamente no Modelo Base Global
+      // Salva no LocalStorage e no Cloud Firestore
       localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(next));
+      saveGlobalTemplateToFirestore(next);
       window.dispatchEvent(new Event('pgr_template_updated'));
 
       return next;
