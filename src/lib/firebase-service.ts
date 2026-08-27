@@ -100,11 +100,29 @@ export async function fetchAllFromFirestore() {
 // 2. GRAVAÇÃO & EXCLUSÃO INDIVIDUAL
 // ==========================================
 
+export function cleanForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(cleanForFirestore).filter(v => v !== undefined);
+  }
+  if (typeof obj === 'object') {
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        clean[key] = cleanForFirestore(value);
+      }
+    }
+    return clean;
+  }
+  return obj;
+}
+
 export async function saveToFirestore<T extends { id: string }>(collectionName: string, item: T): Promise<void> {
   if (!isFirebaseConfigured) return;
   try {
     const docRef = doc(db, collectionName, item.id);
-    await setDoc(docRef, item, { merge: true });
+    const sanitized = cleanForFirestore(item);
+    await setDoc(docRef, sanitized, { merge: true });
   } catch (error) {
     console.error(`Erro ao salvar documento em ${collectionName}/${item.id}:`, error);
   }
