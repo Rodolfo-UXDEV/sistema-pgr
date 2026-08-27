@@ -160,7 +160,7 @@ service cloud.firestore {
                   type="password"
                   value={config.apiKey}
                   onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
-                  placeholder="AIzaSy..."
+                  placeholder="Inserir chave da API do Firebase..."
                   className="h-9 text-xs font-mono"
                 />
               </div>
