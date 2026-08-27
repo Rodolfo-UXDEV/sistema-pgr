@@ -9,8 +9,8 @@ Sistema web completo para elaboração, gestão, inventário de riscos com Matri
 - **Frontend:** [React 18](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/) + [Vite](https://vitejs.dev/)
 - **Componentes & UI:** [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/) (Radix UI)
 - **Ícones:** [Lucide React](https://lucide.dev/)
-- **Backend & Banco de Dados:** [Supabase](https://supabase.com/) (PostgreSQL 17 com Row Level Security - RLS)
-- **Geração de Documentos:** [jsPDF](https://github.com/parallax/jsPDF) + [jspdf-autotable](https://github.com/simonbengtsson/jsPDF-AutoTable)
+- **Backend & Banco de Dados:** [Google Firebase](https://firebase.google.com/) (Cloud Firestore em tempo real)
+- **Geração de Documentos:** [jsPDF](https://github.com/parallax/jsPDF) + [docx](https://docx.js.org/)
 - **Roteamento:** [React Router Dom v6](https://reactrouter.com/)
 
 ---
@@ -33,9 +33,10 @@ Sistema web completo para elaboração, gestão, inventário de riscos com Matri
    - Visualização em **Quadro Kanban Ágil** (*Não Iniciadas, Em Andamento, Concluídas*).
    - Alertas visuais de prazos e módulo de **Verificação Técnica de Eficácia**.
 
-4. **Emissão de Documentos & Exportação em PDF:**
+4. **Emissão de Documentos & Exportação em Word e PDF:**
    - Visualizador formal do documento na tela.
-   - Exportação em PDF diagramado de alta fidelidade com capa oficial, dados do empregador, metodologia, inventário consolidado e termos para assinaturas de ART/CREA/CRM.
+   - Editor e montagem modular por seções com suporte a tabelas personalizadas.
+   - Exportação em Word (.docx) e PDF diagramado de alta fidelidade com capa oficial, dados do empregador, metodologia, inventário consolidado e termos para assinaturas de ART/CREA/CRM.
 
 5. **Estrutura Organizacional & Cadastros:**
    - Cadastro de Empresas (CNAE e Grau de Risco NR-04).
@@ -55,9 +56,7 @@ O projeto já está configurado com `vercel.json` para suporte a rotas do React 
 
 1. Acesse o dashboard da **[Vercel](https://vercel.com/)** e clique em **"Add New... > Project"**.
 2. Importe o repositório **`Rodolfo-UXDEV/sistema-pgr`**.
-3. Em **Environment Variables**, adicione as seguintes variáveis de ambiente:
-   - `VITE_SUPABASE_URL`: URL do seu projeto no Supabase (ex: `https://sdtprjzrzcyjzvwkxqzz.supabase.co`)
-   - `VITE_SUPABASE_ANON_KEY`: Chave pública Anon do seu projeto Supabase
+3. O build roda de forma automática com todas as credenciais do Firebase integradas.
 4. Clique em **"Deploy"**.
 
 ---
@@ -88,9 +87,9 @@ Abra seu navegador em: **`http://localhost:3000`**
 
 ---
 
-## 🗄️ Estrutura do Banco de Dados (Supabase / PostgreSQL)
+## 🗄️ Estrutura do Banco de Dados (Cloud Firestore)
 
-O script com as 11 tabelas e políticas de segurança RLS está disponível em [`supabase/schema.sql`](supabase/schema.sql).
+As 10 coleções do sistema (`companies`, `establishments`, `sectors`, `positions`, `ghes`, `professionals`, `hazards_catalog`, `pgr_documents`, `risk_inventory`, `action_plans`) contam com persistência nativa e sincronização em tempo real via Firebase Modular SDK.
 
 ---
 

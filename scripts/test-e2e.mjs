@@ -115,8 +115,8 @@ async function runVisualTest() {
   await new Promise(r => setTimeout(r, 800));
   await page.screenshot({ path: path.join(artifactDir, '13_catalogo_perigos.png'), fullPage: false });
 
-  // 14. BANCO DE DADOS & SUPABASE
-  console.log('📸 14. Testando Configurações de Banco e Supabase...');
+  // 14. BANCO DE DADOS & FIREBASE
+  console.log('📸 14. Testando Configurações de Banco e Firebase...');
   await page.goto('http://localhost:3000/config-banco', { waitUntil: 'networkidle0' });
   await new Promise(r => setTimeout(r, 800));
   await page.screenshot({ path: path.join(artifactDir, '14_config_banco.png'), fullPage: false });
