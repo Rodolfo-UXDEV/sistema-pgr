@@ -257,7 +257,7 @@ service cloud.firestore {
             </div>
             <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
               <div className="text-xl font-bold text-foreground">{ghes.length}</div>
-              <div className="text-[11px] text-muted-foreground">GHEs</div>
+              <div className="text-[11px] text-muted-foreground">GESs</div>
             </div>
             <div className="p-3 bg-muted/40 rounded-lg text-center border border-border">
               <div className="text-xl font-bold text-foreground">{professionals.length}</div>
@@ -311,7 +311,7 @@ service cloud.firestore {
             <p>2. establishments (Unidades/Estabelecimentos)</p>
             <p>3. sectors (Setores com características físicas)</p>
             <p>4. positions (Cargos, CBO e Atividades)</p>
-            <p>5. ghes (Grupos Homogêneos de Exposição)</p>
+            <p>5. ghes (Grupos de Exposição Similar - GES)</p>
             <p>6. professionals (Responsáveis Técnicos e ART)</p>
             <p>7. hazards_catalog (Catálogo de Riscos eSocial)</p>
             <p>8. pgr_documents (Documentos PGR e Versões)</p>

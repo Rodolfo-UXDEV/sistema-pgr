@@ -37,6 +37,7 @@ export function App() {
             <Route path="estabelecimentos" element={<EstablishmentsPage />} />
             <Route path="setores" element={<SectorsPage />} />
             <Route path="cargos" element={<PositionsPage />} />
+            <Route path="ges" element={<GhesPage />} />
             <Route path="ghes" element={<GhesPage />} />
             <Route path="profissionais" element={<ProfessionalsPage />} />
             

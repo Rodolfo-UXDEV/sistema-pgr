@@ -326,14 +326,14 @@ export async function seedFirestoreDatabase(): Promise<boolean> {
     ];
     positions.forEach(p => batch.set(doc(db, COLLECTIONS.POSITIONS, p.id), p));
 
-    // 5. GHEs
+    // 5. Grupos de Exposição Similar (GES)
     const ghes: GHE[] = [
       {
         id: 'ghe-01',
         establishmentId: 'est-01',
         sectorId: 'sec-usinagem',
-        code: 'GHE-01',
-        name: 'GHE Usinagem',
+        code: 'GES-01',
+        name: 'GES Usinagem e Tornos CNC',
         description: 'Grupo de operadores de máquinas-ferramenta e tornos',
         positionIds: ['pos-torneiro'],
         workerCount: 12,
@@ -344,8 +344,8 @@ export async function seedFirestoreDatabase(): Promise<boolean> {
         id: 'ghe-02',
         establishmentId: 'est-01',
         sectorId: 'sec-solda',
-        code: 'GHE-02',
-        name: 'GHE Caldeiraria e Solda',
+        code: 'GES-02',
+        name: 'GES Caldeiraria e Solda',
         description: 'Grupo de soldadores e operadores de corte térmico',
         positionIds: ['pos-soldador'],
         workerCount: 8,

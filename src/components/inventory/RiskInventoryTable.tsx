@@ -151,7 +151,7 @@ export const RiskInventoryTable: React.FC = () => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-8"></TableHead>
-              <TableHead>Setor / Posto / GHE</TableHead>
+              <TableHead>Setor / Posto / GES</TableHead>
               <TableHead>Perigo / Fator de Risco</TableHead>
               <TableHead>Grupo</TableHead>
               <TableHead className="text-center">Exp.</TableHead>

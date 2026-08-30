@@ -337,19 +337,19 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                 </select>
               </div>
 
-              <div>
-                <Label className="text-xs">GHE (Grupo Homogêneo)</Label>
-                <select
-                  value={gheId}
-                  onChange={(e) => setGheId(e.target.value)}
-                  className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
-                >
-                  <option value="">Nenhum / Selecionar GHE</option>
-                  {sectorGhes.map((g) => (
-                    <option key={g.id} value={g.id}>{g.code} - {g.name}</option>
-                  ))}
-                </select>
-              </div>
+                <div>
+                  <Label className="text-xs">GES (Grupo de Exposição Similar)</Label>
+                  <select
+                    value={gheId}
+                    onChange={(e) => setGheId(e.target.value)}
+                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
+                  >
+                    <option value="">Nenhum / Selecionar GES</option>
+                    {sectorGhes.map((g) => (
+                      <option key={g.id} value={g.id}>{g.code} - {g.name}</option>
+                    ))}
+                  </select>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">

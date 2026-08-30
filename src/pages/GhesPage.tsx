@@ -53,7 +53,7 @@ export const GhesPage: React.FC = () => {
     setEstablishmentId(firstEst);
     const firstSec = sectors.find(s => s.establishmentId === firstEst)?.id || '';
     setSectorId(firstSec);
-    setCode(`GHE-0${currentGhes.length + 1}`);
+    setCode(`GES-0${currentGhes.length + 1}`);
     setName('');
     setDescription('');
     setSelectedPositions([]);
@@ -76,7 +76,7 @@ export const GhesPage: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!establishmentId || !sectorId || !code.trim() || !name.trim()) {
-      alert('Preencha os campos obrigatórios (Código, Nome, Estabelecimento e Setor).');
+      alert('Preencha os campos obrigatórios (Código, Nome, Estabelecimento e Setor do GES).');
       return;
     }
 
@@ -101,7 +101,7 @@ export const GhesPage: React.FC = () => {
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      alert('Erro ao salvar GHE.');
+      alert('Erro ao salvar GES.');
     } finally {
       setIsSaving(false);
     }
@@ -114,10 +114,10 @@ export const GhesPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
               <Users className="h-6 w-6 text-emerald-600" />
-              Grupos Homogêneos de Exposição (GHE)
+              Grupos de Exposição Similar (GES)
             </h1>
             <Badge variant="outline" className="text-xs">
-              {currentGhes.length} GHEs
+              {currentGhes.length} GESs
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
@@ -131,11 +131,11 @@ export const GhesPage: React.FC = () => {
           className="h-9 text-xs font-semibold shadow-xs flex items-center gap-1.5"
         >
           <Plus className="h-4 w-4" />
-          <span>Cadastrar GHE</span>
+          <span>Cadastrar GES</span>
         </Button>
       </div>
 
-      {/* Tabela de GHEs */}
+      {/* Tabela de GESs */}
       <div className="bg-card rounded-xl border border-border shadow-xs overflow-hidden">
         <Table>
           <TableHeader>
@@ -187,7 +187,7 @@ export const GhesPage: React.FC = () => {
                         size="icon"
                         className="h-7 w-7 text-muted-foreground hover:text-destructive"
                         onClick={async () => {
-                          if (window.confirm('Excluir este GHE?')) {
+                          if (window.confirm('Excluir este GES?')) {
                             await deleteGhe(ghe.id);
                           }
                         }}
@@ -210,7 +210,7 @@ export const GhesPage: React.FC = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg">
                 <Users className="h-5 w-5 text-emerald-600" />
-                <span>{editingGhe ? 'Editar GHE' : 'Cadastrar Grupo Homogêneo de Exposição'}</span>
+                <span>{editingGhe ? 'Editar GES' : 'Cadastrar Novo GES'}</span>
               </DialogTitle>
               <DialogDescription className="text-xs">
                 Agrupamento por semelhança de perigos e ambiente de trabalho.
@@ -220,7 +220,7 @@ export const GhesPage: React.FC = () => {
             <form onSubmit={handleSave} className="space-y-4 pt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Unidade / Estabelecimento *</Label>
+                  <Label className="text-xs font-semibold">Unidade / Estabelecimento *</Label>
                   <select
                     value={establishmentId}
                     onChange={(e) => setEstablishmentId(e.target.value)}
@@ -234,7 +234,7 @@ export const GhesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs">Setor *</Label>
+                  <Label className="text-xs font-semibold">Setor *</Label>
                   <select
                     value={sectorId}
                     onChange={(e) => setSectorId(e.target.value)}
@@ -249,18 +249,18 @@ export const GhesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs">Código do GHE *</Label>
+                  <Label className="text-xs font-semibold">Código do GES *</Label>
                   <Input
                     value={code}
                     onChange={(e) => setCode(e.target.value)}
-                    placeholder="Ex: GHE-01"
+                    placeholder="Ex: GES-01"
                     required
                     className="h-9 mt-1 text-xs font-mono font-bold"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-xs">Quantidade Total de Expostos</Label>
+                  <Label className="text-xs font-semibold">Quantidade Total de Expostos</Label>
                   <Input
                     type="number"
                     min="1"
@@ -271,18 +271,18 @@ export const GhesPage: React.FC = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label className="text-xs">Nome / Título do GHE *</Label>
+                  <Label className="text-xs font-semibold">Nome / Título do GES *</Label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: GHE 01 - Usinagem Pesada e Tornos CNC"
+                    placeholder="Ex: GES 01 - Usinagem Pesada e Tornos CNC"
                     required
                     className="h-9 mt-1 text-xs"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label className="text-xs">Descrição do Perfil de Exposição Similar</Label>
+                  <Label className="text-xs font-semibold">Descrição do Perfil de Exposição Similar</Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -292,12 +292,12 @@ export const GhesPage: React.FC = () => {
                 </div>
               </div>
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isSaving} className="font-semibold shadow-sm">
-                  {isSaving ? 'Salvando...' : editingGhe ? 'Salvar Alterações' : 'Cadastrar GHE'}
+                <Button type="submit" disabled={isSaving} className="font-semibold shadow-xs">
+                  {isSaving ? 'Salvando...' : editingGhe ? 'Salvar Alterações' : 'Cadastrar GES'}
                 </Button>
               </DialogFooter>
             </form>

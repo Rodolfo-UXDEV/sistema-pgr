@@ -87,11 +87,11 @@ export interface Position {
   updatedAt: string;
 }
 
-export interface GHE {
+export interface GES {
   id: string;
   establishmentId: string;
   sectorId: string;
-  code: string; // Ex: GHE-01, GHE-PROD-02
+  code: string; // Ex: GES-01, GES-PROD-02
   name: string;
   description: string;
   positionIds: string[];
@@ -99,6 +99,8 @@ export interface GHE {
   createdAt: string;
   updatedAt: string;
 }
+
+export type GHE = GES;
 
 export interface Professional {
   id: string;

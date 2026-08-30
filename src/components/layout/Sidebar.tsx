@@ -58,7 +58,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => void }> 
     { label: 'Unidades & Obras', path: '/estabelecimentos', icon: MapPin },
     { label: 'Setores & Ambientes', path: '/setores', icon: Layers },
     { label: 'Cargos & Funções', path: '/cargos', icon: Briefcase },
-    { label: 'Grupos de Exposição (GHE)', path: '/ghes', icon: Users },
+    { label: 'Grupo de Exposição Similar (GES)', path: '/ges', icon: Users },
     { label: 'Profissionais Técnicos (RT)', path: '/profissionais', icon: Award },
   ];
 
