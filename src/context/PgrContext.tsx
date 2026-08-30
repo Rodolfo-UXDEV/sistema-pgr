@@ -169,12 +169,31 @@ function saveStorage<T>(key: string, value: T) {
   }
 }
 
+function normalizeGesRecord(item: GHE): { normalized: GHE; changed: boolean } {
+  const newCode = (item.code || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+  const newName = (item.name || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+  const newDescription = item.description ? item.description.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-') : item.description;
+  const changed = newCode !== item.code || newName !== item.name || newDescription !== item.description;
+  return {
+    normalized: {
+      ...item,
+      code: newCode,
+      name: newName,
+      description: newDescription,
+    },
+    changed,
+  };
+}
+
 export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [companies, setCompanies] = useState<Company[]>(() => loadStorage(STORAGE_KEYS.COMPANIES, INITIAL_COMPANIES));
   const [establishments, setEstablishments] = useState<Establishment[]>(() => loadStorage(STORAGE_KEYS.ESTABLISHMENTS, INITIAL_ESTABLISHMENTS));
   const [sectors, setSectors] = useState<Sector[]>(() => loadStorage(STORAGE_KEYS.SECTORS, INITIAL_SECTORS));
   const [positions, setPositions] = useState<Position[]>(() => loadStorage(STORAGE_KEYS.POSITIONS, INITIAL_POSITIONS));
-  const [ghes, setGhes] = useState<GHE[]>(() => loadStorage(STORAGE_KEYS.GHES, INITIAL_GHES));
+  const [ghes, setGhes] = useState<GHE[]>(() => {
+    const raw = loadStorage(STORAGE_KEYS.GHES, INITIAL_GHES);
+    return raw.map(g => normalizeGesRecord(g).normalized);
+  });
   const [professionals, setProfessionals] = useState<Professional[]>(() => loadStorage(STORAGE_KEYS.PROFESSIONALS, INITIAL_PROFESSIONALS));
   const [hazards, setHazards] = useState<HazardItem[]>(() => loadStorage(STORAGE_KEYS.HAZARDS, DEFAULT_HAZARDS));
   const [pgrDocuments, setPgrDocuments] = useState<PGRDocument[]>(() => loadStorage(STORAGE_KEYS.PGR_DOCUMENTS, INITIAL_PGR_DOCUMENTS));
@@ -205,7 +224,17 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setEstablishments(data.establishments);
         setSectors(data.sectors);
         setPositions(data.positions);
-        setGhes(data.ghes);
+        
+        // Normaliza automaticamente qualquer registro legado com GHE para GES
+        const normalizedGhes = data.ghes.map(g => {
+          const res = normalizeGesRecord(g);
+          if (res.changed) {
+            saveToFirestore(COLLECTIONS.GHES, res.normalized);
+          }
+          return res.normalized;
+        });
+        setGhes(normalizedGhes);
+
         setProfessionals(data.professionals);
         if (data.hazards.length > 0) setHazards(data.hazards);
         setPgrDocuments(data.pgrDocuments);

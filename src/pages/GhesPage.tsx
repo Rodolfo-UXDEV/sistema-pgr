@@ -65,9 +65,9 @@ export const GhesPage: React.FC = () => {
     setEditingGhe(ghe);
     setEstablishmentId(ghe.establishmentId);
     setSectorId(ghe.sectorId);
-    setCode(ghe.code);
-    setName(ghe.name);
-    setDescription(ghe.description);
+    setCode(ghe.code.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-'));
+    setName(ghe.name.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-'));
+    setDescription(ghe.description ? ghe.description.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-') : '');
     setSelectedPositions(ghe.positionIds || []);
     setWorkerCount(ghe.workerCount);
     setIsModalOpen(true);
@@ -82,12 +82,16 @@ export const GhesPage: React.FC = () => {
 
     setIsSaving(true);
     try {
+      const sanitizedCode = code.trim().replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+      const sanitizedName = name.trim().replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+      const sanitizedDescription = description.trim().replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+
       const gheData: Omit<GHE, 'id' | 'createdAt' | 'updatedAt'> = {
         establishmentId,
         sectorId,
-        code: code.trim(),
-        name: name.trim(),
-        description: description.trim(),
+        code: sanitizedCode,
+        name: sanitizedName,
+        description: sanitizedDescription,
         positionIds: selectedPositions,
         workerCount: Number(workerCount) || 1,
       };
@@ -150,13 +154,16 @@ export const GhesPage: React.FC = () => {
           <TableBody>
             {currentGhes.map((ghe) => {
               const sec = sectors.find(s => s.id === ghe.sectorId);
+              const displayCode = (ghe.code || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+              const displayName = (ghe.name || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
+              const displayDesc = ghe.description ? ghe.description.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-') : 'Condições similares de trabalho';
 
               return (
                 <TableRow key={ghe.id}>
                   <TableCell className="font-semibold text-xs">
                     <div className="flex flex-col">
-                      <span className="font-bold text-foreground font-mono text-emerald-700 dark:text-emerald-400">{ghe.code}</span>
-                      <span className="text-[11px] text-muted-foreground">{ghe.name}</span>
+                      <span className="font-bold text-foreground font-mono text-emerald-700 dark:text-emerald-400">{displayCode}</span>
+                      <span className="text-[11px] text-muted-foreground">{displayName}</span>
                     </div>
                   </TableCell>
 
@@ -164,8 +171,8 @@ export const GhesPage: React.FC = () => {
                     {sec?.name || '-'}
                   </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground max-w-[320px] truncate" title={ghe.description}>
-                    {ghe.description || 'Condições similares de trabalho'}
+                  <TableCell className="text-xs text-muted-foreground max-w-[320px] truncate" title={displayDesc}>
+                    {displayDesc}
                   </TableCell>
 
                   <TableCell className="text-center text-xs font-bold">
