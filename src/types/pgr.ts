@@ -178,6 +178,7 @@ export interface RiskInventoryItem {
   sourceDescription: string; // Fonte geradora
   healthDamage: string; // Possíveis lesões ou agravos / Efeitos à saúde
   penetrationRoute?: string; // Via de penetração (Cutânea, Respiratória, etc.)
+  trajectory?: string; // Trajetória (ex: Ar, Contato direto, Propagação aérea)
   exposedCount: number;
   exposureType: ExposureType;
   

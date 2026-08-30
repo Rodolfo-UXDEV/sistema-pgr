@@ -290,11 +290,14 @@ export const RiskInventoryTable: React.FC = () => {
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 {item.healthDamage}
                               </p>
-                              {item.penetrationRoute && (
-                                <div className="pt-1 text-[11px] text-foreground font-medium">
-                                  <span className="text-muted-foreground">Via de Penetração:</span> {item.penetrationRoute}
-                                </div>
-                              )}
+                              <div className="pt-1 text-[11px] text-foreground font-medium space-y-0.5">
+                                {item.trajectory && (
+                                  <div><span className="text-muted-foreground">Trajetória:</span> {item.trajectory}</div>
+                                )}
+                                {item.penetrationRoute && (
+                                  <div><span className="text-muted-foreground">Via de Penetração:</span> {item.penetrationRoute}</div>
+                                )}
+                              </div>
                             </div>
 
                             {/* Medidas de Prevenção EPC & EPI */}

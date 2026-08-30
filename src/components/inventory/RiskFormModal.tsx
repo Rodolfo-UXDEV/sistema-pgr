@@ -62,7 +62,21 @@ const PENETRATION_ROUTE_SUGGESTIONS = [
   'Digestiva (Ingestão)',
   'Contato Físico / Mecânico',
   'Postural / Biomecânica',
-  'Não Aplicável'
+  'Aparelho auditivo',
+  'Não Aplicável',
+  'NAP'
+];
+
+const TRAJECTORY_SUGGESTIONS = [
+  'Ar',
+  'Contato direto',
+  'Superfície',
+  'Propagação aérea',
+  'Vibração mecânica',
+  'Fluido / Respingo',
+  'Radiação',
+  'Não Aplicável',
+  'NAP'
 ];
 
 export const RiskFormModal: React.FC<RiskFormModalProps> = ({
@@ -96,6 +110,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   const [hazardName, setHazardName] = useState('');
   const [hazardCode, setHazardCode] = useState('');
   const [exposureType, setExposureType] = useState<ExposureType>('HABITUAL_PERMANENTE');
+  const [trajectory, setTrajectory] = useState('Ar');
   const [penetrationRoute, setPenetrationRoute] = useState('Respiratória (Inalação)');
   const [healthDamage, setHealthDamage] = useState('');
   const [sourceDescription, setSourceDescription] = useState('');
@@ -149,6 +164,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setHazardName(initialItem.hazardName);
       setHazardCode(initialItem.hazardCode || '');
       setExposureType(initialItem.exposureType || 'HABITUAL_PERMANENTE');
+      setTrajectory(initialItem.trajectory || 'Ar');
       setPenetrationRoute(initialItem.penetrationRoute || 'Respiratória (Inalação)');
       setHealthDamage(initialItem.healthDamage || '');
       setSourceDescription(initialItem.sourceDescription || '');
@@ -193,6 +209,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setHazardName('');
       setHazardCode('');
       setExposureType('HABITUAL_PERMANENTE');
+      setTrajectory('Ar');
       setPenetrationRoute('Auditiva (Ouvido / Som)');
       setHealthDamage('');
       setSourceDescription('');
@@ -350,6 +367,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
         hazardCode: hazardCode.trim() || undefined,
         sourceDescription: sourceDescription.trim() || 'Processos operacionais do setor',
         healthDamage: healthDamage.trim() || 'Lesões decorrentes de exposição desprotegida',
+        trajectory: trajectory.trim() || 'Ar',
         penetrationRoute: penetrationRoute.trim(),
         exposedCount: Number(exposedCount) || 1,
         exposureType,
@@ -555,8 +573,8 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
               </div>
             </div>
 
-            {/* TIPO DE EXPOSIÇÃO & VIA DE PENETRAÇÃO */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* TIPO DE EXPOSIÇÃO, TRAJETÓRIA & VIA DE PENETRAÇÃO */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs font-semibold">TIPO DE EXPOSIÇÃO *</Label>
                 <select
@@ -573,11 +591,27 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
               </div>
 
               <div>
+                <Label className="text-xs font-semibold">TRAJETÓRIA</Label>
+                <Input
+                  value={trajectory}
+                  onChange={(e) => setTrajectory(e.target.value)}
+                  placeholder="Ex: Ar, Contato direto, Propagação..."
+                  className="h-9 mt-1 text-xs"
+                  list="trajectory-suggestions"
+                />
+                <datalist id="trajectory-suggestions">
+                  {TRAJECTORY_SUGGESTIONS.map((s, idx) => (
+                    <option key={idx} value={s} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div>
                 <Label className="text-xs font-semibold">VIA DE PENETRAÇÃO</Label>
                 <Input
                   value={penetrationRoute}
                   onChange={(e) => setPenetrationRoute(e.target.value)}
-                  placeholder="Ex: Respiratória, Cutânea, Auditiva, Ocular..."
+                  placeholder="Ex: Aparelho auditivo, Respiratória..."
                   className="h-9 mt-1 text-xs"
                   list="penetration-suggestions"
                 />

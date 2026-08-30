@@ -429,86 +429,299 @@ export const PgrViewerPage: React.FC = () => {
         </section>
 
         {/* 14. INVENTÁRIO DE RISCOS */}
-        <section className="space-y-3">
+        <section className="space-y-6">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
             <span className="text-emerald-600 font-mono">14.</span> {getSectionTitle('sec-14', 'INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)')}
           </h2>
-          <div className="border border-border rounded-xl overflow-hidden shadow-xs">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50 text-xs">
-                  <TableHead>Setor & Função</TableHead>
-                  <TableHead>Perigo / Agente</TableHead>
-                  <TableHead>Fontes & Danos</TableHead>
-                  <TableHead className="text-center">Matriz 5x5</TableHead>
-                  <TableHead>Controles (EPC / EPI)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pgrContext.riskInventory.map((item) => {
-                  const sec = sectors.find(s => s.id === item.sectorId);
-                  const pos = positions.find(p => p.id === item.positionId);
-                  const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
 
-                  return (
-                    <TableRow key={item.id} className="text-xs">
-                      <TableCell className="font-semibold">
-                        <div>{sec?.name || '-'}</div>
-                        <div className="text-[11px] text-muted-foreground font-normal">{pos?.title || '-'}</div>
-                        {item.gheId && (
-                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
-                            {sectors.find(s => s.id === item.sectorId) ? 'GES Ativo' : ''}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-[9px] mb-1" style={{ color: catConfig?.color }}>
-                          {catConfig?.label || item.hazardCategory}
-                        </Badge>
-                        <div className="font-bold text-foreground">{item.hazardName}</div>
-                        {item.penetrationRoute && (
-                          <div className="text-[10px] text-muted-foreground mt-0.5">
-                            Via: {item.penetrationRoute}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] text-muted-foreground">
-                        <div><strong>Fonte:</strong> {item.sourceDescription}</div>
-                        <div><strong>Danos:</strong> {item.healthDamage}</div>
-                        {item.measurements && item.measurements.length > 0 && (
-                          <div className="mt-1 p-1 rounded bg-muted/50 text-[10px] text-foreground">
-                            <strong>Medição:</strong> {item.measurements[0].resultText || `${item.measurements[0].measuredValue} ${item.measurements[0].unit || ''}`} 
-                            {item.measurements[0].toleranceLimitText ? ` (LT: ${item.measurements[0].toleranceLimitText})` : ''}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="font-mono font-bold text-[11px] mb-1">
-                          P:{item.probability} × S:{item.severity} = {item.riskScore}
+          {pgrContext.riskInventory.length === 0 ? (
+            <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+              Nenhum risco cadastrado no inventário.
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {pgrContext.riskInventory.map((item) => {
+                const sec = sectors.find(s => s.id === item.sectorId);
+                const pos = positions.find(p => p.id === item.positionId);
+                const ghe = ghes.find(g => g.id === item.gheId);
+                const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
+
+                // Título do GES no cabeçalho
+                const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
+                const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+
+                // Separação do Tipo de Exposição
+                let expPart1 = 'Habitual';
+                let expPart2 = 'Permanente';
+                if (item.exposureType === 'HABITUAL_INTERMITENTE') {
+                  expPart1 = 'Habitual';
+                  expPart2 = 'Intermitente';
+                } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
+                  expPart1 = 'Eventual';
+                  expPart2 = 'Intermitente';
+                } else if (item.exposureType === 'EVENTUAL') {
+                  expPart1 = 'Eventual';
+                  expPart2 = 'NAP';
+                } else if (item.exposureType === 'HABITUAL') {
+                  expPart1 = 'Habitual';
+                  expPart2 = 'NAP';
+                } else if (item.exposureType === 'PERMANENTE') {
+                  expPart1 = 'NAP';
+                  expPart2 = 'Permanente';
+                } else if (item.exposureType === 'INTERMITENTE') {
+                  expPart1 = 'NAP';
+                  expPart2 = 'Intermitente';
+                }
+
+                // EPC / EPI formatado
+                const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
+                const epiStr = item.epiExisting && item.epiExisting.length > 0
+                  ? item.epiExisting.map(e => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
+                  : '';
+                const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
+
+                // Medições
+                const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
+                const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
+                const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
+                const dataMedicao = meas?.measurementDate 
+                  ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
+                  : (meas ? '25/02/2026' : 'NAP');
+                const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
+                const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
+
+                // Status do agente e Prioridade
+                let statusAgente = 'Risco Baixo';
+                let statusColor = '#16a34a';
+                let prioridade = 'Baixa';
+
+                if (item.riskLevel === 'TRIVIAL') {
+                  statusAgente = 'Risco Muito Baixo';
+                  statusColor = '#16a34a';
+                  prioridade = 'Nenhuma';
+                } else if (item.riskLevel === 'TOLERAVEL') {
+                  statusAgente = 'Risco Baixo';
+                  statusColor = '#16a34a';
+                  prioridade = 'Baixa';
+                } else if (item.riskLevel === 'MODERADO') {
+                  statusAgente = 'Risco Médio';
+                  statusColor = '#d97706';
+                  prioridade = 'Média';
+                } else if (item.riskLevel === 'SUBSTANCIAL') {
+                  statusAgente = 'Risco Alto';
+                  statusColor = '#ea580c';
+                  prioridade = 'Alta';
+                } else if (item.riskLevel === 'INTOLERAVEL') {
+                  statusAgente = 'Risco Crítico';
+                  statusColor = '#dc2626';
+                  prioridade = 'Crítica / Imediata';
+                }
+
+                return (
+                  <div 
+                    key={item.id} 
+                    className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid"
+                  >
+                    {/* Header Dark Gray */}
+                    <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
+                      {headerTitle}
+                    </div>
+
+                    {/* Row 2: Risco Categoria & Agente */}
+                    <div className="grid grid-cols-12 border-t border-slate-400">
+                      <div 
+                        className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide"
+                        style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                      >
+                        Risco {catConfig?.label || 'Físico'}
+                      </div>
+                      <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
+                        <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
+                        <span className="text-slate-800 font-normal">{item.hazardName}</span>
+                      </div>
+                    </div>
+
+                    {/* Row 3: Tipo de Exposição */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        Tipo de Exposição
+                      </div>
+                      <div className="col-span-4 py-1 px-3 text-center border-r border-slate-300 flex items-center justify-center text-slate-800">
+                        {expPart1}
+                      </div>
+                      <div className="col-span-5 py-1 px-3 text-center flex items-center justify-center text-slate-800">
+                        {expPart2}
+                      </div>
+                    </div>
+
+                    {/* Row 4: Fontes ou circunstância */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        Fontes ou circunstância
+                      </div>
+                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                        {item.sourceDescription || 'NAP'}
+                      </div>
+                    </div>
+
+                    {/* Row 5: Trajetória */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        Trajetória
+                      </div>
+                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                        {item.trajectory || 'Ar'}
+                      </div>
+                    </div>
+
+                    {/* Row 6: Via de penetração */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        Via de penetração
+                      </div>
+                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                        {item.penetrationRoute || 'NAP'}
+                      </div>
+                    </div>
+
+                    {/* Row 7: Efeitos a saúde */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        Efeitos a saúde
+                      </div>
+                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                        {item.healthDamage || 'NAP'}
+                      </div>
+                    </div>
+
+                    {/* Row 8: EPC/EPI */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        EPC/EPI
+                      </div>
+                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                        {epcEpiFinal}
+                      </div>
+                    </div>
+
+                    {/* Section Header: Medição */}
+                    <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                      Medição
+                    </div>
+
+                    {/* Critério & Técnica */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-6 py-1 px-3 border-r border-slate-300 flex items-center">
+                        <span className="font-bold mr-1.5">Critério:</span>
+                        <span className="text-slate-800">{criterio}</span>
+                      </div>
+                      <div className="col-span-6 py-1 px-3 flex items-center">
+                        <span className="font-bold mr-1.5">Técnica utilizada:</span>
+                        <span className="text-slate-800">{tecnica}</span>
+                      </div>
+                    </div>
+
+                    {/* Data da medição | Resultado | LT Headers */}
+                    <div className="grid grid-cols-12 border-t border-slate-300 bg-slate-50 font-bold text-center">
+                      <div className="col-span-4 py-1 px-2 border-r border-slate-300">
+                        Data da medição
+                      </div>
+                      <div className="col-span-4 py-1 px-2 border-r border-slate-300">
+                        Resultado
+                      </div>
+                      <div className="col-span-4 py-1 px-2">
+                        LT
+                      </div>
+                    </div>
+
+                    {/* Data da medição | Resultado | LT Values */}
+                    <div className="grid grid-cols-12 border-t border-slate-300 text-center">
+                      <div className="col-span-4 py-1 px-2 border-r border-slate-300 text-slate-800">
+                        {dataMedicao}
+                      </div>
+                      <div className="col-span-4 py-1 px-2 border-r border-slate-300 font-semibold text-slate-900">
+                        {resultado}
+                      </div>
+                      <div className="col-span-4 py-1 px-2 text-slate-800">
+                        {lt}
+                      </div>
+                    </div>
+
+                    {/* Section Header: Categorização do risco/perigo */}
+                    <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                      Categorização do risco/perigo
+                    </div>
+
+                    {/* Severidade | Probabilidade | Status do agente | Prioridade Headers */}
+                    <div className="grid grid-cols-12 border-t border-slate-300 bg-slate-50 font-bold text-center">
+                      <div className="col-span-3 py-1 px-2 border-r border-slate-300">
+                        Severidade
+                      </div>
+                      <div className="col-span-3 py-1 px-2 border-r border-slate-300">
+                        Probabilidade
+                      </div>
+                      <div className="col-span-3 py-1 px-2 border-r border-slate-300">
+                        Status do agente
+                      </div>
+                      <div className="col-span-3 py-1 px-2">
+                        Prioridade de ação
+                      </div>
+                    </div>
+
+                    {/* Severidade | Probabilidade | Status do agente | Prioridade Values */}
+                    <div className="grid grid-cols-12 border-t border-slate-300 text-center">
+                      <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-semibold text-slate-800">
+                        {item.severity}
+                      </div>
+                      <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-semibold text-slate-800">
+                        {item.probability}
+                      </div>
+                      <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold" style={{ color: statusColor }}>
+                        {statusAgente}
+                      </div>
+                      <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
+                        {prioridade}
+                      </div>
+                    </div>
+
+                    {/* Section Header: Recomendações */}
+                    <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                      Recomendações
+                    </div>
+
+                    {/* Recomendações Values */}
+                    <div className="grid grid-cols-12 border-t border-slate-300">
+                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                        Recomendações
+                      </div>
+                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                        {item.recommendations || 'NAP'}
+                      </div>
+                    </div>
+
+                    {/* Optional Avaliações e Resultados (Imagens) */}
+                    {item.evaluationImages && item.evaluationImages.length > 0 && (
+                      <div className="border-t border-slate-400 p-2.5 bg-slate-50">
+                        <div className="font-bold text-[10px] uppercase tracking-wider text-slate-600 mb-2">
+                          Avaliações e Resultados (Gráficos e Planilhas):
                         </div>
-                        <RiskLevelBadge level={item.riskLevel} />
-                      </TableCell>
-                      <TableCell className="text-muted-foreground max-w-[220px]">
-                        {item.epcExisting && item.epcExisting.length > 0 && (
-                          <div><strong>EPC:</strong> {item.epcExisting.join(', ')}</div>
-                        )}
-                        {item.epiExisting && item.epiExisting.length > 0 && (
-                          <div className="mt-0.5">
-                            <strong>EPI:</strong> {item.epiExisting.map(e => `${e.name} (CA:${e.ca || 'S/N'})`).join('; ')}
-                          </div>
-                        )}
-                        {item.recommendations && (
-                          <div className="mt-1 text-[10px] text-foreground border-t border-border pt-1">
-                            <strong>Recomendação:</strong> {item.recommendations}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                        <div className="flex flex-wrap gap-2">
+                          {item.evaluationImages.map((img, imgIdx) => (
+                            <img
+                              key={imgIdx}
+                              src={img}
+                              alt={`Avaliação ${imgIdx + 1}`}
+                              className="h-28 w-auto rounded border border-slate-300 object-contain bg-white"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* 15. PLANO DE AÇÃO */}
