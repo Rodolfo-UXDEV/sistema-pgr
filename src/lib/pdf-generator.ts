@@ -3,6 +3,16 @@ import autoTable from 'jspdf-autotable';
 import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { HazardCategory, RiskInventoryItem, ActionPlanItem } from '@/types/pgr';
+
+function hexToRgb(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '');
+  const bigint = parseInt(clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return [r, g, b];
+}
 
 export function generatePgrPdf(ctx: PgrDocumentContext): void {
   const docData = buildPgrFullDocument(ctx);
@@ -10,9 +20,20 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
 
   const primaryColor: [number, number, number] = [15, 118, 110]; // Teal 700
   const secondaryColor: [number, number, number] = [51, 65, 85]; // Slate 700
+  const headerGray: [number, number, number] = [82, 82, 91]; // Dark Charcoal Zinc 600
+  const sectionGray: [number, number, number] = [226, 232, 240]; // Light Gray Slate 200
+  const labelGray: [number, number, number] = [248, 250, 252]; // Slate 50
+
+  // Helper para verificar espaço de página
+  const checkPageBreak = (neededHeight: number = 20) => {
+    if (currentY + neededHeight > 275) {
+      doc.addPage();
+      currentY = 20;
+    }
+  };
 
   // ==========================================
-  // CAPA OFICIAL
+  // CAPA INSTITUCIONAL OFICIAL
   // ==========================================
   doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.rect(0, 0, 210, 15, 'F');
@@ -80,262 +101,386 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
   doc.text(`${ctx.company.address.city}/${ctx.company.address.state} — ${docData.header.year}`, 105, 265, { align: 'center' });
 
   // ==========================================
-  // PÁGINA 2: CONTROLE DE REVISÕES & DADOS CADASTRAIS
+  // PÁGINAS DO DOCUMENTO (SEÇÕES 1 A 18)
   // ==========================================
   doc.addPage();
   let currentY = 20;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  const sec1 = docData.sections.find(s => s.id === 'sec-1');
-  const sec1Title = sec1?.title || '1. CONTROLE DE REVISÕES DO DOCUMENTO';
-  doc.text(sec1Title, 14, currentY);
 
-  const sec1Content = (sec1 as any)?.content || `| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${docData.header.version} | ${docData.header.elaborationDate} | ${ctx.pgr.revisionReason || 'Emissão Oficial do PGR'} |`;
-  const sec1Blocks = parseContentWithTables(sec1Content);
-  let tableRendered = false;
+  for (const section of docData.sections) {
+    if (section.type === 'text') {
+      checkPageBreak(30);
 
-  for (const block of sec1Blocks) {
-    if (block.type === 'table') {
-      tableRendered = true;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 6;
+
+      const blocks = parseContentWithTables(section.content);
+      for (const block of blocks) {
+        if (block.type === 'text') {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8.5);
+          doc.setTextColor(51, 65, 85);
+          const lines = doc.splitTextToSize(block.content, 182);
+          checkPageBreak(lines.length * 4 + 5);
+          doc.text(lines, 14, currentY);
+          currentY += lines.length * 4 + 4;
+        } else if (block.type === 'table') {
+          checkPageBreak(25);
+          autoTable(doc, {
+            startY: currentY,
+            head: [block.headers],
+            body: block.rows,
+            theme: 'grid',
+            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            styles: { fontSize: 7.5, cellPadding: 2 },
+            margin: { left: 14, right: 14 },
+          });
+          currentY = (doc as any).lastAutoTable.finalY + 6;
+        }
+      }
+      currentY += 4;
+
+    } else if (section.type === 'sectors_list') {
+      checkPageBreak(30);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 6;
+
+      for (const s of section.sectors) {
+        checkPageBreak(25);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(15, 23, 42);
+        doc.text(`Setor: ${s.name}`, 14, currentY);
+        currentY += 4;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(71, 85, 105);
+        const descLines = doc.splitTextToSize(`Descrição: ${s.description}`, 182);
+        doc.text(descLines, 14, currentY);
+        currentY += descLines.length * 3.5 + 2;
+
+        const structText = `Estrutura Física: Piso ${s.characteristics.floorType} | Paredes ${s.characteristics.wallType} | Cobertura ${s.characteristics.roofType} | Ventilação ${s.characteristics.ventilationType} | Iluminação ${s.characteristics.lightingType}`;
+        const structLines = doc.splitTextToSize(structText, 182);
+        doc.text(structLines, 14, currentY);
+        currentY += structLines.length * 3.5 + 5;
+      }
+
+    } else if (section.type === 'positions_list') {
+      checkPageBreak(30);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 6;
+
+      for (const p of section.positions) {
+        checkPageBreak(20);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(15, 23, 42);
+        doc.text(`Cargo / Função: ${p.title} (CBO: ${p.cbo})`, 14, currentY);
+        currentY += 4;
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(71, 85, 105);
+        doc.text(`Setor: ${p.sectorName} | Efetivo Exposto: ${p.workers} trabalhador(es)`, 14, currentY);
+        currentY += 4;
+
+        const actLines = doc.splitTextToSize(`Descrição da Atividade: ${p.activityDescription || p.routine || '-'}`, 182);
+        doc.text(actLines, 14, currentY);
+        currentY += actLines.length * 3.5 + 4;
+      }
+
+    } else if (section.type === 'risk_inventory_table') {
+      checkPageBreak(30);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 6;
+
+      const items = section.items;
+      if (!items || items.length === 0) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(100, 116, 139);
+        doc.text('Nenhum risco registrado no inventário.', 14, currentY);
+        currentY += 8;
+      } else {
+        for (const item of items) {
+          checkPageBreak(65);
+
+          const sec = ctx.sectors.find(s => s.id === item.sectorId);
+          const pos = ctx.positions.find(p => p.id === item.positionId);
+          const ghe = ctx.ghes.find(g => g.id === item.gheId);
+          const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
+          const catRgb = hexToRgb(catConfig?.color || '#16a34a');
+
+          const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
+          const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+
+          let expPart1 = 'Habitual';
+          let expPart2 = 'Permanente';
+          if (item.exposureType === 'HABITUAL_INTERMITENTE') {
+            expPart1 = 'Habitual';
+            expPart2 = 'Intermitente';
+          } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
+            expPart1 = 'Eventual';
+            expPart2 = 'Intermitente';
+          } else if (item.exposureType === 'EVENTUAL') {
+            expPart1 = 'Eventual';
+            expPart2 = 'NAP';
+          } else if (item.exposureType === 'HABITUAL') {
+            expPart1 = 'Habitual';
+            expPart2 = 'NAP';
+          } else if (item.exposureType === 'PERMANENTE') {
+            expPart1 = 'NAP';
+            expPart2 = 'Permanente';
+          } else if (item.exposureType === 'INTERMITENTE') {
+            expPart1 = 'NAP';
+            expPart2 = 'Intermitente';
+          }
+
+          const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
+          const epiStr = item.epiExisting && item.epiExisting.length > 0
+            ? item.epiExisting.map((e: any) => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
+            : '';
+          const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
+
+          const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
+          const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
+          const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
+          const dataMedicao = meas?.measurementDate 
+            ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
+            : (meas ? '25/02/2026' : 'NAP');
+          const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
+          const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
+
+          let statusAgente = 'Risco Baixo';
+          let prioridade = 'Baixa';
+
+          if (item.riskLevel === 'TRIVIAL') {
+            statusAgente = 'Risco Muito Baixo';
+            prioridade = 'Nenhuma';
+          } else if (item.riskLevel === 'TOLERAVEL') {
+            statusAgente = 'Risco Baixo';
+            prioridade = 'Baixa';
+          } else if (item.riskLevel === 'MODERADO') {
+            statusAgente = 'Risco Médio';
+            prioridade = 'Média';
+          } else if (item.riskLevel === 'SUBSTANCIAL') {
+            statusAgente = 'Risco Alto';
+            prioridade = 'Alta';
+          } else if (item.riskLevel === 'INTOLERAVEL') {
+            statusAgente = 'Risco Crítico';
+            prioridade = 'Crítica / Imediata';
+          }
+
+          const tableBody = [
+            // Row 1: Header Dark Gray
+            [
+              { content: headerTitle, colSpan: 4, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', fontSize: 8.5 } }
+            ],
+            // Row 2: Risco Categoria & Agente
+            [
+              { content: `Risco ${catConfig?.label || 'Físico'}`, colSpan: 1, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
+              { content: `Agente: ${item.hazardName}`, colSpan: 3, styles: { fontStyle: 'bold', textColor: [15, 23, 42] } }
+            ],
+            // Row 3: Tipo de Exposição
+            [
+              { content: 'Tipo de Exposição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: expPart1, colSpan: 1, styles: { halign: 'center' } },
+              { content: expPart2, colSpan: 2, styles: { halign: 'center' } }
+            ],
+            // Row 4: Fontes ou circunstância
+            [
+              { content: 'Fontes ou circunstância', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: item.sourceDescription || 'NAP', colSpan: 3 }
+            ],
+            // Row 5: Trajetória
+            [
+              { content: 'Trajetória', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: item.trajectory || 'Ar', colSpan: 3 }
+            ],
+            // Row 6: Via de penetração
+            [
+              { content: 'Via de penetração', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: item.penetrationRoute || 'NAP', colSpan: 3 }
+            ],
+            // Row 7: Efeitos a saúde
+            [
+              { content: 'Efeitos a saúde', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: item.healthDamage || 'NAP', colSpan: 3 }
+            ],
+            // Row 8: EPC/EPI
+            [
+              { content: 'EPC/EPI', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: epcEpiFinal, colSpan: 3 }
+            ],
+            // Section Header: Medição
+            [
+              { content: 'Medição', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+            ],
+            // Row 10: Critério & Técnica
+            [
+              { content: `Critério: ${criterio}`, colSpan: 2, styles: { fontStyle: 'bold' } },
+              { content: `Técnica utilizada: ${tecnica}`, colSpan: 2, styles: { fontStyle: 'bold' } }
+            ],
+            // Row 11: Data da medição | Resultado | LT Headers
+            [
+              { content: 'Data da medição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+              { content: 'Resultado', colSpan: 2, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+              { content: 'LT', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
+            ],
+            // Row 12: Data da medição | Resultado | LT Values
+            [
+              { content: dataMedicao, colSpan: 1, styles: { halign: 'center' } },
+              { content: resultado, colSpan: 2, styles: { fontStyle: 'bold', halign: 'center' } },
+              { content: lt, colSpan: 1, styles: { halign: 'center' } }
+            ],
+            // Section Header: Categorização do risco/perigo
+            [
+              { content: 'Categorização do risco/perigo', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+            ],
+            // Row 14: Severidade | Probabilidade | Status do agente | Prioridade Headers
+            [
+              { content: 'Severidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+              { content: 'Probabilidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+              { content: 'Status do agente', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+              { content: 'Prioridade de ação', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
+            ],
+            // Row 15: Severidade | Probabilidade | Status do agente | Prioridade Values
+            [
+              { content: String(item.severity), colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+              { content: String(item.probability), colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+              { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold', textColor: catRgb } },
+              { content: prioridade, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } }
+            ],
+            // Section Header: Recomendações
+            [
+              { content: 'Recomendações', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+            ],
+            // Row 17: Recomendações Values
+            [
+              { content: 'Recomendações', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+              { content: item.recommendations || 'NAP', colSpan: 3 }
+            ]
+          ];
+
+          autoTable(doc, {
+            startY: currentY,
+            body: tableBody as any,
+            theme: 'grid',
+            styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 41, 59] },
+            margin: { left: 14, right: 14 },
+          });
+
+          currentY = (doc as any).lastAutoTable.finalY + 8;
+        }
+      }
+
+    } else if (section.type === 'action_plan_table') {
+      checkPageBreak(35);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 6;
+
+      const actions = section.items;
+      const actionRows = (!actions || actions.length === 0)
+        ? [['Nenhuma ação programada no plano de prevenção.', '-', '-', '-', '-', '-']]
+        : actions.map((act: ActionPlanItem) => [
+            act.what,
+            act.why,
+            act.who,
+            act.whenDate,
+            `R$ ${Number(act.howMuch || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+            act.status.replace('_', ' ').toUpperCase(),
+          ]);
+
       autoTable(doc, {
-        startY: currentY + 4,
-        head: [block.headers],
-        body: block.rows,
+        startY: currentY,
+        head: [['O que (Ação)', 'Por que (Motivo)', 'Quem (Responsável)', 'Prazo', 'Custo (R$)', 'Status']],
+        body: actionRows,
         theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 8 },
+        styles: { fontSize: 7.5, cellPadding: 2.5 },
+        margin: { left: 14, right: 14 },
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 22, halign: 'center' },
+          4: { cellWidth: 22, halign: 'right' },
+          5: { cellWidth: 18, halign: 'center' },
+        },
       });
+
       currentY = (doc as any).lastAutoTable.finalY + 8;
+
+    } else if (section.type === 'closing_signatures') {
+      checkPageBreak(40);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(51, 65, 85);
+      const closeLines = doc.splitTextToSize(section.text, 182);
+      doc.text(closeLines, 14, currentY);
+      currentY += closeLines.length * 4 + 10;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`${section.city}/${section.state}, ${section.date}.`, 196, currentY, { align: 'right' });
+      currentY += 20;
+
+      // Linhas de Assinaturas
+      checkPageBreak(30);
+      doc.setDrawColor(148, 163, 184);
+      doc.setLineWidth(0.5);
+
+      // Assinatura 1 (RT)
+      doc.line(20, currentY, 95, currentY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text(docData.header.techRespName, 57.5, currentY + 4, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`${docData.header.techRespCouncil} | ${docData.header.techRespArt}`, 57.5, currentY + 8, { align: 'center' });
+      doc.text('Responsável Técnico SST', 57.5, currentY + 12, { align: 'center' });
+
+      // Assinatura 2 (Empresa)
+      doc.line(115, currentY, 190, currentY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text(ctx.company.legalRepresentative, 152.5, currentY + 4, { align: 'center' });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(ctx.company.representativeRole, 152.5, currentY + 8, { align: 'center' });
+      doc.text(ctx.company.name, 152.5, currentY + 12, { align: 'center' });
+
+      currentY += 20;
     }
   }
 
-  if (!tableRendered) {
-    autoTable(doc, {
-      startY: currentY + 4,
-      head: [['Revisão', 'Data', 'Descrição / Motivo da Revisão']],
-      body: [[docData.header.version, docData.header.elaborationDate, ctx.pgr.revisionReason || 'Emissão Inicial do PGR e Inventário de Riscos']],
-      theme: 'grid',
-      headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold' },
-      styles: { fontSize: 8, cellPadding: 3 },
-    });
-    currentY = (doc as any).lastAutoTable.finalY + 8;
-  }
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('2. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO', 14, currentY);
-
-  const empData = [
-    ['Razão Social:', ctx.company.name],
-    ['Nome Fantasia:', ctx.company.tradeName || ctx.company.name],
-    ['CNPJ:', docData.header.cnpj],
-    ['CNAE Principal:', `${ctx.company.cnae} - ${ctx.company.cnaeDescription}`],
-    ['Grau de Risco (NR-04):', `Grau de Risco ${ctx.company.riskGrade}`],
-    ['Endereço da Matriz:', `${ctx.company.address.street}, ${ctx.company.address.number} - ${ctx.company.address.city}/${ctx.company.address.state}`],
-    ['Estabelecimento Avaliado:', ctx.establishment ? `${ctx.establishment.name} (${ctx.establishment.code})` : 'Unidade Matriz'],
-    ['Representante Legal:', `${ctx.company.legalRepresentative} (${ctx.company.representativeRole})`],
-    ['Total de Trabalhadores:', `${ctx.company.employeeCount} colaboradores`],
-  ];
-
-  autoTable(doc, {
-    startY: currentY + 4,
-    body: empData,
-    theme: 'plain',
-    styles: { fontSize: 8, cellPadding: 2 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 50 } },
-  });
-
-  currentY = (doc as any).lastAutoTable.finalY + 8;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('3. RESPONSABILIDADE TÉCNICA PELA ELABORAÇÃO', 14, currentY);
-
-  const techResp = ctx.professionals.find(p => p.id === ctx.pgr.technicalResponsibleId) || ctx.professionals[0];
-  const medResp = ctx.professionals.find(p => p.id === ctx.pgr.medicalResponsibleId);
-
-  const profData = [
-    [
-      'Responsável Técnico pela Elaboração:',
-      techResp ? `${techResp.name} — ${techResp.registrationCouncil}: ${techResp.registrationNumber}/${techResp.registrationState} (ART: ${techResp.artRrt || 'Emitida'})` : 'Profissional Habilitado em SST'
-    ],
-    [
-      'Médico Coordenador do PCMSO (NR-07):',
-      medResp ? `${medResp.name} — ${medResp.registrationCouncil}: ${medResp.registrationNumber}/${medResp.registrationState}` : 'Médico do Trabalho Habilitado'
-    ],
-  ];
-
-  autoTable(doc, {
-    startY: currentY + 4,
-    body: profData,
-    theme: 'plain',
-    styles: { fontSize: 8, cellPadding: 2 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
-  });
-
-  // ==========================================
-  // PÁGINA 3: INTRODUÇÃO, OBJETIVOS E FUNDAMENTAÇÃO LEGAL
-  // ==========================================
-  doc.addPage();
-  currentY = 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('4. INTRODUÇÃO E OBJETIVOS DO PROGRAMA', 14, currentY);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  const introLines = doc.splitTextToSize(OFFICIAL_PGR_TEXTS.introducao, 182);
-  doc.text(introLines, 14, currentY + 5);
-
-  currentY += 5 + (introLines.length * 4) + 6;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('5. FUNDAMENTAÇÃO LEGAL E NORMAS REGULAMENTADORAS', 14, currentY);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  const legalLines = doc.splitTextToSize(OFFICIAL_PGR_TEXTS.fundamentacaoLegal, 182);
-  doc.text(legalLines, 14, currentY + 5);
-
-  currentY += 5 + (legalLines.length * 4) + 6;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('6. GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) E METODOLOGIA 5X5', 14, currentY);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  const groLines = doc.splitTextToSize(OFFICIAL_PGR_TEXTS.metodologiaGro, 182);
-  doc.text(groLines, 14, currentY + 5);
-
-  // ==========================================
-  // PÁGINA 4: INVENTÁRIO DE RISCOS OCUPACIONAIS
-  // ==========================================
-  doc.addPage();
-  currentY = 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('7. INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)', 14, currentY);
-
-  const riskRows = ctx.riskInventory.map((item) => {
-    const sec = ctx.sectors.find(s => s.id === item.sectorId);
-    const pos = ctx.positions.find(p => p.id === item.positionId);
-    const cat = HAZARD_CATEGORY_CONFIG[item.hazardCategory]?.label || item.hazardCategory;
-
-    const epiText = item.epiExisting && item.epiExisting.length > 0
-      ? item.epiExisting.map(e => `${e.name} (CA:${e.ca || 'S/N'})`).join('; ')
-      : 'N/A';
-
-    return [
-      `${sec?.name || '-'}\n${pos?.title || '-'}`,
-      `[${cat}]\n${item.hazardName}`,
-      `Fonte: ${item.sourceDescription}\nDanos: ${item.healthDamage}`,
-      `${item.probability}x${item.severity}=${item.riskScore}\n(${item.riskLevel})`,
-      `EPC: ${item.epcExisting?.join(', ') || 'N/A'}\nEPI: ${epiText}`,
-    ];
-  });
-
-  autoTable(doc, {
-    startY: currentY + 4,
-    head: [['Setor / Cargo', 'Perigo / Risco', 'Fontes & Danos', 'Matriz 5x5', 'Medidas de Controle']],
-    body: riskRows.length > 0 ? riskRows : [['Nenhum risco registrado', '-', '-', '-', '-']],
-    theme: 'grid',
-    headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-    styles: { fontSize: 7, cellPadding: 2 },
-    columnStyles: {
-      0: { cellWidth: 32 },
-      1: { cellWidth: 35 },
-      2: { cellWidth: 50 },
-      3: { cellWidth: 25, halign: 'center' },
-      4: { cellWidth: 40 },
-    },
-  });
-
-  // ==========================================
-  // PÁGINA 5: PLANO DE AÇÃO & ASSINATURAS
-  // ==========================================
-  doc.addPage();
-  currentY = 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('8. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (NR-01.5.5 - 5W2H)', 14, currentY);
-
-  const actionRows = ctx.actionPlans.map((act) => [
-    act.what,
-    act.why,
-    act.who,
-    act.whenDate,
-    `R$ ${Number(act.howMuch || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-    act.status,
-  ]);
-
-  autoTable(doc, {
-    startY: currentY + 4,
-    head: [['O que (Ação)', 'Por que (Motivo)', 'Quem (Responsável)', 'Prazo', 'Custo', 'Status']],
-    body: actionRows.length > 0 ? actionRows : [['Nenhuma ação programada', '-', '-', '-', '-', '-']],
-    theme: 'grid',
-    headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
-    styles: { fontSize: 7, cellPadding: 2 },
-    columnStyles: {
-      0: { cellWidth: 50 },
-      1: { cellWidth: 45 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 20 },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 17 },
-    },
-  });
-
-  currentY = (doc as any).lastAutoTable.finalY + 12;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('9. TERMO DE ENCERRAMENTO E ASSINATURAS LEGAIS', 14, currentY);
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(51, 65, 85);
-  const termoLines = doc.splitTextToSize(OFFICIAL_PGR_TEXTS.termoEncerramento, 182);
-  doc.text(termoLines, 14, currentY + 5);
-
-  currentY += 5 + (termoLines.length * 3.5) + 20;
-
-  // Assinaturas
-  doc.setDrawColor(148, 163, 184);
-  doc.line(20, currentY, 90, currentY);
-  doc.line(120, currentY, 190, currentY);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(15, 23, 42);
-  doc.text(docData.header.techRespName, 55, currentY + 4, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${docData.header.techRespCouncil} | ${docData.header.techRespArt}`, 55, currentY + 8, { align: 'center' });
-  doc.text('Responsável Técnico SST', 55, currentY + 12, { align: 'center' });
-
-  doc.setFont('helvetica', 'bold');
-  doc.text(ctx.company.legalRepresentative, 155, currentY + 4, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.text(ctx.company.representativeRole, 155, currentY + 8, { align: 'center' });
-  doc.text(ctx.company.name, 155, currentY + 12, { align: 'center' });
-
-  // Salva o PDF
-  const cleanName = ctx.company.name.replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`PGR_${cleanName}_${docData.header.year}.pdf`);
+  // Download do arquivo PDF
+  const sanitizedCompany = ctx.company.name.replace(/[^a-zA-Z0-9]/g, '_');
+  doc.save(`PGR_${sanitizedCompany}_${docData.header.code}.pdf`);
 }

@@ -9,6 +9,7 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
+import { generatePgrExcel } from '@/lib/excel-generator';
 import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
@@ -26,6 +27,7 @@ import {
   Calendar, 
   Award,
   FileCode,
+  FileSpreadsheet,
   Sliders
 } from 'lucide-react';
 
@@ -114,6 +116,15 @@ export const PgrViewerPage: React.FC = () => {
       alert('Erro ao gerar arquivo Word.');
     } finally {
       setIsGeneratingDocx(false);
+    }
+  };
+
+  const handleDownloadExcel = async () => {
+    try {
+      await generatePgrExcel(pgrContext);
+    } catch (err) {
+      console.error('Erro ao gerar Excel:', err);
+      alert('Erro ao gerar planilha Excel.');
     }
   };
 
@@ -213,6 +224,16 @@ export const PgrViewerPage: React.FC = () => {
           >
             <FileCode className="h-3.5 w-3.5" />
             <span>{isGeneratingDocx ? 'Gerando Word...' : 'Baixar Word (.docx)'}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownloadExcel}
+            className="text-xs gap-1.5 border-emerald-200 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 font-semibold"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Baixar Excel (.xlsx)</span>
           </Button>
 
           <Button

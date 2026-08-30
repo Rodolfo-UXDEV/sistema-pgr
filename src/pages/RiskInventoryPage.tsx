@@ -2,10 +2,88 @@ import React from 'react';
 import { RiskInventoryTable } from '@/components/inventory/RiskInventoryTable';
 import { usePgr } from '@/context/PgrContext';
 import { Badge } from '@/components/ui/badge';
-import { ShieldCheck, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ShieldCheck, Info, FileSpreadsheet, Download } from 'lucide-react';
+import { generatePgrExcel } from '@/lib/excel-generator';
+import { generatePgrPdf } from '@/lib/pdf-generator';
 
 export const RiskInventoryPage: React.FC = () => {
-  const { activeCompany, activeEstablishment, activePgr, stats } = usePgr();
+  const { 
+    activeCompany, 
+    activeEstablishment, 
+    establishments,
+    activePgr, 
+    pgrDocuments,
+    sectors,
+    positions,
+    ghes,
+    professionals,
+    riskInventory,
+    actionPlans,
+    stats 
+  } = usePgr();
+
+  const handleExportExcel = async () => {
+    if (!activeCompany) return;
+    const est = activeEstablishment || establishments[0];
+    const pgr = activePgr || pgrDocuments[0] || {
+      id: 'pgr-default',
+      companyId: activeCompany.id,
+      establishmentId: est?.id || '',
+      code: 'PGR-2026',
+      title: `Inventário de Riscos - ${activeCompany.name}`,
+      version: '1.0',
+      year: 2026,
+      validityStart: '2026-01-01',
+      validityEnd: '2027-12-31',
+      status: 'APPROVED',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await generatePgrExcel({
+      company: activeCompany,
+      establishment: est,
+      pgr,
+      sectors,
+      positions,
+      ghes,
+      professionals,
+      riskInventory,
+      actionPlans,
+    });
+  };
+
+  const handleExportPdf = () => {
+    if (!activeCompany) return;
+    const est = activeEstablishment || establishments[0];
+    const pgr = activePgr || pgrDocuments[0] || {
+      id: 'pgr-default',
+      companyId: activeCompany.id,
+      establishmentId: est?.id || '',
+      code: 'PGR-2026',
+      title: `Inventário de Riscos - ${activeCompany.name}`,
+      version: '1.0',
+      year: 2026,
+      validityStart: '2026-01-01',
+      validityEnd: '2027-12-31',
+      status: 'APPROVED',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    generatePgrPdf({
+      company: activeCompany,
+      establishment: est,
+      pgr,
+      sectors,
+      positions,
+      ghes,
+      professionals,
+      riskInventory,
+      actionPlans,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -28,13 +106,35 @@ export const RiskInventoryPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <div className="flex items-center gap-1.5 text-xs bg-muted/60 px-3 py-1.5 rounded-lg border border-border">
             <span className="text-muted-foreground">Total:</span>
             <strong className="text-foreground font-bold">{stats.totalRisks} perigos</strong>
             <span className="text-muted-foreground">|</span>
             <span className="text-rose-600 font-bold">{stats.criticalRisksCount} críticos</span>
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            className="text-xs gap-1.5 border-emerald-200 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 font-semibold"
+            title="Exportar tabela de riscos no formato APR-HO para Excel (.xlsx)"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+            <span>Exportar Excel</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPdf}
+            className="text-xs gap-1.5 border-slate-200 text-slate-800 bg-slate-50/50 hover:bg-slate-100 dark:bg-slate-900 font-semibold"
+            title="Exportar documento oficial em PDF"
+          >
+            <Download className="h-3.5 w-3.5 text-slate-600" />
+            <span>Exportar PDF</span>
+          </Button>
         </div>
       </div>
 

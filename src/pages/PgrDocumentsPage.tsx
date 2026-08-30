@@ -20,6 +20,7 @@ import { formatDate } from '@/lib/utils';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
 import { generatePgrFromMasterTemplate } from '@/lib/docx-template-engine';
+import { generatePgrExcel } from '@/lib/excel-generator';
 import { 
   FileText, 
   Plus, 
@@ -32,6 +33,7 @@ import {
   Award,
   Clock,
   FileCode,
+  FileSpreadsheet,
   Sliders
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -196,6 +198,23 @@ export const PgrDocumentsPage: React.FC = () => {
     }
   };
 
+  const handleDownloadExcel = async (doc: PGRDocument) => {
+    if (!activeCompany) return;
+    const est = establishments.find(e => e.id === doc.establishmentId) || establishments[0];
+    const ctx = {
+      company: activeCompany,
+      establishment: est,
+      pgr: doc,
+      sectors,
+      positions,
+      ghes,
+      professionals,
+      riskInventory,
+      actionPlans,
+    };
+    await generatePgrExcel(ctx);
+  };
+
   const getStatusBadge = (status: PgrDocumentStatus) => {
     switch (status) {
       case 'APPROVED':
@@ -351,6 +370,17 @@ export const PgrDocumentsPage: React.FC = () => {
                         >
                           <FileCode className="h-3.5 w-3.5" />
                           <span>DOCX</span>
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDownloadExcel(doc)}
+                          className="h-8 text-xs gap-1 border-emerald-200 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 font-semibold"
+                          title="Baixar Planilha Excel (.xlsx)"
+                        >
+                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>XLSX</span>
                         </Button>
 
                         <Button
