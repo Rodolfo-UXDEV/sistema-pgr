@@ -283,68 +283,115 @@ export const RiskInventoryTable: React.FC = () => {
                       <TableRow className="bg-muted/40 border-b border-border">
                         <TableCell colSpan={9} className="p-4 space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                            {/* Danos à Saúde */}
-                            <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                            {/* Danos à Saúde & Via de Penetração */}
+                            <div className="p-3 rounded-lg bg-card border border-border space-y-1.5">
                               <span className="font-bold text-foreground flex items-center gap-1.5 text-xs text-rose-600 dark:text-rose-400">
-                                Possíveis Danos à Saúde:
+                                Efeitos à Saúde & Exposição:
                               </span>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 {item.healthDamage}
                               </p>
+                              {item.penetrationRoute && (
+                                <div className="pt-1 text-[11px] text-foreground font-medium">
+                                  <span className="text-muted-foreground">Via de Penetração:</span> {item.penetrationRoute}
+                                </div>
+                              )}
                             </div>
 
-                            {/* Medidas de Prevenção EPC & ADM */}
-                            <div className="p-3 rounded-lg bg-card border border-border space-y-1">
+                            {/* Medidas de Prevenção EPC & EPI */}
+                            <div className="p-3 rounded-lg bg-card border border-border space-y-1.5">
                               <span className="font-bold text-foreground flex items-center gap-1.5 text-xs">
                                 <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                                Medidas Coletivas & Administrativas:
+                                Medidas Coletivas & Proteção:
                               </span>
-                              <div className="text-[11px] text-muted-foreground space-y-0.5">
+                              <div className="text-[11px] text-muted-foreground space-y-1">
                                 <p><strong>EPCs:</strong> {item.epcExisting?.length ? item.epcExisting.join(', ') : 'Nenhum registrado'}</p>
-                                <p><strong>ADM:</strong> {item.adminMeasuresExisting?.length ? item.adminMeasuresExisting.join(', ') : 'Nenhum registrado'}</p>
+                                {item.epiExisting?.length ? (
+                                  <div>
+                                    <strong>EPIs (com C.A.):</strong>
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {item.epiExisting.map((epi, idx) => (
+                                        <span key={idx} className="inline-flex items-center text-[10px] bg-muted px-1.5 py-0.5 rounded font-mono">
+                                          {epi.name} (CA: {epi.ca})
+                                        </span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p><strong>EPIs:</strong> Nenhum EPI específico exigido</p>
+                                )}
                               </div>
                             </div>
 
-                            {/* EPIs com CA */}
-                            <div className="p-3 rounded-lg bg-card border border-border space-y-1">
-                              <span className="font-bold text-foreground flex items-center gap-1.5 text-xs">
-                                Equipamentos de Proteção (EPI com CA):
+                            {/* Recomendações Técnicas */}
+                            <div className="p-3 rounded-lg bg-card border border-border space-y-1.5">
+                              <span className="font-bold text-foreground flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                Recomendações & Propostas:
                               </span>
-                              {item.epiExisting?.length ? (
-                                <div className="space-y-1">
-                                  {item.epiExisting.map((epi, idx) => (
-                                    <div key={idx} className="flex items-center justify-between text-[10px] bg-muted/60 px-2 py-0.5 rounded">
-                                      <span className="font-medium text-foreground">{epi.name}</span>
-                                      <span className="font-mono text-muted-foreground">CA: {epi.ca}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-[11px] text-muted-foreground">Nenhum EPI específico exigido</span>
-                              )}
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                {item.recommendations || 'Manter os controles preventivos existentes e monitoramento periódico.'}
+                              </p>
+                              <div className="pt-1 text-[10px]">
+                                {item.actionRequired ? (
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Vinculado ao Plano de Ação (5W2H)</span>
+                                ) : (
+                                  <span className="text-muted-foreground">Risco considerado sob controle contínuo</span>
+                                )}
+                              </div>
                             </div>
                           </div>
 
                           {/* Medições Quantitativas se houver */}
                           {item.measurements && item.measurements.length > 0 && (
-                            <div className="p-3 rounded-lg bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800 text-xs">
-                              <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 mb-1">
+                            <div className="p-3 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-xs">
+                              <span className="font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-1.5 mb-2">
                                 <Activity className="h-3.5 w-3.5" />
-                                Avaliação Ambiental Quantitativa:
+                                Medição & Avaliação Ambiental:
                               </span>
-                              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
+                              <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 text-[11px]">
                                 <div>
-                                  <span className="text-muted-foreground">Agente:</span> <strong>{item.measurements[0].agentName}</strong>
+                                  <span className="text-muted-foreground block text-[10px]">CRITÉRIO</span>
+                                  <strong>{item.measurements[0].criteria || item.measurements[0].methodology || 'Quantitativo NR-15 / NHO'}</strong>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Valor Medido:</span> <strong className="text-emerald-700 dark:text-emerald-300 font-mono">{item.measurements[0].measuredValue} {item.measurements[0].unit}</strong>
+                                  <span className="text-muted-foreground block text-[10px]">TÉCNICA UTILIZADA</span>
+                                  <strong>{item.measurements[0].technique || item.measurements[0].equipmentUsed || 'Leitura Direta'}</strong>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Nível de Ação / LT:</span> <strong>{item.measurements[0].actionLevel || '-'} / {item.measurements[0].toleranceLimit || '-'}</strong>
+                                  <span className="text-muted-foreground block text-[10px]">DATA DA MEDIÇÃO</span>
+                                  <strong className="font-mono">{item.measurements[0].measurementDate || '-'}</strong>
                                 </div>
                                 <div>
-                                  <span className="text-muted-foreground">Método:</span> <span>{item.measurements[0].methodology}</span>
+                                  <span className="text-muted-foreground block text-[10px]">RESULTADO</span>
+                                  <strong className="text-emerald-700 dark:text-emerald-300 font-mono font-bold">
+                                    {item.measurements[0].resultText || (item.measurements[0].measuredValue ? `${item.measurements[0].measuredValue} ${item.measurements[0].unit || ''}` : '-')}
+                                  </strong>
                                 </div>
+                                <div>
+                                  <span className="text-muted-foreground block text-[10px]">LT (LIMITE TOLERÂNCIA)</span>
+                                  <strong className="font-mono">
+                                    {item.measurements[0].toleranceLimitText || (item.measurements[0].toleranceLimit ? `${item.measurements[0].toleranceLimit} ${item.measurements[0].unit || ''}` : '-')}
+                                  </strong>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Avaliações e Resultados: Galeria de Imagens se houver */}
+                          {item.evaluationImages && item.evaluationImages.length > 0 && (
+                            <div className="p-3 rounded-lg bg-card border border-border space-y-2">
+                              <span className="font-bold text-foreground text-xs block">
+                                Avaliações e Resultados (Gráficos e Planilhas Anexadas):
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                {item.evaluationImages.map((img, i) => (
+                                  <img
+                                    key={i}
+                                    src={img}
+                                    alt={`Avaliação ${i + 1}`}
+                                    className="h-20 w-28 object-cover rounded-md border border-border shadow-xs hover:opacity-95 transition-opacity"
+                                  />
+                                ))}
                               </div>
                             </div>
                           )}

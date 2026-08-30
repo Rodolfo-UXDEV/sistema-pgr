@@ -6,7 +6,15 @@ export type ActionStatus = 'NAO_INICIADA' | 'EM_ANDAMENTO' | 'CONCLUIDA' | 'ATRA
 
 export type PgrDocumentStatus = 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'ARCHIVED';
 
-export type ExposureType = 'CONTINUA' | 'INTERMITENTE' | 'EVENTUAL';
+export type ExposureType = 
+  | 'HABITUAL_PERMANENTE' 
+  | 'HABITUAL_INTERMITENTE' 
+  | 'EVENTUAL_INTERMITENTE' 
+  | 'EVENTUAL' 
+  | 'PERMANENTE' 
+  | 'INTERMITENTE' 
+  | 'HABITUAL' 
+  | 'CONTINUA';
 
 export interface Company {
   id: string;
@@ -140,14 +148,19 @@ export interface EpiControl {
 export interface EnvironmentalMeasurement {
   id: string;
   agentName: string;
-  unit: string; // dB(A), °C IBUTG, Lux, ppm, mg/m³
-  measuredValue: number;
+  unit?: string; // dB(A), °C IBUTG, Lux, ppm, mg/m³
+  measuredValue?: number;
+  criteria?: string; // Critério (ex: Quantitativo NR-15, NHO-01, Qualitativo)
+  technique?: string; // Técnica Utilizada (ex: Dosimetria, Termômetro de Globo)
+  measurementDate?: string; // Data da Medição (ex: YYYY-MM-DD)
+  resultText?: string; // Resultado (ex: 84.5 dB(A))
+  toleranceLimitText?: string; // LT - Limite de Tolerância (ex: 85.0 dB(A))
   actionLevel?: number;
   toleranceLimit?: number;
-  methodology: string; // NHO-01, NHO-06, NR-15 Anexo 1, etc.
-  equipmentUsed: string;
+  methodology?: string; // NHO-01, NHO-06, NR-15 Anexo 1, etc.
+  equipmentUsed?: string;
   calibrationDate?: string;
-  resultStatus: 'ABAIXO_NIVEL_ACAO' | 'ACIMA_NIVEL_ACAO' | 'ACIMA_LIMITE_TOLERANCIA';
+  resultStatus?: 'ABAIXO_NIVEL_ACAO' | 'ACIMA_NIVEL_ACAO' | 'ACIMA_LIMITE_TOLERANCIA';
 }
 
 export interface RiskInventoryItem {
@@ -163,7 +176,8 @@ export interface RiskInventoryItem {
   hazardName: string;
   hazardCode?: string;
   sourceDescription: string; // Fonte geradora
-  healthDamage: string; // Possíveis lesões ou agravos
+  healthDamage: string; // Possíveis lesões ou agravos / Efeitos à saúde
+  penetrationRoute?: string; // Via de penetração (Cutânea, Respiratória, etc.)
   exposedCount: number;
   exposureType: ExposureType;
   
@@ -178,8 +192,14 @@ export interface RiskInventoryItem {
   adminMeasuresExisting: string[];
   epiExisting: EpiControl[];
   
-  // Avaliações Ambientais
+  // Avaliações Ambientais / Medições
   measurements?: EnvironmentalMeasurement[];
+  
+  // Recomendações
+  recommendations?: string;
+  
+  // Avaliações e Resultados (Imagens / Gráficos / Planilhas)
+  evaluationImages?: string[];
   
   // Necessita de Ação?
   actionRequired: boolean;

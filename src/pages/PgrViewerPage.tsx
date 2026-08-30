@@ -455,16 +455,32 @@ export const PgrViewerPage: React.FC = () => {
                       <TableCell className="font-semibold">
                         <div>{sec?.name || '-'}</div>
                         <div className="text-[11px] text-muted-foreground font-normal">{pos?.title || '-'}</div>
+                        {item.gheId && (
+                          <div className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
+                            {sectors.find(s => s.id === item.sectorId) ? 'GES Ativo' : ''}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[9px] mb-1" style={{ color: catConfig?.color }}>
                           {catConfig?.label || item.hazardCategory}
                         </Badge>
                         <div className="font-bold text-foreground">{item.hazardName}</div>
+                        {item.penetrationRoute && (
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            Via: {item.penetrationRoute}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="max-w-[200px] text-muted-foreground">
                         <div><strong>Fonte:</strong> {item.sourceDescription}</div>
                         <div><strong>Danos:</strong> {item.healthDamage}</div>
+                        {item.measurements && item.measurements.length > 0 && (
+                          <div className="mt-1 p-1 rounded bg-muted/50 text-[10px] text-foreground">
+                            <strong>Medição:</strong> {item.measurements[0].resultText || `${item.measurements[0].measuredValue} ${item.measurements[0].unit || ''}`} 
+                            {item.measurements[0].toleranceLimitText ? ` (LT: ${item.measurements[0].toleranceLimitText})` : ''}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="font-mono font-bold text-[11px] mb-1">
@@ -479,6 +495,11 @@ export const PgrViewerPage: React.FC = () => {
                         {item.epiExisting && item.epiExisting.length > 0 && (
                           <div className="mt-0.5">
                             <strong>EPI:</strong> {item.epiExisting.map(e => `${e.name} (CA:${e.ca || 'S/N'})`).join('; ')}
+                          </div>
+                        )}
+                        {item.recommendations && (
+                          <div className="mt-1 text-[10px] text-foreground border-t border-border pt-1">
+                            <strong>Recomendação:</strong> {item.recommendations}
                           </div>
                         )}
                       </TableCell>

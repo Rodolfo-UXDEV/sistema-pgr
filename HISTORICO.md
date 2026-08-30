@@ -167,6 +167,31 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Ajuste na busca e nos seletores do inventário de riscos (`RiskInventoryTable.tsx` e `RiskFormModal.tsx`).
   - Build validado e publicado no GitHub / Vercel (Commits `fc56802`, `5672e97` e `8630d01`).
 
+---
+
+### [2026-08-30] - Reestruturação da Modal de Levantamento de Risco (NR-01.5.7) & Adequação do Banco de Dados
+- **1. Sequência Padronizada dos Campos na Modal:**
+  - **1. Lotação & Trabalhadores Expostos:** `SETOR / AMBIENTE *`, `CARGO / FUNÇÃO`, `GES (GRUPO DE EXPOSIÇÃO SIMILAR)` e `QUANTIDADE DE TRABALHADORES EXPOSTOS`.
+  - **2. Identificação do Risco & Agente:**
+    - `RISCO (CATEGORIA)`: Seletor com botões interativos das categorias oficiais (*Físico, Químico, Biológico, Ergonômico, Acidente / Mecânico*).
+    - `AGENTE / PERIGO *` e `CÓDIGO ESOCIAL (TAB. 24)` com catálogo de sugestões rápidas.
+    - `TIPO DE EXPOSIÇÃO *`: Lista suspensa com as opções oficiais: *Habitual e Permanente*, *Habitual e Intermitente*, *Eventual e Intermitente*, *Eventual*, *Permanente*, *Intermitente*, *Habitual*.
+    - `VIA DE PENETRAÇÃO`: Campo com sugestões rápidas (*Respiratória*, *Cutânea / Dérmica*, *Auditiva*, *Ocular*, *Digestiva*, *Contato Físico / Mecânico*, *Postural / Biomecânica*, *Não Aplicável*).
+    - `EFEITOS A SAÚDE (LESÕES OU AGRAVOS) *` e `FONTE GERADORA / CIRCUNSTÂNCIA`.
+    - `EPC / EPI (NOME E C.A)`: Medidas Coletivas (EPC) e Equipamentos de Proteção Individual (EPI) com Nome e Certificado de Aprovação (C.A.).
+  - **3. Medição Ambiental:**
+    - Seção expansível com `CRITÉRIO`, `TÉCNICA UTILIZADA`, `DATA DA MEDIÇÃO`, `RESULTADO` e `LT (LIMITE DE TOLERÂNCIA)`.
+  - **4. Categorização do Risco/Perigo: Matriz (NR-01):**
+    - Matriz 5x5 interativa (*Probabilidade x Severidade = Nível de Risco e Diretriz de Controle*).
+  - **5. Recomendações & Medidas Propostas:**
+    - Campo de texto livre para recomendações técnicas e switch de integração automática com o **Plano de Ação (5W2H)**.
+  - **6. Avaliações e Resultados (Gráficos e Planilhas):**
+    - Componente de upload e anexação de imagens com conversão Base64 / URL, galeria de miniaturas, botão de exclusão e modal de visualização em tela cheia (lightbox).
+- **2. Adequações no Banco de Dados (Firestore) & Tipagem:**
+  - Atualização dos tipos `RiskInventoryItem`, `EnvironmentalMeasurement` e `ExposureType` em `src/types/pgr.ts`.
+  - Atualização do renderizador de inventário na tabela (`RiskInventoryTable.tsx`), no visualizador oficial (`PgrViewerPage.tsx`) e nos geradores Word / PDF (`docx-generator.ts` e `pgr-official-template.ts`).
+  - Validação de compilação sem erros (`tsc -b && vite build`) e testes visuais com Puppeteer.
+
 
 
 

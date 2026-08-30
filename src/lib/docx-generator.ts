@@ -255,13 +255,20 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
               ? item.epcExisting.join('; ')
               : 'Nenhum';
 
+            const measText = item.measurements && item.measurements.length > 0
+              ? `\nMedição: ${item.measurements[0].resultText || `${item.measurements[0].measuredValue} ${item.measurements[0].unit || ''}`} (LT: ${item.measurements[0].toleranceLimitText || item.measurements[0].toleranceLimit || '-'})`
+              : '';
+
+            const recText = item.recommendations ? `\nRecomendações: ${item.recommendations}` : '';
+            const routeText = item.penetrationRoute ? ` (Via: ${item.penetrationRoute})` : '';
+
             return new TableRow({
               children: [
                 new TableCell({ children: [new Paragraph({ text: `${sec?.name || '-'}\n${pos?.title || '-'}` })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: `[${cat}]\n${item.hazardName}` })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: `Fonte: ${item.sourceDescription}\nDanos: ${item.healthDamage}` })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: `[${cat}]\n${item.hazardName}${routeText}` })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: `Fonte: ${item.sourceDescription}\nDanos: ${item.healthDamage}${measText}` })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: `P:${item.probability} x S:${item.severity} = ${item.riskScore}\n[${item.riskLevel}]`, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: `EPC: ${epcText}\nEPI: ${epiText}` })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: `EPC: ${epcText}\nEPI: ${epiText}${recText}` })], borders: cellBorder }),
               ],
             });
           }),
