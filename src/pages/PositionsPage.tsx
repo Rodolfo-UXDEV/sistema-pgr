@@ -270,14 +270,14 @@ export const PositionsPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="md:col-span-2">
+                <div>
                   <Label className="text-xs font-semibold">Número de Trabalhadores</Label>
                   <Input
                     type="number"
                     min="1"
                     value={workerCount}
                     onChange={(e) => setWorkerCount(Number(e.target.value))}
-                    className="h-9 mt-1 text-xs max-w-xs"
+                    className="h-9 mt-1 text-xs"
                   />
                 </div>
 
