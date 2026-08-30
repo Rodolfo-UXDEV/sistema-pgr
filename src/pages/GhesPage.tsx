@@ -214,37 +214,37 @@ export const GhesPage: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
 
-            <form onSubmit={handleSave} className="space-y-4 pt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs font-semibold">Unidade / Estabelecimento *</Label>
-                  <select
-                    value={establishmentId}
-                    onChange={(e) => setEstablishmentId(e.target.value)}
-                    required
-                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
-                  >
-                    {companyEstablishments.map((est) => (
-                      <option key={est.id} value={est.id}>{est.name}</option>
-                    ))}
-                  </select>
-                </div>
+            <form onSubmit={handleSave} className="space-y-3 pt-2">
+              <div>
+                <Label className="text-xs font-semibold">Unidade / Estabelecimento *</Label>
+                <select
+                  value={establishmentId}
+                  onChange={(e) => setEstablishmentId(e.target.value)}
+                  required
+                  className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
+                >
+                  {companyEstablishments.map((est) => (
+                    <option key={est.id} value={est.id}>{est.name}</option>
+                  ))}
+                </select>
+              </div>
 
-                <div>
-                  <Label className="text-xs font-semibold">Setor *</Label>
-                  <select
-                    value={sectorId}
-                    onChange={(e) => setSectorId(e.target.value)}
-                    required
-                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
-                  >
-                    <option value="">Selecione o Setor</option>
-                    {availableSectors.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <Label className="text-xs font-semibold">Setor *</Label>
+                <select
+                  value={sectorId}
+                  onChange={(e) => setSectorId(e.target.value)}
+                  required
+                  className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
+                >
+                  <option value="">Selecione o Setor</option>
+                  {availableSectors.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                 <div>
                   <Label className="text-xs font-semibold">Código do GES *</Label>
                   <Input
