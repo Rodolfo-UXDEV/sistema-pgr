@@ -219,8 +219,7 @@ export const RiskInventoryTable: React.FC = () => {
                       <TableCell>
                         <Badge 
                           variant="outline"
-                          className="text-[10px] font-semibold border-border/80"
-                          style={{ color: catConfig.color }}
+                          className={`text-[10px] font-bold ${catConfig.badgeClass}`}
                         >
                           {catConfig.label}
                         </Badge>

@@ -97,35 +97,61 @@ export function calculateRiskLevel(severity: number, probability: number): { sco
   return { score, level };
 }
 
-export const HAZARD_CATEGORY_CONFIG: Record<HazardCategory, { label: string; color: string; iconBg: string; textClass: string }> = {
+export const HAZARD_CATEGORY_CONFIG: Record<
+  HazardCategory, 
+  { 
+    label: string; 
+    color: string; 
+    iconBg: string; 
+    textClass: string;
+    buttonActiveClass: string;
+    buttonInactiveClass: string;
+    badgeClass: string;
+  }
+> = {
   FISICO: {
     label: 'Físico',
-    color: '#0284c7',
-    iconBg: 'bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300',
-    textClass: 'text-sky-600 dark:text-sky-400',
+    color: '#16a34a', // Verde
+    iconBg: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300',
+    textClass: 'text-emerald-600 dark:text-emerald-400',
+    buttonActiveClass: 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-400 border-emerald-600 font-bold',
+    buttonInactiveClass: 'bg-emerald-50/80 text-emerald-800 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
+    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800',
   },
   QUIMICO: {
     label: 'Químico',
-    color: '#dc2626',
-    iconBg: 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300',
-    textClass: 'text-rose-600 dark:text-rose-400',
+    color: '#dc2626', // Vermelho
+    iconBg: 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300',
+    textClass: 'text-red-600 dark:text-red-400',
+    buttonActiveClass: 'bg-red-600 text-white shadow-xs ring-2 ring-red-400 border-red-600 font-bold',
+    buttonInactiveClass: 'bg-red-50/80 text-red-800 border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800',
+    badgeClass: 'bg-red-50 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800',
   },
   BIOLOGICO: {
     label: 'Biológico',
-    color: '#9333ea',
-    iconBg: 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300',
-    textClass: 'text-purple-600 dark:text-purple-400',
+    color: '#78350f', // Marrom
+    iconBg: 'bg-[#fef3c7] text-[#78350f] dark:bg-[#78350f]/50 dark:text-[#fcd34d]',
+    textClass: 'text-[#78350f] dark:text-[#fcd34d]',
+    buttonActiveClass: 'bg-[#78350f] text-white shadow-xs ring-2 ring-amber-700 border-[#78350f] font-bold',
+    buttonInactiveClass: 'bg-[#fef3c7]/70 text-[#78350f] border-[#d97706]/40 hover:bg-[#fde68a] dark:bg-[#78350f]/30 dark:text-[#fcd34d] dark:border-[#92400e]',
+    badgeClass: 'bg-[#fef3c7]/60 text-[#78350f] border-[#d97706]/40 dark:bg-[#78350f]/30 dark:text-[#fcd34d] dark:border-[#92400e]',
   },
   ERGONOMICO: {
     label: 'Ergonômico',
-    color: '#f59e0b',
-    iconBg: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300',
-    textClass: 'text-amber-600 dark:text-amber-400',
+    color: '#eab308', // Amarelo
+    iconBg: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950/60 dark:text-yellow-300',
+    textClass: 'text-yellow-600 dark:text-yellow-400',
+    buttonActiveClass: 'bg-yellow-500 text-slate-950 shadow-xs ring-2 ring-yellow-300 border-yellow-500 font-bold',
+    buttonInactiveClass: 'bg-yellow-50/80 text-yellow-800 border-yellow-200 hover:bg-yellow-100 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800',
+    badgeClass: 'bg-yellow-50 text-yellow-800 border-yellow-300 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800',
   },
   ACIDENTE: {
     label: 'Acidente / Mecânico',
-    color: '#ea580c',
-    iconBg: 'bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300',
-    textClass: 'text-orange-600 dark:text-orange-400',
+    color: '#2563eb', // Azul
+    iconBg: 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300',
+    textClass: 'text-blue-600 dark:text-blue-400',
+    buttonActiveClass: 'bg-blue-600 text-white shadow-xs ring-2 ring-blue-400 border-blue-600 font-bold',
+    buttonInactiveClass: 'bg-blue-50/80 text-blue-800 border-blue-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
+    badgeClass: 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
   },
 };

@@ -477,7 +477,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                 <Shield className="h-4 w-4 text-emerald-600" />
                 <span>2. Identificação do Risco & Agente</span>
               </h4>
-              <Badge variant="outline" className="text-[10px]">
+              <Badge variant="outline" className={`text-[10px] font-bold ${HAZARD_CATEGORY_CONFIG[hazardCategory].badgeClass}`}>
                 {HAZARD_CATEGORY_CONFIG[hazardCategory].label}
               </Badge>
             </div>
@@ -485,24 +485,28 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
             {/* RISCO: Categoria */}
             <div>
               <Label className="text-xs font-semibold block mb-1.5">RISCO (CATEGORIA):</Label>
-              <div className="flex flex-wrap gap-1.5">
-                {(['FISICO', 'QUIMICO', 'BIOLOGICO', 'ERGONOMICO', 'ACIDENTE'] as HazardCategory[]).map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => {
-                      setHazardCategory(cat);
-                      setSelectedHazardId('');
-                    }}
-                    className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                      hazardCategory === cat
-                        ? 'bg-foreground text-background shadow-xs ring-2 ring-emerald-500'
-                        : 'bg-muted text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {HAZARD_CATEGORY_CONFIG[cat].label}
-                  </button>
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {(['FISICO', 'QUIMICO', 'BIOLOGICO', 'ERGONOMICO', 'ACIDENTE'] as HazardCategory[]).map((cat) => {
+                  const cfg = HAZARD_CATEGORY_CONFIG[cat];
+                  const isSelected = hazardCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setHazardCategory(cat);
+                        setSelectedHazardId('');
+                      }}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                        isSelected
+                          ? cfg.buttonActiveClass
+                          : cfg.buttonInactiveClass
+                      }`}
+                    >
+                      {cfg.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
