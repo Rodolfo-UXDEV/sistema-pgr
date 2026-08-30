@@ -36,9 +36,7 @@ export const PositionsPage: React.FC = () => {
   const [sectorId, setSectorId] = useState('');
   const [title, setTitle] = useState('');
   const [cbo, setCbo] = useState('');
-  const [description, setDescription] = useState('');
-  const [routineActivities, setRoutineActivities] = useState('');
-  const [nonRoutineActivities, setNonRoutineActivities] = useState('');
+  const [activityDescription, setActivityDescription] = useState('');
   const [workerCount, setWorkerCount] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -54,9 +52,7 @@ export const PositionsPage: React.FC = () => {
     setSectorId(firstSec);
     setTitle('');
     setCbo('7212-15');
-    setDescription('');
-    setRoutineActivities('');
-    setNonRoutineActivities('');
+    setActivityDescription('');
     setWorkerCount(1);
     setIsModalOpen(true);
   };
@@ -67,17 +63,15 @@ export const PositionsPage: React.FC = () => {
     setSectorId(pos.sectorId);
     setTitle(pos.title);
     setCbo(pos.cbo);
-    setDescription(pos.description);
-    setRoutineActivities(pos.routineActivities);
-    setNonRoutineActivities(pos.nonRoutineActivities || '');
+    setActivityDescription(pos.activityDescription || pos.routineActivities || pos.description || '');
     setWorkerCount(pos.workerCount);
     setIsModalOpen(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!establishmentId || !sectorId || !title.trim() || !routineActivities.trim()) {
-      alert('Preencha os campos obrigatórios (Estabelecimento, Setor, Cargo e Atividades Rotineiras).');
+    if (!establishmentId || !sectorId || !title.trim() || !activityDescription.trim()) {
+      alert('Preencha os campos obrigatórios (Estabelecimento, Setor, Cargo e Descrição da Atividade).');
       return;
     }
 
@@ -88,9 +82,8 @@ export const PositionsPage: React.FC = () => {
         sectorId,
         title: title.trim(),
         cbo: cbo.trim() || '9999-99',
-        description: description.trim(),
-        routineActivities: routineActivities.trim(),
-        nonRoutineActivities: nonRoutineActivities.trim() || undefined,
+        activityDescription: activityDescription.trim(),
+        routineActivities: activityDescription.trim(), // Retrocompatibilidade
         workerCount: Number(workerCount) || 1,
       };
 
@@ -146,7 +139,7 @@ export const PositionsPage: React.FC = () => {
               <TableHead>CBO</TableHead>
               <TableHead>Setor / Lotação</TableHead>
               <TableHead className="text-center">Qtd. Trab.</TableHead>
-              <TableHead>Atividades Rotineiras</TableHead>
+              <TableHead>Descrição da Atividade</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -172,8 +165,11 @@ export const PositionsPage: React.FC = () => {
                     {pos.workerCount}
                   </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground max-w-[280px] truncate" title={pos.routineActivities}>
-                    {pos.routineActivities}
+                  <TableCell 
+                    className="text-xs text-muted-foreground max-w-[320px] truncate" 
+                    title={pos.activityDescription || pos.routineActivities || pos.description || '-'}
+                  >
+                    {pos.activityDescription || pos.routineActivities || pos.description || '-'}
                   </TableCell>
 
                   <TableCell className="text-right">
@@ -224,7 +220,7 @@ export const PositionsPage: React.FC = () => {
             <form onSubmit={handleSave} className="space-y-4 pt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs">Unidade / Estabelecimento *</Label>
+                  <Label className="text-xs font-semibold">Unidade / Estabelecimento *</Label>
                   <select
                     value={establishmentId}
                     onChange={(e) => setEstablishmentId(e.target.value)}
@@ -238,7 +234,7 @@ export const PositionsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs">Setor de Lotação *</Label>
+                  <Label className="text-xs font-semibold">Setor de Lotação *</Label>
                   <select
                     value={sectorId}
                     onChange={(e) => setSectorId(e.target.value)}
@@ -253,7 +249,7 @@ export const PositionsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs">Título do Cargo / Função *</Label>
+                  <Label className="text-xs font-semibold">Título do Cargo / Função *</Label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -264,7 +260,7 @@ export const PositionsPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label className="text-xs">Código CBO *</Label>
+                  <Label className="text-xs font-semibold">Código CBO *</Label>
                   <Input
                     value={cbo}
                     onChange={(e) => setCbo(e.target.value)}
@@ -274,54 +270,35 @@ export const PositionsPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs">Número de Trabalhadores</Label>
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold">Número de Trabalhadores</Label>
                   <Input
                     type="number"
                     min="1"
                     value={workerCount}
                     onChange={(e) => setWorkerCount(Number(e.target.value))}
-                    className="h-9 mt-1 text-xs"
+                    className="h-9 mt-1 text-xs max-w-xs"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label className="text-xs">Descrição Sucinta do Cargo</Label>
-                  <Input
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Ex: Opera tornos convencionais e CNC para usinagem de peças metálicas..."
-                    className="h-9 mt-1 text-xs"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Atividades Rotineiras (Diárias) *</Label>
+                  <Label className="text-xs font-semibold">Descrição da Atividade *</Label>
                   <Textarea
-                    value={routineActivities}
-                    onChange={(e) => setRoutineActivities(e.target.value)}
-                    placeholder="Fixação de ferramentas, abastecimento de matéria-prima, controle dimensional..."
+                    value={activityDescription}
+                    onChange={(e) => setActivityDescription(e.target.value)}
+                    placeholder="Descreva detalhadamente as atividades e tarefas executadas pelo cargo..."
                     required
-                    className="mt-1 text-xs min-h-[60px]"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Atividades Não Rotineiras / Eventuais</Label>
-                  <Textarea
-                    value={nonRoutineActivities}
-                    onChange={(e) => setNonRoutineActivities(e.target.value)}
-                    placeholder="Troca de fluido de corte, limpeza pesada da máquina e filtros..."
-                    className="mt-1 text-xs min-h-[50px]"
+                    rows={4}
+                    className="mt-1 text-xs min-h-[90px]"
                   />
                 </div>
               </div>
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isSaving} className="font-semibold shadow-sm">
+                <Button type="submit" disabled={isSaving} className="font-semibold shadow-xs">
                   {isSaving ? 'Salvando...' : editingPos ? 'Salvar Alterações' : 'Cadastrar'}
                 </Button>
               </DialogFooter>

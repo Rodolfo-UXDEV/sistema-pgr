@@ -78,9 +78,10 @@ export interface Position {
   sectorId: string;
   title: string;
   cbo: string; // Classificação Brasileira de Ocupações
-  description: string;
-  routineActivities: string;
-  nonRoutineActivities?: string;
+  activityDescription?: string; // Descrição da Atividade
+  description?: string; // Legado
+  routineActivities?: string; // Legado
+  nonRoutineActivities?: string; // Legado
   workerCount: number;
   createdAt: string;
   updatedAt: string;

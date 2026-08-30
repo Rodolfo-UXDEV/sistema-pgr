@@ -254,8 +254,9 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
           cbo: p.cbo,
           sectorName: sectors.find(s => s.id === p.sectorId)?.name || '-',
           workers: p.workerCount,
-          routine: p.routineActivities,
-          nonRoutine: p.nonRoutineActivities || 'Não identificadas'
+          activityDescription: p.activityDescription || p.routineActivities || p.description || 'Não identificada',
+          routine: p.activityDescription || p.routineActivities || p.description || 'Não identificada',
+          nonRoutine: p.nonRoutineActivities || '-'
         }))
       },
       {

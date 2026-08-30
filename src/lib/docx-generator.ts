@@ -222,8 +222,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
             spacing: { before: 200, after: 80 },
           }),
           new Paragraph({ text: `Setor: ${p.sectorName} | Efetivo Exposto: ${p.workers} trabalhador(es)` }),
-          new Paragraph({ text: `Atividades Rotineiras: ${p.routine}` }),
-          new Paragraph({ text: `Atividades Não Rotineiras: ${p.nonRoutine}`, spacing: { after: 150 } })
+          new Paragraph({ text: `Descrição da Atividade: ${p.activityDescription || p.routine || '-'}` , spacing: { after: 150 } })
         );
       }
     } else if (section.type === 'risk_inventory_table') {

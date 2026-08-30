@@ -412,8 +412,9 @@ export const PgrViewerPage: React.FC = () => {
                   <span className="font-bold text-foreground text-sm">{p.title} (CBO: {p.cbo})</span>
                   <Badge variant="outline" className="text-[10px]">{p.workerCount} expostos</Badge>
                 </div>
-                <p className="text-muted-foreground"><strong>Atividades Rotineiras:</strong> {p.routineActivities}</p>
-                {p.nonRoutineActivities && <p className="text-muted-foreground"><strong>Atividades Não Rotineiras:</strong> {p.nonRoutineActivities}</p>}
+                <p className="text-muted-foreground">
+                  <strong>Descrição da Atividade:</strong> {p.activityDescription || p.routineActivities || p.description || '-'}
+                </p>
               </div>
             ))}
           </div>
