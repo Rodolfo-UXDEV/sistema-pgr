@@ -159,12 +159,14 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
 - **1. Ajuste da Interface & Modal:**
   - Remoção dos campos redundantes: *"Nome / Título do GES \*"* e *"Descrição do Perfil de Exposição Similar"*.
   - A modal de cadastro e edição de GES agora possui apenas os 4 campos essenciais e diretos: *Unidade / Estabelecimento \**, *Setor \**, *Código do GES \** e *Quantidade Total de Expostos*.
+  - Ajuste de layout para posicionar **"Unidade / Estabelecimento \*"** e **"Setor \*"** empilhados verticalmente (um em cima do outro), seguidos da linha com *Código do GES* e *Quantidade Total de Expostos*.
   - Redimensionamento e centralização compacta da janela modal (`max-w-md`).
   - Atualização da tabela de listagem de GESs, exibindo de forma clara e limpa: *Código do GES*, *Setor / Lotação*, *Trabalhadores* e *Ações*.
 - **2. Adequação no Banco de Dados & Tipagem:**
   - Atualização da interface `GES` em `src/types/pgr.ts` tornando os campos `name` e `description` opcionais para total retrocompatibilidade.
   - Ajuste na busca e nos seletores do inventário de riscos (`RiskInventoryTable.tsx` e `RiskFormModal.tsx`).
-  - Build validado e publicado no GitHub / Vercel (Commit `fc56802`).
+  - Build validado e publicado no GitHub / Vercel (Commits `fc56802`, `5672e97` e `8630d01`).
+
 
 
 
