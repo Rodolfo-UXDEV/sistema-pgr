@@ -30,7 +30,7 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
 ### 2.1 Estrutura Organizacional
 1. **Multi-empresa / Multi-estabelecimento:** O sistema deve suportar múltiplas empresas (Razão Social, CNPJ, CNAE, Grau de Risco, Endereço, Responsável Legal).
 2. **Hierarquia Operacional:**
-   $$\text{Empresa} \longrightarrow \text{Estabelecimento/Unidade} \longrightarrow \text{Setor/Ambiente} \longrightarrow \text{Cargo/Função} \longrightarrow \text{GHE (Grupo Homogêneo de Exposição)}$$
+   $$\text{Empresa} \longrightarrow \text{Estabelecimento/Unidade} \longrightarrow \text{Setor/Ambiente} \longrightarrow \text{Cargo/Função} \longrightarrow \text{GES (Grupo de Exposição Similar)}$$
 3. **Profissionais Responsáveis:** Cadastro dos responsáveis técnicos pela elaboração do PGR (Engenheiro de Segurança com CREA/ART, Técnico de Segurança com Registro MTE, Médico do Trabalho com CRM/RQE).
 
 ### 2.2 Inventário de Riscos Ocupacionais (NR-01.5.7)
@@ -42,7 +42,7 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
    - **Acidentes / Mecânicos** (Máquinas desprotegidas, Queda de nível, Eletricidade, etc.)
 2. **Identificação do Perigo / Fator de Risco:**
    - Fonte geradora ou circunstância.
-   - Trabalhadores expostos (quantidade, cargos, GHE).
+   - Trabalhadores expostos (quantidade, cargos, GES).
    - Possíveis lesões ou agravos à saúde.
    - Tipo de exposição (contínua, intermitente, eventual).
 3. **Avaliação e Gradação de Risco (Matriz de Risco):**
@@ -75,7 +75,8 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
 - Suporte a modo claro / escuro se desejado, priorizando contraste e leitura de tabelas densas e matrizes de risco com cores padronizadas (Verde, Amarelo, Laranja, Vermelho).
 - Responsividade com foco em Desktop e Tablets para inspeções de campo.
 
-### 3.3 Regras de Segurança e Banco de Dados
-- NUNCA expor a `service_role_key` do Supabase no frontend.
-- Utilizar sempre chaves `anon` com RLS rígido.
-- Todas as operações com impacto sensível devem possuir trilha de integridade.
+### 3.4 Execução de Testes (Regra Mandatória)
+- **REGRA OBRIGATÓRIA:** SÓ execute testes (automatizados, scripts Puppeteer, testes de interface ou testes manuais) se o usuário SOLICITAR explicitamente. NÃO execute rotinas ou scripts de teste automaticamente sem pedido prévio do usuário.
+
+### 3.5 Análise e Adequação do Banco de Dados
+- **REGRA OBRIGATÓRIA:** Sempre que o usuário solicitar qualquer ajuste de telas, campos ou regras de negócio, analise proativamente se há necessidade de adequações no banco de dados / modelos de dados e realize as devidas alterações estruturais.
