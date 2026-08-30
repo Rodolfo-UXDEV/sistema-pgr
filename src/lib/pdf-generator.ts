@@ -5,6 +5,8 @@ import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, RiskInventoryItem, ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
+import { ensurePngDataUrl } from '@/lib/image-utils';
+import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
@@ -15,10 +17,17 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
-export function generatePgrPdf(ctx: PgrDocumentContext): void {
+export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   const docData = buildPgrFullDocument(ctx);
   const issuerConfig = getIssuerCompanyConfig();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  // Converte e garante que ambas as imagens sejam PNGs rasterizados válidos para o jsPDF
+  const emissoraLogoUrl = issuerConfig.logoUrl || DEFAULT_EMISSORA_LOGO;
+  const clienteLogoUrl = docData.header.companyLogo || DEFAULT_CLIENTE_LOGO;
+
+  const emissoraPng = await ensurePngDataUrl(emissoraLogoUrl, 600, 150);
+  const clientePng = await ensurePngDataUrl(clienteLogoUrl, 600, 150);
 
   const primaryColor: [number, number, number] = [15, 118, 110]; // Teal 700
   const secondaryColor: [number, number, number] = [51, 65, 85]; // Slate 700
@@ -38,57 +47,47 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
   // CAPA INSTITUCIONAL OFICIAL
   // ==========================================
   doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.rect(0, 0, 210, 15, 'F');
-  doc.rect(0, 282, 210, 15, 'F');
+  doc.rect(0, 0, 210, 12, 'F');
+  doc.rect(0, 285, 210, 12, 'F');
 
-  // Cabeçalho da Consultoria com Logo opcional
-  if (issuerConfig.logoUrl && issuerConfig.logoUrl.startsWith('data:image/')) {
+  // 1. Logotipo da Empresa Emissora / Consultoria SST
+  if (emissoraPng && emissoraPng.startsWith('data:image/')) {
     try {
-      doc.addImage(issuerConfig.logoUrl, 'PNG', 80, 18, 50, 15, undefined, 'FAST');
+      doc.addImage(emissoraPng, 'PNG', 65, 16, 80, 20, undefined, 'FAST');
     } catch (e) {
-      console.error('Erro ao adicionar logo no PDF:', e);
+      console.error('Erro ao adicionar logo da emissora no PDF:', e);
     }
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9.5);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 38, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text(issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 43, { align: 'center' });
-  } else {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-    doc.text(issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 30, { align: 'center' });
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(100, 116, 139);
-    doc.text(issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 35, { align: 'center' });
   }
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.text(docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 41, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text(docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 46, { align: 'center' });
 
   // Título Principal
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
+  doc.setFontSize(18);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text('PROGRAMA DE GERENCIAMENTO', 105, 65, { align: 'center' });
-  doc.text('DE RISCOS - PGR', 105, 75, { align: 'center' });
+  doc.text('PROGRAMA DE GERENCIAMENTO', 105, 66, { align: 'center' });
+  doc.text('DE RISCOS - PGR', 105, 74, { align: 'center' });
 
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text('GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) — NR-01', 105, 85, { align: 'center' });
+  doc.text('GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) — NR-01', 105, 83, { align: 'center' });
 
   doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.setLineWidth(0.8);
-  doc.line(40, 92, 170, 92);
+  doc.line(40, 89, 170, 89);
 
-  // Dados da Empresa com Logo do Cliente opcional
-  let companyStartY = 118;
-  if (docData.header.companyLogo && docData.header.companyLogo.startsWith('data:image/')) {
+  // 2. Dados da Empresa com Logotipo do Cliente
+  if (clientePng && clientePng.startsWith('data:image/')) {
     try {
-      doc.addImage(docData.header.companyLogo, 'PNG', 80, 100, 50, 14, undefined, 'FAST');
-      companyStartY = 120;
+      doc.addImage(clientePng, 'PNG', 65, 95, 80, 20, undefined, 'FAST');
     } catch (e) {
       console.error('Erro ao adicionar logo do cliente no PDF:', e);
     }
@@ -97,13 +96,13 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(15, 23, 42);
-  doc.text(docData.header.companyName.toUpperCase(), 105, companyStartY, { align: 'center' });
+  doc.text(docData.header.companyName.toUpperCase(), 105, 122, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(`CNPJ: ${docData.header.cnpj}`, 105, companyStartY + 7, { align: 'center' });
-  doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, companyStartY + 13, { align: 'center' });
+  doc.text(`CNPJ: ${docData.header.cnpj}`, 105, 129, { align: 'center' });
+  doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 135, { align: 'center' });
 
   // Bloco de Identificação
   doc.setFillColor(248, 250, 252);

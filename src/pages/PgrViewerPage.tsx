@@ -48,6 +48,7 @@ export const PgrViewerPage: React.FC = () => {
   } = usePgr();
 
   const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [customSections, setCustomSections] = useState<Record<string, PgrCustomSectionData>>({});
   const [issuerConfig, setIssuerConfig] = useState(getIssuerCompanyConfig());
 
@@ -108,8 +109,16 @@ export const PgrViewerPage: React.FC = () => {
     return found?.content || defaultContent;
   };
 
-  const handleDownloadPdf = () => {
-    generatePgrPdf(pgrContext);
+  const handleDownloadPdf = async () => {
+    setIsGeneratingPdf(true);
+    try {
+      await generatePgrPdf(pgrContext);
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      alert('Erro ao gerar PDF oficial.');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
   const handleDownloadDocx = async () => {
@@ -240,11 +249,12 @@ export const PgrViewerPage: React.FC = () => {
 
           <Button
             size="sm"
+            disabled={isGeneratingPdf}
             onClick={handleDownloadPdf}
             className="text-xs gap-1.5 font-semibold shadow-xs bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             <Download className="h-3.5 w-3.5" />
-            <span>Baixar PDF Oficial</span>
+            <span>{isGeneratingPdf ? 'Gerando PDF...' : 'Baixar PDF Oficial'}</span>
           </Button>
         </div>
       </div>

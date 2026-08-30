@@ -3,6 +3,7 @@ import {
   Packer, 
   Paragraph, 
   TextRun, 
+  ImageRun,
   Table, 
   TableRow, 
   TableCell, 
@@ -17,6 +18,8 @@ import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
+import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
+import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
 export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
   const docData = buildPgrFullDocument(ctx);
@@ -36,16 +39,37 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
   // ==========================================
   // CAPA INSTITUCIONAL
   // ==========================================
+
+  // 1. Logotipo da Empresa Emissora / Consultoria SST
+  const emissoraPng = await ensurePngDataUrl(docData.header.consultingLogo || DEFAULT_EMISSORA_LOGO, 600, 150);
+  const emissoraBytes = dataUrlToUint8Array(emissoraPng);
+
+  if (emissoraBytes) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 200, after: 150 },
+        children: [
+          new ImageRun({
+            data: emissoraBytes,
+            transformation: { width: 340, height: 85 },
+            type: 'png',
+          } as any),
+        ],
+      })
+    );
+  }
+
   children.push(
     new Paragraph({
       text: docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany,
       alignment: AlignmentType.CENTER,
-      spacing: { before: 200, after: 100 },
+      spacing: { before: 100, after: 80 },
     }),
     new Paragraph({
       text: docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea,
       alignment: AlignmentType.CENTER,
-      spacing: { after: 1200 },
+      spacing: { after: 1000 },
     }),
     new Paragraph({
       text: 'PROGRAMA DE GERENCIAMENTO DE RISCOS',
@@ -56,8 +80,31 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
     new Paragraph({
       text: 'PGR / GRO — NORMA REGULAMENTADORA Nº 01',
       alignment: AlignmentType.CENTER,
-      spacing: { after: 800 },
-    }),
+      spacing: { after: 600 },
+    })
+  );
+
+  // 2. Logotipo da Empresa Cliente Contratante
+  const clientePng = await ensurePngDataUrl(docData.header.companyLogo || DEFAULT_CLIENTE_LOGO, 600, 150);
+  const clienteBytes = dataUrlToUint8Array(clientePng);
+
+  if (clienteBytes) {
+    children.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { before: 100, after: 150 },
+        children: [
+          new ImageRun({
+            data: clienteBytes,
+            transformation: { width: 340, height: 85 },
+            type: 'png',
+          } as any),
+        ],
+      })
+    );
+  }
+
+  children.push(
     new Paragraph({
       text: docData.header.companyName.toUpperCase(),
       heading: HeadingLevel.HEADING_1,
@@ -67,7 +114,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
     new Paragraph({
       text: `CNPJ: ${docData.header.cnpj} | ${docData.header.establishmentName}`,
       alignment: AlignmentType.CENTER,
-      spacing: { after: 1400 },
+      spacing: { after: 1200 },
     }),
     new Paragraph({
       text: `DOCUMENTO: ${docData.header.code} - VERSÃO ${docData.header.version}`,
