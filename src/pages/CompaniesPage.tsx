@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { usePgr } from '@/context/PgrContext';
 import { Company } from '@/types/pgr';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -16,7 +16,7 @@ import {
   DialogDescription 
 } from '@/components/ui/dialog';
 import { formatCNPJ, maskCNPJ } from '@/lib/utils';
-import { Building2, Plus, Edit, Trash2, Check, Users, MapPin } from 'lucide-react';
+import { Building2, Plus, Edit, Trash2, Check, Users, MapPin, Upload, Image as ImageIcon, Trash } from 'lucide-react';
 
 export const CompaniesPage: React.FC = () => {
   const { companies, activeCompany, setActiveCompany, addCompany, updateCompany, deleteCompany } = usePgr();
@@ -42,7 +42,27 @@ export const CompaniesPage: React.FC = () => {
   const [legalRepresentative, setLegalRepresentative] = useState('');
   const [representativeRole, setRepresentativeRole] = useState('Diretor');
   const [employeeCount, setEmployeeCount] = useState(10);
+  const [logoUrl, setLogoUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione um arquivo de imagem válido (PNG, JPG, SVG, WebP).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('O tamanho da imagem não deve exceder 5 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setLogoUrl(base64);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const openNewModal = () => {
     setEditingCompany(null);
@@ -63,6 +83,7 @@ export const CompaniesPage: React.FC = () => {
     setLegalRepresentative('');
     setRepresentativeRole('Diretor');
     setEmployeeCount(10);
+    setLogoUrl('');
     setIsModalOpen(true);
   };
 
@@ -85,6 +106,7 @@ export const CompaniesPage: React.FC = () => {
     setLegalRepresentative(c.legalRepresentative);
     setRepresentativeRole(c.representativeRole);
     setEmployeeCount(c.employeeCount);
+    setLogoUrl(c.logoUrl || '');
     setIsModalOpen(true);
   };
 
@@ -117,6 +139,7 @@ export const CompaniesPage: React.FC = () => {
         legalRepresentative: legalRepresentative.trim() || 'Representante Legal',
         representativeRole: representativeRole.trim() || 'Diretor',
         employeeCount: Number(employeeCount) || 1,
+        logoUrl: logoUrl.trim() || undefined,
       };
 
       if (editingCompany) {
@@ -182,13 +205,22 @@ export const CompaniesPage: React.FC = () => {
               return (
                 <TableRow key={comp.id} className={isSelected ? 'bg-emerald-50/40 dark:bg-emerald-950/20' : ''}>
                   <TableCell className="font-semibold text-xs">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5">
+                      {comp.logoUrl ? (
+                        <div className="h-8 w-8 rounded-lg border border-border bg-white flex items-center justify-center p-0.5 shrink-0 overflow-hidden shadow-2xs">
+                          <img src={comp.logoUrl} alt={comp.name} className="max-h-full max-w-full object-contain" />
+                        </div>
+                      ) : (
+                        <div className="h-8 w-8 rounded-lg border border-border bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center shrink-0 font-bold text-xs">
+                          {comp.tradeName ? comp.tradeName[0].toUpperCase() : comp.name[0].toUpperCase()}
+                        </div>
+                      )}
                       <div className="flex flex-col">
                         <span className="font-bold text-foreground">{comp.tradeName || comp.name}</span>
                         <span className="text-[10px] text-muted-foreground">{comp.name}</span>
                       </div>
                       {isSelected && (
-                        <Badge variant="success" className="text-[9px] px-1.5 py-0">
+                        <Badge variant="success" className="text-[9px] px-1.5 py-0 ml-1">
                           Ativa
                         </Badge>
                       )}
@@ -273,12 +305,100 @@ export const CompaniesPage: React.FC = () => {
                 <span>{editingCompany ? 'Editar Empresa' : 'Cadastrar Nova Empresa'}</span>
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Dados cadastrais e enquadramento de grau de risco da NR-04.
+                Dados cadastrais, logotipo e enquadramento de grau de risco da NR-04.
               </DialogDescription>
             </DialogHeader>
 
             <form onSubmit={handleSave} className="space-y-4 pt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* 0. LOGOTIPO DA EMPRESA */}
+                <div className="md:col-span-2 space-y-2 bg-muted/20 p-3.5 rounded-xl border border-border">
+                  <Label className="text-xs font-semibold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <ImageIcon className="h-3.5 w-3.5 text-emerald-600" />
+                      Logotipo da Empresa
+                    </span>
+                    {logoUrl && (
+                      <span className="text-[10px] text-emerald-600 font-normal">
+                        ✓ Logotipo carregado
+                      </span>
+                    )}
+                  </Label>
+
+                  {logoUrl ? (
+                    <div className="flex items-center gap-3 bg-card p-2.5 rounded-lg border border-border">
+                      <div className="h-14 w-28 bg-white rounded-md border border-border/80 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                        <img src={logoUrl} alt="Logo preview" className="max-h-full max-w-full object-contain" />
+                      </div>
+                      <div className="flex-1 flex flex-col gap-1">
+                        <span className="text-[11px] font-medium text-foreground">Logotipo anexado</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="h-7 text-[10px] gap-1 px-2"
+                          >
+                            <Upload className="h-3 w-3" />
+                            Trocar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLogoUrl('')}
+                            className="h-7 text-[10px] gap-1 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <Trash className="h-3 w-3" />
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                      onDragLeave={() => setIsDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        const file = e.dataTransfer.files?.[0];
+                        if (file) handleLogoUpload(file);
+                      }}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-all flex items-center justify-center gap-2.5 ${
+                        isDragging 
+                          ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20' 
+                          : 'border-muted-foreground/30 hover:border-emerald-500/70 hover:bg-muted/40'
+                      }`}
+                    >
+                      <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0">
+                        <Upload className="h-4 w-4" />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-xs font-semibold text-foreground block">
+                          Clique ou arraste o logotipo da empresa
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          PNG transparente, JPG ou SVG (Máx 5MB)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file);
+                    }}
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                    className="hidden"
+                  />
+                </div>
+
                 {/* 1. CNPJ */}
                 <div className="md:col-span-2">
                   <Label className="text-xs font-semibold">CNPJ *</Label>
