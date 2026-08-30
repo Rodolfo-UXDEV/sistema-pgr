@@ -15,7 +15,7 @@ import {
   DialogFooter, 
   DialogDescription 
 } from '@/components/ui/dialog';
-import { formatCNPJ } from '@/lib/utils';
+import { formatCNPJ, maskCNPJ } from '@/lib/utils';
 import { Building2, Plus, Edit, Trash2, Check, Users, MapPin } from 'lucide-react';
 
 export const CompaniesPage: React.FC = () => {
@@ -279,8 +279,22 @@ export const CompaniesPage: React.FC = () => {
 
             <form onSubmit={handleSave} className="space-y-4 pt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* 1. CNPJ */}
                 <div className="md:col-span-2">
-                  <Label className="text-xs">Razão Social *</Label>
+                  <Label className="text-xs font-semibold">CNPJ *</Label>
+                  <Input
+                    value={cnpj}
+                    onChange={(e) => setCnpj(maskCNPJ(e.target.value))}
+                    placeholder="00.000.000/0001-00"
+                    required
+                    maxLength={18}
+                    className="h-9 mt-1 text-xs font-mono"
+                  />
+                </div>
+
+                {/* 2. RAZÃO SOCIAL */}
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold">Razão Social *</Label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -290,8 +304,9 @@ export const CompaniesPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs">Nome Fantasia</Label>
+                {/* 3. NOME FANTASIA */}
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold">Nome Fantasia</Label>
                   <Input
                     value={tradeName}
                     onChange={(e) => setTradeName(e.target.value)}
@@ -300,19 +315,42 @@ export const CompaniesPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs">CNPJ *</Label>
-                  <Input
-                    value={cnpj}
-                    onChange={(e) => setCnpj(e.target.value)}
-                    placeholder="00.000.000/0001-00"
-                    required
-                    className="h-9 mt-1 text-xs font-mono"
-                  />
+                {/* 4. ENDEREÇO */}
+                <div className="md:col-span-2 space-y-2 bg-muted/40 p-3 rounded-lg border border-border/60">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Endereço Completo</span>
+                  </Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="md:col-span-2">
+                      <Input
+                        value={street}
+                        onChange={(e) => setStreet(e.target.value)}
+                        placeholder="Logradouro, número, bairro (Ex: Av. das Indústrias, 1500)"
+                        className="h-9 text-xs"
+                      />
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Input
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        placeholder="Cidade"
+                        className="h-9 text-xs flex-1"
+                      />
+                      <Input
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
+                        placeholder="UF"
+                        maxLength={2}
+                        className="h-9 text-xs w-14 uppercase font-mono text-center"
+                      />
+                    </div>
+                  </div>
                 </div>
 
+                {/* 5. CNAE PRINCIPAL */}
                 <div>
-                  <Label className="text-xs">Código CNAE Principal</Label>
+                  <Label className="text-xs font-semibold">Código CNAE Principal</Label>
                   <Input
                     value={cnae}
                     onChange={(e) => setCnae(e.target.value)}
@@ -321,8 +359,9 @@ export const CompaniesPage: React.FC = () => {
                   />
                 </div>
 
+                {/* 6. GRAU DE RISCO */}
                 <div>
-                  <Label className="text-xs">Grau de Risco (NR-04)</Label>
+                  <Label className="text-xs font-semibold">Grau de Risco (NR-04)</Label>
                   <select
                     value={riskGrade}
                     onChange={(e) => setRiskGrade(Number(e.target.value) as 1 | 2 | 3 | 4)}
@@ -335,18 +374,20 @@ export const CompaniesPage: React.FC = () => {
                   </select>
                 </div>
 
+                {/* DESCRIÇÃO DO CNAE */}
                 <div className="md:col-span-2">
-                  <Label className="text-xs">Descrição da Atividade Econômica (CNAE)</Label>
+                  <Label className="text-xs font-semibold">Descrição da Atividade Econômica (CNAE)</Label>
                   <Input
                     value={cnaeDescription}
                     onChange={(e) => setCnaeDescription(e.target.value)}
-                    placeholder="Ex: Fabricação de produtos de metal e usinagem"
+                    placeholder="Ex: Serviços de usinagem, tornearia e solda"
                     className="h-9 mt-1 text-xs"
                   />
                 </div>
 
+                {/* 7. REPRESENTANTE LEGAL */}
                 <div>
-                  <Label className="text-xs">Representante Legal</Label>
+                  <Label className="text-xs font-semibold">Representante Legal</Label>
                   <Input
                     value={legalRepresentative}
                     onChange={(e) => setLegalRepresentative(e.target.value)}
@@ -355,8 +396,9 @@ export const CompaniesPage: React.FC = () => {
                   />
                 </div>
 
+                {/* 8. CARGO DO REPRESENTANTE */}
                 <div>
-                  <Label className="text-xs">Cargo do Representante</Label>
+                  <Label className="text-xs font-semibold">Cargo do Representante</Label>
                   <Input
                     value={representativeRole}
                     onChange={(e) => setRepresentativeRole(e.target.value)}
@@ -365,51 +407,24 @@ export const CompaniesPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs">Total de Empregados</Label>
+                {/* 9. TOTAL DE EMPREGADOS */}
+                <div className="md:col-span-2">
+                  <Label className="text-xs font-semibold">Total de Empregados</Label>
                   <Input
                     type="number"
                     min="1"
                     value={employeeCount}
                     onChange={(e) => setEmployeeCount(Number(e.target.value))}
-                    className="h-9 mt-1 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs">Cidade / UF</Label>
-                  <div className="flex gap-2 mt-1">
-                    <Input
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      placeholder="Joinville"
-                      className="h-9 text-xs flex-1"
-                    />
-                    <Input
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      placeholder="SC"
-                      className="h-9 text-xs w-16 uppercase font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Endereço Completo (Rua, Número, Bairro)</Label>
-                  <Input
-                    value={street}
-                    onChange={(e) => setStreet(e.target.value)}
-                    placeholder="Ex: Av. Industrial das Nações, 1500 - Distrito Industrial"
-                    className="h-9 mt-1 text-xs"
+                    className="h-9 mt-1 text-xs max-w-xs"
                   />
                 </div>
               </div>
 
-              <DialogFooter className="gap-2">
+              <DialogFooter className="gap-2 pt-2">
                 <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={isSaving} className="font-semibold shadow-sm">
+                <Button type="submit" disabled={isSaving} className="font-semibold shadow-xs">
                   {isSaving ? 'Salvando...' : editingCompany ? 'Salvar Alterações' : 'Cadastrar'}
                 </Button>
               </DialogFooter>

@@ -14,6 +14,15 @@ export function formatCNPJ(cnpj: string): string {
   );
 }
 
+export function maskCNPJ(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return digits.replace(/^(\d{2})(\d+)/, "$1.$2");
+  if (digits.length <= 8) return digits.replace(/^(\d{2})(\d{3})(\d+)/, "$1.$2.$3");
+  if (digits.length <= 12) return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d+)/, "$1.$2.$3/$4");
+  return digits.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d+)/, "$1.$2.$3/$4-$5");
+}
+
 export function formatCPF(cpf: string): string {
   const digits = cpf.replace(/\D/g, "");
   if (digits.length !== 11) return cpf;
