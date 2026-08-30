@@ -132,11 +132,13 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
 - **1. Ajuste da Interface & Modal:**
   - Remoção dos campos: *Descrição Sucinta do Cargo*, *Atividades Rotineiras (Diárias)* e *Atividades Não Rotineiras / Eventuais*.
   - Inserção do campo unificado **"Descrição da Atividade"** (`activityDescription`) na modal de cadastro e edição de cargos.
+  - Alinhamento e proporcionalidade visual do campo *Número de Trabalhadores* na coluna esquerda do grid da modal.
   - Atualização da tabela de visualização da listagem de cargos com a nova coluna *Descrição da Atividade*.
 - **2. Adequação do Banco de Dados & Exportações:**
   - Atualização da interface `Position` em `src/types/pgr.ts` com o novo campo `activityDescription` e retrocompatibilidade para dados legados.
   - Atualização do gerador Word (.docx), visualizador de documentos PGR (`PgrViewerPage.tsx`) e do template oficial (`pgr-official-template.ts`).
   - Atualização do seed de dados no Google Cloud Firestore (`src/lib/firebase-service.ts`).
-  - Build validado e publicado no GitHub / Vercel (Commit `e5af223`).
+  - Build validado e publicado no GitHub / Vercel (Commits `e5af223` e `029abc3`).
+
 
 
