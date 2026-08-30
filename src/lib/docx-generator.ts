@@ -96,9 +96,10 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
   // ==========================================
   for (const section of docData.sections) {
     // Título da Seção
+    const sectionHeading = /^\d+\./.test(section.title) ? section.title : `${section.number}. ${section.title}`;
     children.push(
       new Paragraph({
-        text: `${section.number}. ${section.title}`,
+        text: sectionHeading,
         heading: HeadingLevel.HEADING_2,
         spacing: { before: 600, after: 200 },
       })

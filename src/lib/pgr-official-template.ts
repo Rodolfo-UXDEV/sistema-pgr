@@ -11,7 +11,7 @@ import {
 } from '@/types/pgr';
 import { formatDate, formatCNPJ } from '@/lib/utils';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
-import { SEVERITY_SCALE, PROBABILITY_SCALE, RISK_LEVEL_CONFIG } from '@/lib/risk-matrix';
+import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 
 export interface PgrDocumentContext {
   company: Company;
@@ -34,85 +34,82 @@ export const OFFICIAL_PGR_TEXTS = {
   consultingCompany: 'ES Engenharia de Segurança do Trabalho LTDA.',
   consultingCrea: 'CREA-SP: 01.194.103',
 
-  // 5. INTRODUÇÃO
-  introducao: `O Programa de Gerenciamento de Riscos (PGR) é um conjunto de ações coordenadas de prevenção que têm por objetivo garantir locais de trabalho seguros e saudáveis. O PGR materializa o Gerenciamento de Riscos Ocupacionais (GRO) da organização, contemplando o Inventário de Riscos e o Plano de Ação, estruturados de acordo com as disposições estabelecidas na Norma Regulamentadora nº 01 (NR-01) aprovada pela Portaria SEPRT nº 6.730/2020 e suas atualizações.
+  // 4. INTRODUÇÃO
+  introducao: `Este documento intitulado PGR – Programa de Gerenciamento de Riscos, integra o Gerenciamento de Riscos Ocupacionais GRO, visando apresentar a implantação de um programa de prioridades para a preservação da saúde e da integridade física dos trabalhadores, gerenciando os riscos ocupacionais através da antecipação, reconhecimento, avaliação e consequentemente controle das ocorrências existentes ou que venham a existir no ambiente de trabalho das dependências da empresa.`,
 
-A organização adota este documento como diretriz mestra para a antecipação, reconhecimento, avaliação e consequente controle dos riscos ocupacionais existentes ou que venham a existir no ambiente de trabalho, preservando a integridade física e a saúde dos seus trabalhadores, bem como a proteção do meio ambiente e dos recursos naturais.`,
+  // 5. OBJETIVO
+  objetivo: `A intenção na elaboração deste trabalho é evitar que ocorram acidentes e adoecimentos ocupacionais, gerenciando os riscos e fornecendo aos trabalhadores, informações quanto aos riscos e perigos envolvidos em sua atividade laboral e a eficácia das medidas controle utilizadas ou a serem implantadas.
 
-  // 6. OBJETIVO
-  objetivo: `O objetivo primordial deste Programa de Gerenciamento de Riscos é estabelecer as diretrizes e requisitos para o gerenciamento de riscos ocupacionais e as medidas de prevenção em Segurança e Saúde no Trabalho (SST), visando:
+NR 01 - 1.1.1 - O objetivo desta Norma é estabelecer as disposições gerais, o campo de aplicação, os termos e as definições comuns às Normas Regulamentadoras - NR relativas a segurança e saúde no trabalho e as diretrizes e os requisitos para o gerenciamento de riscos ocupacionais e as medidas de prevenção em Segurança e Saúde no Trabalho - SST. (Redação dada pela Portaria SEPRT n.º 6.730, de 09/03/20)
 
-a) Identificar os perigos e possíveis lesões ou agravos à saúde dos trabalhadores;
-b) Avaliar os riscos ocupacionais indicando o nível de risco e a necessidade de adoção de medidas preventivas;
-c) Classificar os riscos ocupacionais para determinar a necessidade e prioridade de adoção de medidas de prevenção;
-d) Implementar medidas de prevenção, de acordo com a classificação de risco e na ordem de prioridade estabelecida na NR-01;
-e) Acompanhar o controle dos riscos ocupacionais e avaliar a eficácia das medidas implementadas;
-f) Manter registro da evolução das ações e subsidiar a elaboração e atualização do Programa de Controle Médico de Saúde Ocupacional (PCMSO) conforme a NR-07.`,
+As NR são de observância obrigatória pelas organizações e pelos órgãos públicos da administração direta e indireta, bem como pelos órgãos dos Poderes Legislativo, Judiciário e Ministério Público, que possuam empregados regidos pela Consolidação das Leis do Trabalho.`,
 
-  // 7. FUNDAMENTAÇÃO LEGAL
-  fundamentacaoLegal: `Este documento está fundamentado na legislação vigente e nas Normas Regulamentadoras da Portaria MTB nº 3.214/1978, em especial:
+  // 6. FUNDAMENTAÇÃO LEGAL
+  fundamentacaoLegal: `O presente Programa de Gerenciamento de Riscos – PGR foi elaborado em atendimento às disposições da Norma Regulamentadora nº 1 (NR-1) – Disposições Gerais e Gerenciamento de Riscos Ocupacionais, estabelecida pelo Ministério do Trabalho e Emprego, e demais dispositivos legais e normativos aplicáveis à Segurança e Saúde no Trabalho.
 
-• NR-01: Disposições Gerais e Gerenciamento de Riscos Ocupacionais (Portaria SEPRT nº 6.730/2020);
-• NR-05: Comissão Interna de Prevenção de Acidentes e Assédio (CIPA);
-• NR-06: Equipamentos de Proteção Individual (EPI);
-• NR-07: Programa de Controle Médico de Saúde Ocupacional (PCMSO);
-• NR-09: Avaliação e Controle das Exposições Ocupacionais a Agentes Físicos, Químicos e Biológicos;
-• NR-10: Segurança em Instalações e Serviços em Eletricidade;
-• NR-12: Segurança no Trabalho em Máquinas e Equipamentos;
-• NR-15: Atividades e Operações Insalubres e seus Anexos;
+O PGR constitui a materialização do Gerenciamento de Riscos Ocupacionais – GRO, tendo como finalidade a identificação dos perigos, a avaliação dos riscos ocupacionais e o estabelecimento de medidas de prevenção e controle, visando à eliminação, redução ou controle dos riscos presentes nos ambientes e processos de trabalho. A NR-1 estabelece que o gerenciamento deve abranger os riscos decorrentes de agentes físicos, químicos e biológicos, acidentes e fatores ergonômicos, incluindo os fatores de risco psicossociais relacionados ao trabalho.
+
+Principais referências normativas:
+• NR-1: Disposições Gerais e Gerenciamento de Riscos Ocupacionais;
+• NR-9: Avaliação e Controle das Exposições Ocupacionais a Agentes Físicos, Químicos e Biológicos;
+• NR-15: Atividades e Operações Insalubres e seus respectivos Anexos;
+• NR-16: Atividades e Operações Periculosas;
 • NR-17: Ergonomia e Avaliação Ergonômica Preliminar (AEP);
-• NR-23: Proteção Contra Incêndios;
-• Normas de Higiene Ocupacional (NHO) da FUNDACENTRO;
-• Consolidação das Leis do Trabalho (CLT), Capítulo V do Título II.`,
+• Demais NRs aplicáveis às atividades e aos riscos identificados;
+• Normas de Higiene Ocupacional – NHO/Fundacentro, quando aplicáveis;
+• Consolidação das Leis do Trabalho (CLT), Capítulo V do Título II.
 
-  // 8. RESPONSABILIDADES
-  responsabilidades: {
-    empregador: `Cabe ao empregador:
-a) Implementar o PGR e garantir os recursos necessários para o cumprimento do Plano de Ação;
-b) Cumprir e fazer cumprir as disposições legais e regulamentares sobre segurança e saúde no trabalho;
-c) Informar aos trabalhadores os riscos ocupacionais existentes nos locais de trabalho, as medidas de prevenção e os resultados dos exames médicos e avaliações ambientais;
-d) Adotar medidas para determinar que, em caso de risco grave e iminente, os trabalhadores possam interromper de imediato suas atividades.`,
-    trabalhadores: `Cabe aos trabalhadores:
-a) Cumprir as disposições legais e regulamentares sobre segurança e saúde no trabalho, inclusive as ordens de serviço expedidas pelo empregador;
-b) Submeter-se aos exames médicos previstos no PCMSO (NR-07);
-c) Utilizar corretamente os Equipamentos de Proteção Individual (EPI) fornecidos pelo empregador;
-d) Colaborar com a organização na aplicação das Normas Regulamentadoras e comunicar imediatamente ao superior hierárquico situações de risco.`,
-    sesmt: `Cabe aos Responsáveis Técnicos e ao SESMT:
-a) Coordenar tecnicamente a identificação de perigos e a avaliação de riscos ocupacionais;
-b) Propor medidas de engenharia, proteção coletiva (EPC), administrativas e individuais (EPI);
-c) Acompanhar o cronograma de implementação do Plano de Ação e realizar a verificação de eficácia;
-d) Subsidiar tecnicamente o médico coordenador na elaboração do PCMSO.`
-  },
+O disposto nestes itens deve ser utilizado para fins de prevenção e gerenciamento dos riscos ocupacionais. Para fins de caracterização de atividades ou operações insalubres ou perigosas, devem ser aplicadas as disposições previstas na NR-15 – Atividades e operações insalubres e NR-16 – Atividades e operações perigosas.`,
 
-  // 9. METODOLOGIA DE AÇÃO & GRO
-  metodologiaGro: `O processo de Gerenciamento de Riscos Ocupacionais (GRO) da organização segue a sistemática contínua do ciclo PDCA (Plan-Do-Check-Act):
+  // 7. RESPONSABILIDADES
+  responsabilidades: `CABE AO EMPREGADOR:
+a) cumprir e fazer cumprir as disposições legais e regulamentares sobre segurança e saúde no trabalho;
+b) informar aos trabalhadores:
+   I. os riscos ocupacionais existentes nos locais de trabalho;
+   II. as medidas de prevenção adotadas pela empresa para eliminar ou reduzir tais riscos;
+   III. os resultados dos exames médicos e de exames complementares de diagnóstico aos quais os próprios trabalhadores forem submetidos; e
+   IV. os resultados das avaliações ambientais realizadas nos locais de trabalho.
+c) elaborar ordens de serviço sobre segurança e saúde no trabalho, dando ciência aos trabalhadores;
+d) permitir que representantes dos trabalhadores acompanhem a fiscalização dos preceitos legais e regulamentares sobre segurança e saúde no trabalho;
+e) determinar procedimentos que devem ser adotados em caso de acidente ou doença relacionada ao trabalho, incluindo a análise de suas causas;
+f) disponibilizar à Inspeção do Trabalho todas as informações relativas à segurança e saúde no trabalho; e
+g) implementar medidas de prevenção, ouvidos os trabalhadores, de acordo com a seguinte ordem de prioridade:
+   I. eliminação dos fatores de risco;
+   II. minimização e controle dos fatores de risco, com a adoção de medidas de proteção coletiva;
+   III. minimização e controle dos fatores de risco, com a adoção de medidas administrativas ou de organização do trabalho; e
+   IV. adoção de medidas de proteção individual.
 
-1. Levantamento Preliminar de Perigos e Reconhecimento: Realizado antes do início do funcionamento do estabelecimento, para as mudanças e introdução de novos processos ou máquinas.
-2. Identificação de Perigos: Caracterização dos processos e ambientes, descrição das atividades rotineiras e não rotineiras, identificação das fontes geradoras, dos trabalhadores expostos e das possíveis lesões ou agravos à saúde.
-3. Avaliação de Riscos: Gradação da severidade das possíveis lesões ou agravos à saúde e da probabilidade ou chance de sua ocorrência, combinadas na Matriz Bidimensional de Risco 5x5.
-4. Controle de Riscos: Adoção prioritária de medidas de eliminação, substituição, controle de engenharia (EPC), medidas administrativas e, por fim, equipamentos de proteção individual (EPI).
-5. Acompanhamento e Revisão: O PGR deve ser revisado a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos ou quando identificadas inadequações no controle.`,
+CABE AO TRABALHADOR:
+a) cumprir as disposições legais e regulamentares sobre segurança e saúde no trabalho, inclusive as ordens de serviço expedidas pelo empregador;
+b) submeter-se aos exames médicos previstos nas NR;
+c) colaborar com a organização na aplicação das NR; e
+d) usar o equipamento de proteção individual fornecido pelo empregador.`,
 
-  // 10. PREPARAÇÃO PARA EMERGÊNCIAS
-  preparacaoEmergencias: `A organização mantém procedimentos e instruções para resposta a cenários de emergência no estabelecimento, contemplando:
-a) Identificação dos cenários de emergência prováveis (incêndios, vazamentos químicos, panes elétricas e acidentes graves);
-b) Medidas para evacuação rápida e segura dos ambientes de trabalho;
-c) Dispositivos de alarme, combate a princípio de incêndio (extintores, hidrantes) e rotas de fuga desobstruídas e sinalizadas;
-d) Treinamento periódico dos membros da Brigada de Emergência e simulações práticas.`,
+  // 8. ESTRUTURA DO PGR
+  estruturaPgr: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-8')?.defaultContent || '',
 
-  // 11. ANÁLISE DE ACIDENTES E ACOMPANHAMENTO DA SAÚDE
-  acompanhamentoSaude: `A organização assegura a integração total entre o PGR e o PCMSO (NR-07):
-• Os dados quantitativos e qualitativos do Inventário de Riscos subsidiam diretamente o médico do trabalho na definição dos exames clínicos e complementares admissionais, periódicos, de retorno ao trabalho, mudança de riscos e demissionais.
-• Todos os acidentes e incidentes de trabalho são investigados tecnicamente para identificação das causas raízes e revisão imediata do inventário de riscos e plano de ação.`,
+  // 9. DESENVOLVIMENTO DO PGR E MATRIZ
+  desenvolvimentoPgr: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-9')?.defaultContent || '',
 
-  // 12. ENCERRAMENTO E ASSINATURAS
-  termoEncerramento: `O presente Programa de Gerenciamento de Riscos (PGR) foi elaborado com base nas inspeções técnicas periciais realizadas nos postos de trabalho do estabelecimento, nas informações prestadas pela direção da empresa e nas medições instrumentais efetuadas.
+  // 10. METODOLOGIA DE ANÁLISE POR AGENTE
+  metodologiaAgentes: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-10')?.defaultContent || '',
 
-Declara-se que as informações aqui contidas expressam fielmente a realidade das condições ambientais e operacionais identificadas na data da avaliação, assumindo o Responsável Técnico e o Representante Legal da empresa as responsabilidades legais e normativas decorrentes.`
+  // 11. INSTRUMENTOS DE MEDIÇÃO
+  instrumentosMedicao: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-11')?.defaultContent || '',
+
+  // 16. ENCERRAMENTO
+  termoEncerramento: `Este trabalho atende às Portarias Mtb. 3214 de 08/06/78, 3111 de 29/11/89 e 29/12/1994.
+
+O principal objetivo deste programa foi de elaborar o PGR oferecendo dados e medidas de controle sobre a exposição ocupacional a que estão sujeitos os trabalhadores, para que possam ser gerenciados.
+
+Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à saúde de nossos trabalhadores, evidentemente isto é impossível, pois grande parte dos riscos são inerentes a atividades. Daí nossa alternativa é controlarmos a exposição a estes riscos, a fim de que fiquem dentro de parâmetros seguros à saúde desses trabalhadores.`,
+
+  // 17. MODELO DE RECIBO DE EPI
+  reciboEpi: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-17')?.defaultContent || ''
 };
 
 /**
- * Monta o sumário estruturado e o conteúdo para exibição formal e exportação
+ * Monta o documento PGR estruturado com todas as 17 seções completas
  */
 export function buildPgrFullDocument(ctx: PgrDocumentContext) {
   const { company, establishment, sectors, positions, professionals, pgr, riskInventory, actionPlans } = ctx;
@@ -125,6 +122,7 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
   return {
     header: {
       companyName: company.name,
+      tradeName: company.tradeName || company.name,
       establishmentName: establishment ? establishment.name : 'Unidade Matriz',
       cnpj: formatCNPJ(company.cnpj),
       cnae: `${company.cnae} - ${company.cnaeDescription}`,
@@ -142,14 +140,14 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-1',
         number: '1',
-        title: getSec('sec-1')?.title || 'CONTROLE DE REVISÕES DO DOCUMENTO',
+        title: getSec('sec-1')?.title || '1. CONTROLE DE REVISÕES DO DOCUMENTO',
         type: 'text' as const,
-        content: getSec('sec-1')?.content || `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.\n\n| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${pgr.version} | ${formatDate(pgr.elaborationDate)} | ${pgr.revisionReason || 'Emissão Oficial do PGR e Inventário de Riscos Ocupacionais'} |`
+        content: getSec('sec-1')?.content || `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.\n\n| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${pgr.version} | ${formatDate(pgr.elaborationDate)} | ${pgr.revisionReason || 'Emissão Inicial do Programa de Gerenciamento de Riscos (PGR)'} |`
       },
       {
         id: 'sec-2',
         number: '2',
-        title: getSec('sec-2')?.title || 'INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
+        title: getSec('sec-2')?.title || '2. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
         type: 'company_info' as const,
         data: {
           razaoSocial: company.name,
@@ -167,7 +165,7 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-3',
         number: '3',
-        title: getSec('sec-3')?.title || 'RESPONSABILIDADE TÉCNICA PELA ELABORAÇÃO',
+        title: getSec('sec-3')?.title || '3. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR',
         type: 'responsibles_info' as const,
         elaborador: techResp ? {
           nome: techResp.name,
@@ -187,56 +185,63 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-4',
         number: '4',
-        title: getSec('sec-4')?.title || 'INTRODUÇÃO E DIRETRIZES GERAIS',
+        title: getSec('sec-4')?.title || '4. INTRODUÇÃO',
         type: 'text' as const,
         content: getSec('sec-4')?.content || OFFICIAL_PGR_TEXTS.introducao
       },
       {
         id: 'sec-5',
         number: '5',
-        title: getSec('sec-5')?.title || 'OBJETIVOS DO PROGRAMA',
+        title: getSec('sec-5')?.title || '5. OBJETIVO',
         type: 'text' as const,
         content: getSec('sec-5')?.content || OFFICIAL_PGR_TEXTS.objetivo
       },
       {
         id: 'sec-6',
         number: '6',
-        title: getSec('sec-6')?.title || 'FUNDAMENTAÇÃO LEGAL E NORMAS APLICÁVEIS',
+        title: getSec('sec-6')?.title || '6. FUNDAMENTAÇÃO LEGAL',
         type: 'text' as const,
         content: getSec('sec-6')?.content || OFFICIAL_PGR_TEXTS.fundamentacaoLegal
       },
       {
         id: 'sec-7',
         number: '7',
-        title: getSec('sec-7')?.title || 'RESPONSABILIDADES E ATRIBUIÇÕES',
+        title: getSec('sec-7')?.title || '7. RESPONSABILIDADES',
         type: 'text' as const,
-        content: getSec('sec-7')?.content || `${OFFICIAL_PGR_TEXTS.responsabilidades.empregador}\n\n${OFFICIAL_PGR_TEXTS.responsabilidades.trabalhadores}\n\n${OFFICIAL_PGR_TEXTS.responsabilidades.sesmt}`
+        content: getSec('sec-7')?.content || OFFICIAL_PGR_TEXTS.responsabilidades
       },
       {
         id: 'sec-8',
         number: '8',
-        title: getSec('sec-8')?.title || 'ESTRUTURA DO GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO)',
+        title: getSec('sec-8')?.title || '8. ESTRUTURA DO PGR',
         type: 'text' as const,
-        content: getSec('sec-8')?.content || OFFICIAL_PGR_TEXTS.metodologiaGro
+        content: getSec('sec-8')?.content || OFFICIAL_PGR_TEXTS.estruturaPgr
       },
       {
         id: 'sec-9',
         number: '9',
-        title: getSec('sec-9')?.title || 'METODOLOGIA DA MATRIZ DE RISCO 5X5 (SEVERIDADE X PROBABILIDADE)',
+        title: getSec('sec-9')?.title || '9. DESENVOLVIMENTO DO PGR E MATRIZ DE RISCO 5X5',
         type: 'text' as const,
-        content: getSec('sec-9')?.content || 'A organização adota a Matriz Bidimensional de Risco 5x5 em consonância com os preceitos da NR-01.'
+        content: getSec('sec-9')?.content || OFFICIAL_PGR_TEXTS.desenvolvimentoPgr
       },
       {
         id: 'sec-10',
         number: '10',
-        title: getSec('sec-10')?.title || 'DIRETRIZES DE RECONHECIMENTO DOS AGENTES OCUPACIONAIS',
+        title: getSec('sec-10')?.title || '10. METODOLOGIA DE ANÁLISE POR AGENTE OCUPACIONAL',
         type: 'text' as const,
-        content: getSec('sec-10')?.content || ''
+        content: getSec('sec-10')?.content || OFFICIAL_PGR_TEXTS.metodologiaAgentes
       },
       {
         id: 'sec-11',
         number: '11',
-        title: getSec('sec-11')?.title || 'CARACTERIZAÇÃO DOS SETORES E AMBIENTES DE TRABALHO',
+        title: getSec('sec-11')?.title || '11. INSTRUMENTOS UTILIZADOS NAS AVALIAÇÕES DOS RISCOS',
+        type: 'text' as const,
+        content: getSec('sec-11')?.content || OFFICIAL_PGR_TEXTS.instrumentosMedicao
+      },
+      {
+        id: 'sec-12',
+        number: '12',
+        title: getSec('sec-12')?.title || '12. CARACTERIZAÇÃO DOS PROCESSOS, AMBIENTES E SETORES',
         type: 'sectors_list' as const,
         sectors: sectors.map(s => ({
           name: s.name,
@@ -245,9 +250,9 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
         }))
       },
       {
-        id: 'sec-12',
-        number: '12',
-        title: getSec('sec-12')?.title || 'FUNÇÕES, CBO E DESCRIÇÃO DAS ATIVIDADES OCUPACIONAIS',
+        id: 'sec-13',
+        number: '13',
+        title: getSec('sec-13')?.title || '13. CARGO, FUNÇÕES E CARACTERIZAÇÃO DAS ATIVIDADES',
         type: 'positions_list' as const,
         positions: positions.map(p => ({
           title: p.title,
@@ -260,35 +265,35 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
         }))
       },
       {
-        id: 'sec-13',
-        number: '13',
-        title: getSec('sec-13')?.title || 'PREPARAÇÃO PARA EMERGÊNCIAS, TREINAMENTOS E SAÚDE OCUPACIONAL',
-        type: 'text' as const,
-        content: getSec('sec-13')?.content || `${OFFICIAL_PGR_TEXTS.preparacaoEmergencias}\n\n${OFFICIAL_PGR_TEXTS.acompanhamentoSaude}`
-      },
-      {
         id: 'sec-14',
         number: '14',
-        title: getSec('sec-14')?.title || 'INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)',
+        title: getSec('sec-14')?.title || '14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
         type: 'risk_inventory_table' as const,
         items: riskInventory
       },
       {
         id: 'sec-15',
         number: '15',
-        title: getSec('sec-15')?.title || 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (NR-01.5.5 - 5W2H)',
+        title: getSec('sec-15')?.title || '15. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
         type: 'action_plan_table' as const,
         items: actionPlans
       },
       {
         id: 'sec-16',
         number: '16',
-        title: getSec('sec-16')?.title || 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE TÉCNICA',
+        title: getSec('sec-16')?.title || '16. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
         type: 'closing_signatures' as const,
         text: getSec('sec-16')?.content || OFFICIAL_PGR_TEXTS.termoEncerramento,
         date: formatDate(pgr.elaborationDate),
         city: company.address.city,
         state: company.address.state
+      },
+      {
+        id: 'sec-17',
+        number: '17',
+        title: getSec('sec-17')?.title || '17. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
+        type: 'text' as const,
+        content: getSec('sec-17')?.content || OFFICIAL_PGR_TEXTS.reciboEpi
       }
     ]
   };
