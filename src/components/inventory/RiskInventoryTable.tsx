@@ -61,7 +61,8 @@ export const RiskInventoryTable: React.FC = () => {
       const term = searchTerm.toLowerCase();
       const sectorName = sectors.find(s => s.id === r.sectorId)?.name.toLowerCase() || '';
       const posName = positions.find(p => p.id === r.positionId)?.title.toLowerCase() || '';
-      const gheName = ghes.find(g => g.id === r.gheId)?.name.toLowerCase() || '';
+      const gheMatch = ghes.find(g => g.id === r.gheId);
+      const gheName = (gheMatch?.code || gheMatch?.name || '').toLowerCase();
       const matchName = r.hazardName.toLowerCase().includes(term);
       const matchSource = r.sourceDescription.toLowerCase().includes(term);
       const matchDamage = r.healthDamage.toLowerCase().includes(term);

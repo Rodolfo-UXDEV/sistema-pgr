@@ -36,8 +36,6 @@ export const GhesPage: React.FC = () => {
   const [establishmentId, setEstablishmentId] = useState('');
   const [sectorId, setSectorId] = useState('');
   const [code, setCode] = useState('');
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [selectedPositions, setSelectedPositions] = useState<string[]>([]);
   const [workerCount, setWorkerCount] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
@@ -54,8 +52,6 @@ export const GhesPage: React.FC = () => {
     const firstSec = sectors.find(s => s.establishmentId === firstEst)?.id || '';
     setSectorId(firstSec);
     setCode(`GES-0${currentGhes.length + 1}`);
-    setName('');
-    setDescription('');
     setSelectedPositions([]);
     setWorkerCount(1);
     setIsModalOpen(true);
@@ -65,9 +61,7 @@ export const GhesPage: React.FC = () => {
     setEditingGhe(ghe);
     setEstablishmentId(ghe.establishmentId);
     setSectorId(ghe.sectorId);
-    setCode(ghe.code.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-'));
-    setName(ghe.name.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-'));
-    setDescription(ghe.description ? ghe.description.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-') : '');
+    setCode((ghe.code || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-'));
     setSelectedPositions(ghe.positionIds || []);
     setWorkerCount(ghe.workerCount);
     setIsModalOpen(true);
@@ -75,23 +69,21 @@ export const GhesPage: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!establishmentId || !sectorId || !code.trim() || !name.trim()) {
-      alert('Preencha os campos obrigatórios (Código, Nome, Estabelecimento e Setor do GES).');
+    if (!establishmentId || !sectorId || !code.trim()) {
+      alert('Preencha os campos obrigatórios (Código, Estabelecimento e Setor do GES).');
       return;
     }
 
     setIsSaving(true);
     try {
       const sanitizedCode = code.trim().replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
-      const sanitizedName = name.trim().replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
-      const sanitizedDescription = description.trim().replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
 
       const gheData: Omit<GHE, 'id' | 'createdAt' | 'updatedAt'> = {
         establishmentId,
         sectorId,
         code: sanitizedCode,
-        name: sanitizedName,
-        description: sanitizedDescription,
+        name: sanitizedCode,
+        description: '',
         positionIds: selectedPositions,
         workerCount: Number(workerCount) || 1,
       };
@@ -144,68 +136,66 @@ export const GhesPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Código & Nome</TableHead>
-              <TableHead>Setor</TableHead>
-              <TableHead>Descrição da Exposição Similar</TableHead>
+              <TableHead>Código do GES</TableHead>
+              <TableHead>Setor / Lotação</TableHead>
               <TableHead className="text-center">Trabalhadores</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentGhes.map((ghe) => {
-              const sec = sectors.find(s => s.id === ghe.sectorId);
-              const displayCode = (ghe.code || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
-              const displayName = (ghe.name || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
-              const displayDesc = ghe.description ? ghe.description.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-') : 'Condições similares de trabalho';
+            {currentGhes.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-28 text-center text-muted-foreground text-xs">
+                  Nenhum Grupo de Exposição Similar (GES) cadastrado para este estabelecimento.
+                </TableCell>
+              </TableRow>
+            ) : (
+              currentGhes.map((ghe) => {
+                const sec = sectors.find(s => s.id === ghe.sectorId);
+                const displayCode = (ghe.code || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-');
 
-              return (
-                <TableRow key={ghe.id}>
-                  <TableCell className="font-semibold text-xs">
-                    <div className="flex flex-col">
+                return (
+                  <TableRow key={ghe.id}>
+                    <TableCell className="font-semibold text-xs">
                       <span className="font-bold text-foreground font-mono text-emerald-700 dark:text-emerald-400">{displayCode}</span>
-                      <span className="text-[11px] text-muted-foreground">{displayName}</span>
-                    </div>
-                  </TableCell>
+                    </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground font-medium">
-                    {sec?.name || '-'}
-                  </TableCell>
+                    <TableCell className="text-xs text-muted-foreground font-medium">
+                      {sec?.name || '-'}
+                    </TableCell>
 
-                  <TableCell className="text-xs text-muted-foreground max-w-[320px] truncate" title={displayDesc}>
-                    {displayDesc}
-                  </TableCell>
+                    <TableCell className="text-center text-xs font-bold">
+                      {ghe.workerCount}
+                    </TableCell>
 
-                  <TableCell className="text-center text-xs font-bold">
-                    {ghe.workerCount}
-                  </TableCell>
-
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                        onClick={() => openEditModal(ghe)}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={async () => {
-                          if (window.confirm('Excluir este GES?')) {
-                            await deleteGhe(ghe.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => openEditModal(ghe)}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={async () => {
+                            if (window.confirm('Excluir este GES?')) {
+                              await deleteGhe(ghe.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>
@@ -213,7 +203,7 @@ export const GhesPage: React.FC = () => {
       {/* Modal */}
       {isModalOpen && (
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg">
                 <Users className="h-5 w-5 text-emerald-600" />
@@ -274,27 +264,6 @@ export const GhesPage: React.FC = () => {
                     value={workerCount}
                     onChange={(e) => setWorkerCount(Number(e.target.value))}
                     className="h-9 mt-1 text-xs"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-xs font-semibold">Nome / Título do GES *</Label>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Ex: GES 01 - Usinagem Pesada e Tornos CNC"
-                    required
-                    className="h-9 mt-1 text-xs"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-xs font-semibold">Descrição do Perfil de Exposição Similar</Label>
-                  <Textarea
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Descreva os fatores ambientais e operacionais compartilhados pelo grupo..."
-                    className="mt-1 text-xs min-h-[60px]"
                   />
                 </div>
               </div>

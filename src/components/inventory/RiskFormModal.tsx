@@ -346,7 +346,9 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   >
                     <option value="">Nenhum / Selecionar GES</option>
                     {sectorGhes.map((g) => (
-                      <option key={g.id} value={g.id}>{g.code} - {g.name}</option>
+                      <option key={g.id} value={g.id}>
+                        {g.code}{g.name && g.name !== g.code ? ` - ${g.name}` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>

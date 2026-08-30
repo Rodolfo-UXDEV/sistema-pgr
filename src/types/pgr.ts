@@ -92,9 +92,9 @@ export interface GES {
   establishmentId: string;
   sectorId: string;
   code: string; // Ex: GES-01, GES-PROD-02
-  name: string;
-  description: string;
-  positionIds: string[];
+  name?: string;
+  description?: string;
+  positionIds?: string[];
   workerCount: number;
   createdAt: string;
   updatedAt: string;
