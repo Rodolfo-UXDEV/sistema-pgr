@@ -153,7 +153,19 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Atualização dos prefixos de códigos padrão (`GES-01`, `GES-02`) no Firestore e seed de dados.
   - Execução de script de migração e rotina de sanitização automática de dados legados no Firestore, convertendo qualquer registro com `GHE-` para `GES-`.
   - Persistência e integridade das coleções existentes mantidas 100% ativas no Firestore.
-  - Build testado e publicado na Vercel (Commits `e6c0db9`, `06c8edf` e `d6b119b`).
+---
+
+### [2026-08-30] - Simplificação e Otimização da Modal de GES (Exclusão de Campos)
+- **1. Ajuste da Interface & Modal:**
+  - Remoção dos campos redundantes: *"Nome / Título do GES \*"* e *"Descrição do Perfil de Exposição Similar"*.
+  - A modal de cadastro e edição de GES agora possui apenas os 4 campos essenciais e diretos: *Unidade / Estabelecimento \**, *Setor \**, *Código do GES \** e *Quantidade Total de Expostos*.
+  - Redimensionamento e centralização compacta da janela modal (`max-w-md`).
+  - Atualização da tabela de listagem de GESs, exibindo de forma clara e limpa: *Código do GES*, *Setor / Lotação*, *Trabalhadores* e *Ações*.
+- **2. Adequação no Banco de Dados & Tipagem:**
+  - Atualização da interface `GES` em `src/types/pgr.ts` tornando os campos `name` e `description` opcionais para total retrocompatibilidade.
+  - Ajuste na busca e nos seletores do inventário de riscos (`RiskInventoryTable.tsx` e `RiskFormModal.tsx`).
+  - Build validado e publicado no GitHub / Vercel (Commit `fc56802`).
+
 
 
 
