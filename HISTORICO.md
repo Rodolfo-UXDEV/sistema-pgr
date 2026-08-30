@@ -138,7 +138,22 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Atualização da interface `Position` em `src/types/pgr.ts` com o novo campo `activityDescription` e retrocompatibilidade para dados legados.
   - Atualização do gerador Word (.docx), visualizador de documentos PGR (`PgrViewerPage.tsx`) e do template oficial (`pgr-official-template.ts`).
   - Atualização do seed de dados no Google Cloud Firestore (`src/lib/firebase-service.ts`).
-  - Build validado e publicado no GitHub / Vercel (Commits `e5af223` e `029abc3`).
+  - Build validado e publicado no GitHub / Vercel (Commits `e5af223`, `029abc3` e `366cbd3`).
+
+---
+
+### [2026-08-30] - Migração Terminológica Completa de GHE para GES (Grupo de Exposição Similar)
+- **1. Atualização no Sistema e Menus:**
+  - Substituição da nomenclatura e siglas de *GHE (Grupos Homogêneos de Exposição)* para **"Grupo de Exposição Similar (GES)"** em toda a aplicação.
+  - Atualização do Menu Lateral (`Sidebar.tsx`), rotas (`/ges` e `/ghes`), cabeçalhos, formulários modais, botões e tabelas de dados.
+  - Atualização do formulário e tabela do Inventário de Riscos (`RiskFormModal.tsx` e `RiskInventoryTable.tsx`).
+  - Atualização do painel de monitoramento do banco de dados (`DatabaseSettingsPage.tsx`).
+- **2. Adequação no Banco de Dados & Tipagem:**
+  - Criação da interface oficial `GES` em `src/types/pgr.ts` mantendo alias de tipagem `type GHE = GES` para integridade.
+  - Atualização dos prefixos de códigos padrão (`GES-01`, `GES-02`) no Firestore e seed de dados.
+  - Persistência e integridade das coleções existentes mantidas 100% ativas no Firestore.
+  - Build testado e publicado na Vercel (Commit `e6c0db9`).
+
 
 
 
