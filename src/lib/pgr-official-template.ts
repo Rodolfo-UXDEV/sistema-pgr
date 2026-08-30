@@ -12,6 +12,7 @@ import {
 import { formatDate, formatCNPJ } from '@/lib/utils';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
+import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 
 export interface PgrDocumentContext {
   company: Company;
@@ -113,6 +114,7 @@ Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à sa
  */
 export function buildPgrFullDocument(ctx: PgrDocumentContext) {
   const { company, establishment, sectors, positions, professionals, pgr, riskInventory, actionPlans } = ctx;
+  const issuerConfig = getIssuerCompanyConfig();
 
   const techResp = professionals.find(p => p.id === pgr.technicalResponsibleId) || professionals[0];
   const medResp = professionals.find(p => p.id === pgr.medicalResponsibleId);
@@ -132,9 +134,12 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       year: new Date(pgr.validityStart).getFullYear().toString(),
       validityPeriod: `${formatDate(pgr.validityStart)} a ${formatDate(pgr.validityEnd)}`,
       elaborationDate: formatDate(pgr.elaborationDate),
-      techRespName: techResp ? techResp.name : 'Engenheiro de Segurança do Trabalho',
-      techRespCouncil: techResp ? `${techResp.registrationCouncil} ${techResp.registrationNumber}/${techResp.registrationState}` : 'CREA/CRM',
-      techRespArt: techResp ? (techResp.artRrt || 'ART Emitida') : 'ART Emitida'
+      techRespName: techResp ? techResp.name : (issuerConfig.technicalManager?.name || 'Engenheiro de Segurança do Trabalho'),
+      techRespCouncil: techResp ? `${techResp.registrationCouncil} ${techResp.registrationNumber}/${techResp.registrationState}` : (issuerConfig.technicalManager?.council || 'CREA/CRM'),
+      techRespArt: techResp ? (techResp.artRrt || 'ART Emitida') : 'ART Emitida',
+      consultingCompany: issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany,
+      consultingCrea: issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea,
+      consultingLogo: issuerConfig.logoUrl || ''
     },
     sections: [
       {
@@ -173,7 +178,7 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
           conselho: `${techResp.registrationCouncil}: ${techResp.registrationNumber}/${techResp.registrationState}`,
           art: techResp.artRrt || 'ART/RRT Emitida',
           email: techResp.email || '-',
-          empresaConsultoria: OFFICIAL_PGR_TEXTS.consultingCompany
+          empresaConsultoria: `${issuerConfig.name} (${issuerConfig.registrationCouncil})`
         } : null,
         medicoPcmso: medResp ? {
           nome: medResp.name,

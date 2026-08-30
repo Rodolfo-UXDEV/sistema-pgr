@@ -262,3 +262,30 @@ export interface PGRDocument {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface IssuerCompanyConfig {
+  name: string; // Razão Social da Empresa Emissora / Consultoria SST
+  tradeName?: string; // Nome Fantasia
+  cnpj: string; // CNPJ da Emissora
+  registrationCouncil: string; // ex: 'CREA-SP: 01.194.103'
+  phone?: string;
+  email?: string;
+  website?: string;
+  address: {
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  technicalManager?: {
+    name: string;
+    role: string;
+    council: string;
+    cpf?: string;
+  };
+  logoUrl?: string; // Logotipo da Consultoria em Base64 ou URL
+  updatedAt?: string;
+}

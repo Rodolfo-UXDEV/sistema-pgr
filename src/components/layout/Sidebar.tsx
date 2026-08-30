@@ -63,6 +63,7 @@ export const Sidebar: React.FC<{ isOpen: boolean; onCloseMobile?: () => void }> 
   ];
 
   const supportNav: NavItem[] = [
+    { label: 'Empresa Emissora & Logo', path: '/empresa-emissora', icon: Building2 },
     { label: 'Modelo Base do PGR', path: '/modelo-base-pgr', icon: BookOpen },
     { label: 'Catálogo de Perigos', path: '/catalogo-perigos', icon: AlertTriangle },
     { 

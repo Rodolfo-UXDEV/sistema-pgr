@@ -4,6 +4,7 @@ import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, RiskInventoryItem, ActionPlanItem } from '@/types/pgr';
+import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
@@ -16,6 +17,7 @@ function hexToRgb(hex: string): [number, number, number] {
 
 export function generatePgrPdf(ctx: PgrDocumentContext): void {
   const docData = buildPgrFullDocument(ctx);
+  const issuerConfig = getIssuerCompanyConfig();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   const primaryColor: [number, number, number] = [15, 118, 110]; // Teal 700
@@ -39,15 +41,31 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
   doc.rect(0, 0, 210, 15, 'F');
   doc.rect(0, 282, 210, 15, 'F');
 
-  // Cabeçalho da Consultoria
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(OFFICIAL_PGR_TEXTS.consultingCompany, 105, 30, { align: 'center' });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
-  doc.text(OFFICIAL_PGR_TEXTS.consultingCrea, 105, 35, { align: 'center' });
+  // Cabeçalho da Consultoria com Logo opcional
+  if (issuerConfig.logoUrl && issuerConfig.logoUrl.startsWith('data:image/')) {
+    try {
+      doc.addImage(issuerConfig.logoUrl, 'PNG', 80, 18, 50, 15, undefined, 'FAST');
+    } catch (e) {
+      console.error('Erro ao adicionar logo no PDF:', e);
+    }
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 38, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 43, { align: 'center' });
+  } else {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.text(issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 30, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 35, { align: 'center' });
+  }
 
   // Título Principal
   doc.setFont('helvetica', 'bold');

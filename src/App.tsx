@@ -18,6 +18,7 @@ import { GhesPage } from '@/pages/GhesPage';
 import { ProfessionalsPage } from '@/pages/ProfessionalsPage';
 import { HazardCatalogPage } from '@/pages/HazardCatalogPage';
 import { DatabaseSettingsPage } from '@/pages/DatabaseSettingsPage';
+import { IssuerCompanyPage } from '@/pages/IssuerCompanyPage';
 
 export function App() {
   return (
@@ -42,6 +43,7 @@ export function App() {
             <Route path="profissionais" element={<ProfessionalsPage />} />
             
             {/* Apoio e Configurações */}
+            <Route path="empresa-emissora" element={<IssuerCompanyPage />} />
             <Route path="modelo-base-pgr" element={<GlobalPgrTemplatePage />} />
             <Route path="catalogo-perigos" element={<HazardCatalogPage />} />
             <Route path="config-banco" element={<DatabaseSettingsPage />} />

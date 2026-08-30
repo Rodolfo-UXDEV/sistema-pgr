@@ -16,6 +16,7 @@ import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
+import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
 import { 
   ArrowLeft, 
   Download, 
@@ -48,6 +49,7 @@ export const PgrViewerPage: React.FC = () => {
 
   const [isGeneratingDocx, setIsGeneratingDocx] = useState(false);
   const [customSections, setCustomSections] = useState<Record<string, PgrCustomSectionData>>({});
+  const [issuerConfig, setIssuerConfig] = useState(getIssuerCompanyConfig());
 
   const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
   const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
@@ -58,13 +60,15 @@ export const PgrViewerPage: React.FC = () => {
     const refresh = () => {
       if (pgr) {
         setResolvedList(getResolvedPgrSections(pgr.id));
+        setIssuerConfig(getIssuerCompanyConfig());
       }
     };
-    refresh();
     window.addEventListener('pgr_template_updated', refresh);
+    window.addEventListener(ISSUER_UPDATED_EVENT, refresh);
     window.addEventListener('focus', refresh);
     return () => {
       window.removeEventListener('pgr_template_updated', refresh);
+      window.removeEventListener(ISSUER_UPDATED_EVENT, refresh);
       window.removeEventListener('focus', refresh);
     };
   }, [pgr]);
@@ -250,12 +254,21 @@ export const PgrViewerPage: React.FC = () => {
         
         {/* CAPA FORMAL */}
         <div className="text-center space-y-6 border-b border-border pb-12">
+          {issuerConfig.logoUrl && (
+            <div className="flex justify-center mb-1">
+              <img 
+                src={issuerConfig.logoUrl} 
+                alt={`Logo ${issuerConfig.name}`} 
+                className="h-16 md:h-20 max-w-xs object-contain"
+              />
+            </div>
+          )}
           <div className="space-y-1">
             <p className="text-xs font-bold tracking-widest text-emerald-700 dark:text-emerald-400 uppercase">
-              {OFFICIAL_PGR_TEXTS.consultingCompany}
+              {issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany}
             </p>
             <p className="text-[11px] text-muted-foreground font-mono">
-              {OFFICIAL_PGR_TEXTS.consultingCrea}
+              {issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea}
             </p>
           </div>
 
