@@ -126,3 +126,17 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Compatibilidade garantida com a coleção `companies` do Firestore.
   - Build testado e publicado na Vercel.
 
+---
+
+### [2026-08-30] - Simplificação e Unificação dos Campos de Atividades em Cargos & Funções
+- **1. Ajuste da Interface & Modal:**
+  - Remoção dos campos: *Descrição Sucinta do Cargo*, *Atividades Rotineiras (Diárias)* e *Atividades Não Rotineiras / Eventuais*.
+  - Inserção do campo unificado **"Descrição da Atividade"** (`activityDescription`) na modal de cadastro e edição de cargos.
+  - Atualização da tabela de visualização da listagem de cargos com a nova coluna *Descrição da Atividade*.
+- **2. Adequação do Banco de Dados & Exportações:**
+  - Atualização da interface `Position` em `src/types/pgr.ts` com o novo campo `activityDescription` e retrocompatibilidade para dados legados.
+  - Atualização do gerador Word (.docx), visualizador de documentos PGR (`PgrViewerPage.tsx`) e do template oficial (`pgr-official-template.ts`).
+  - Atualização do seed de dados no Google Cloud Firestore (`src/lib/firebase-service.ts`).
+  - Build validado e publicado no GitHub / Vercel (Commit `e5af223`).
+
+
