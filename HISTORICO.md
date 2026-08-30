@@ -151,8 +151,10 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
 - **2. Adequação no Banco de Dados & Tipagem:**
   - Criação da interface oficial `GES` em `src/types/pgr.ts` mantendo alias de tipagem `type GHE = GES` para integridade.
   - Atualização dos prefixos de códigos padrão (`GES-01`, `GES-02`) no Firestore e seed de dados.
+  - Execução de script de migração e rotina de sanitização automática de dados legados no Firestore, convertendo qualquer registro com `GHE-` para `GES-`.
   - Persistência e integridade das coleções existentes mantidas 100% ativas no Firestore.
-  - Build testado e publicado na Vercel (Commit `e6c0db9`).
+  - Build testado e publicado na Vercel (Commits `e6c0db9`, `06c8edf` e `d6b119b`).
+
 
 
 
