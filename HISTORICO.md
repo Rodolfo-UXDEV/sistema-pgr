@@ -107,3 +107,22 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Comprovada a gravação em tempo real no Google Cloud Firestore com leitura das novas coleções via API.
 - **3. Confirmação Final:**
   - 100% dos dados alterados na Vercel estão persistidos e sincronizados no Google Cloud Firestore.
+
+---
+
+### [2026-08-30] - Reordenação da Modal de Cadastro de Empresas & Mascaramento Dinâmico
+- **1. Reordenação Estrita dos Campos:**
+  - Reorganização do formulário modal de cadastro e edição de empresas para seguir rigorosamente o fluxo:
+    1. `CNPJ` (com máscara de digitação `maskCNPJ`)
+    2. `Razão Social`
+    3. `Nome Fantasia`
+    4. `Endereço Completo` (Logradouro, número, bairro, Cidade e UF)
+    5. `Código CNAE Principal` & `Descrição da Atividade Econômica`
+    6. `Grau de Risco (NR-04)`
+    7. `Representante Legal`
+    8. `Cargo do Representante`
+    9. `Total de Empregados`
+- **2. Validação & Banco de Dados:**
+  - Compatibilidade garantida com a coleção `companies` do Firestore.
+  - Build testado e publicado na Vercel.
+
