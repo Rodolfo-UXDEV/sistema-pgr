@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import { IssuerCompanyConfig } from '@/types/pgr';
+import { DEFAULT_EMISSORA_LOGO } from '@/lib/default-logos';
 
 export const ISSUER_STORAGE_KEY = 'pgr_issuer_company_config_v1';
 export const ISSUER_UPDATED_EVENT = 'pgr_issuer_company_updated';
@@ -28,7 +29,7 @@ export const DEFAULT_ISSUER_COMPANY: IssuerCompanyConfig = {
     council: 'CREA-SP: 5.060.011.940',
     cpf: '132.188.318-81',
   },
-  logoUrl: '',
+  logoUrl: DEFAULT_EMISSORA_LOGO,
 };
 
 /**

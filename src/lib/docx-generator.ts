@@ -38,12 +38,12 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
   // ==========================================
   children.push(
     new Paragraph({
-      text: OFFICIAL_PGR_TEXTS.consultingCompany,
+      text: docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany,
       alignment: AlignmentType.CENTER,
       spacing: { before: 200, after: 100 },
     }),
     new Paragraph({
-      text: OFFICIAL_PGR_TEXTS.consultingCrea,
+      text: docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea,
       alignment: AlignmentType.CENTER,
       spacing: { after: 1200 },
     }),

@@ -13,6 +13,7 @@ import { formatDate, formatCNPJ } from '@/lib/utils';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
+import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
 export interface PgrDocumentContext {
   company: Company;
@@ -139,7 +140,8 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       techRespArt: techResp ? (techResp.artRrt || 'ART Emitida') : 'ART Emitida',
       consultingCompany: issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany,
       consultingCrea: issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea,
-      consultingLogo: issuerConfig.logoUrl || ''
+      consultingLogo: issuerConfig.logoUrl || DEFAULT_EMISSORA_LOGO,
+      companyLogo: company.logoUrl || DEFAULT_CLIENTE_LOGO
     },
     sections: [
       {

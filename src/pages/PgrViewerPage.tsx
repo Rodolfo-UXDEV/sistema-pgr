@@ -281,9 +281,20 @@ export const PgrViewerPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="space-y-1.5 py-4 bg-muted/40 rounded-xl border border-border/60 max-w-xl mx-auto">
-            <p className="text-lg font-bold text-foreground">{docData.header.companyName.toUpperCase()}</p>
-            <p className="text-xs text-muted-foreground">CNPJ: {docData.header.cnpj} | {docData.header.establishmentName}</p>
+          <div className="space-y-3 py-5 px-6 bg-muted/40 rounded-xl border border-border/60 max-w-xl mx-auto flex flex-col items-center">
+            {docData.header.companyLogo && (
+              <div className="p-2 bg-white rounded-lg border border-border shadow-2xs max-w-xs flex items-center justify-center">
+                <img 
+                  src={docData.header.companyLogo} 
+                  alt={`Logo ${docData.header.companyName}`} 
+                  className="h-14 max-w-full object-contain"
+                />
+              </div>
+            )}
+            <div className="space-y-0.5 text-center">
+              <p className="text-lg font-bold text-foreground">{docData.header.companyName.toUpperCase()}</p>
+              <p className="text-xs text-muted-foreground">CNPJ: {docData.header.cnpj} | {docData.header.establishmentName}</p>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-left max-w-xl mx-auto p-4 bg-background border border-border rounded-xl font-medium">

@@ -83,17 +83,27 @@ export function generatePgrPdf(ctx: PgrDocumentContext): void {
   doc.setLineWidth(0.8);
   doc.line(40, 92, 170, 92);
 
-  // Dados da Empresa
+  // Dados da Empresa com Logo do Cliente opcional
+  let companyStartY = 118;
+  if (docData.header.companyLogo && docData.header.companyLogo.startsWith('data:image/')) {
+    try {
+      doc.addImage(docData.header.companyLogo, 'PNG', 80, 100, 50, 14, undefined, 'FAST');
+      companyStartY = 120;
+    } catch (e) {
+      console.error('Erro ao adicionar logo do cliente no PDF:', e);
+    }
+  }
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(13);
   doc.setTextColor(15, 23, 42);
-  doc.text(docData.header.companyName.toUpperCase(), 105, 120, { align: 'center' });
+  doc.text(docData.header.companyName.toUpperCase(), 105, companyStartY, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9.5);
   doc.setTextColor(71, 85, 105);
-  doc.text(`CNPJ: ${docData.header.cnpj}`, 105, 128, { align: 'center' });
-  doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 134, { align: 'center' });
+  doc.text(`CNPJ: ${docData.header.cnpj}`, 105, companyStartY + 7, { align: 'center' });
+  doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, companyStartY + 13, { align: 'center' });
 
   // Bloco de Identificação
   doc.setFillColor(248, 250, 252);

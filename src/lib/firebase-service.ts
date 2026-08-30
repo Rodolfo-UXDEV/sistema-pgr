@@ -21,6 +21,7 @@ import {
   ActionPlanItem 
 } from '@/types/pgr';
 import { DEFAULT_HAZARDS } from '@/lib/default-hazards';
+import { DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
 // Nomes das coleções no Firestore
 export const COLLECTIONS = {
@@ -237,6 +238,7 @@ export async function seedFirestoreDatabase(): Promise<boolean> {
       legalRepresentative: 'Carlos Eduardo Silveira',
       representativeRole: 'Diretor Geral',
       employeeCount: 45,
+      logoUrl: DEFAULT_CLIENTE_LOGO,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

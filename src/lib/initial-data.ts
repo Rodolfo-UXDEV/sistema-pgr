@@ -9,6 +9,7 @@ import {
   RiskInventoryItem, 
   ActionPlanItem 
 } from '@/types/pgr';
+import { DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
 // Base limpa por padrão para testes do zero
 export const INITIAL_COMPANIES: Company[] = [];
@@ -45,6 +46,7 @@ export const DEMO_COMPANIES: Company[] = [
     legalRepresentative: 'Carlos Eduardo Silveira',
     representativeRole: 'Diretor Industrial',
     employeeCount: 68,
+    logoUrl: DEFAULT_CLIENTE_LOGO,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }
