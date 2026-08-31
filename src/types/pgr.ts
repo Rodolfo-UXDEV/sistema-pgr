@@ -68,13 +68,13 @@ export interface Sector {
   id: string;
   establishmentId: string;
   name: string;
-  description: string;
-  physicalCharacteristics: {
-    floorType: string;
-    wallType: string;
-    roofType: string;
-    ventilationType: 'NATURAL' | 'ARTIFICIAL' | 'MISTA';
-    lightingType: 'NATURAL' | 'ARTIFICIAL' | 'MISTA';
+  description?: string;
+  physicalCharacteristics?: {
+    floorType?: string;
+    wallType?: string;
+    roofType?: string;
+    ventilationType?: 'NATURAL' | 'ARTIFICIAL' | 'MISTA' | string;
+    lightingType?: 'NATURAL' | 'ARTIFICIAL' | 'MISTA' | string;
   };
   createdAt: string;
   updatedAt: string;

@@ -254,13 +254,19 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
           new Paragraph({
             children: [new TextRun({ text: `Setor: ${s.name}`, bold: true })],
             spacing: { before: 200, after: 80 },
-          }),
-          new Paragraph({ text: `Descrição: ${s.description}` }),
-          new Paragraph({
-            text: `Estrutura Física: Piso ${s.characteristics.floorType} | Paredes ${s.characteristics.wallType} | Cobertura ${s.characteristics.roofType} | Ventilação ${s.characteristics.ventilationType} | Iluminação ${s.characteristics.lightingType}`,
-            spacing: { after: 150 },
           })
         );
+        if (s.description) {
+          children.push(new Paragraph({ text: `Descrição: ${s.description}` }));
+        }
+        if (s.characteristics && s.characteristics.floorType) {
+          children.push(
+            new Paragraph({
+              text: `Estrutura Física: Piso ${s.characteristics.floorType || '-'} | Paredes ${s.characteristics.wallType || '-'} | Cobertura ${s.characteristics.roofType || '-'} | Ventilação ${s.characteristics.ventilationType || '-'} | Iluminação ${s.characteristics.lightingType || '-'}`,
+              spacing: { after: 150 },
+            })
+          );
+        }
       }
     } else if (section.type === 'positions_list') {
       for (const p of section.positions) {

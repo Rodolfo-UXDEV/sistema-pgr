@@ -552,9 +552,11 @@ export const PgrBuilderPage: React.FC = () => {
                         {sectors.map((s) => (
                           <div key={s.id} className="p-3 bg-muted/20 border border-border rounded-lg text-xs space-y-1">
                             <span className="font-bold text-foreground">{s.name}</span>
-                            <p className="text-muted-foreground text-[11px]">
-                              Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
-                            </p>
+                            {s.physicalCharacteristics?.floorType && (
+                              <p className="text-muted-foreground text-[11px]">
+                                Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
+                              </p>
+                            )}
                           </div>
                         ))}
                       </div>

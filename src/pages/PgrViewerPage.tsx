@@ -464,10 +464,12 @@ export const PgrViewerPage: React.FC = () => {
             {sectors.map((s) => (
               <div key={s.id} className="p-3 bg-muted/20 border border-border rounded-xl text-xs space-y-1">
                 <span className="font-bold text-foreground block text-sm">{s.name}</span>
-                <p className="text-muted-foreground">{s.description || 'Ambiente operacional'}</p>
-                <div className="pt-1 text-[11px] text-muted-foreground font-mono">
-                  Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Cobertura: {s.physicalCharacteristics.roofType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
-                </div>
+                {s.description && <p className="text-muted-foreground">{s.description}</p>}
+                {s.physicalCharacteristics?.floorType && (
+                  <div className="pt-1 text-[11px] text-muted-foreground font-mono">
+                    Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Cobertura: {s.physicalCharacteristics.roofType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
+                  </div>
+                )}
               </div>
             ))}
           </div>

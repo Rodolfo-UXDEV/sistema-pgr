@@ -185,17 +185,26 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
         doc.text(`Setor: ${s.name}`, 14, currentY);
         currentY += 4;
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(71, 85, 105);
-        const descLines = doc.splitTextToSize(`Descrição: ${s.description}`, 182);
-        doc.text(descLines, 14, currentY);
-        currentY += descLines.length * 3.5 + 2;
+        if (s.description) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(71, 85, 105);
+          const descLines = doc.splitTextToSize(`Descrição: ${s.description}`, 182);
+          doc.text(descLines, 14, currentY);
+          currentY += descLines.length * 3.5 + 2;
+        }
 
-        const structText = `Estrutura Física: Piso ${s.characteristics.floorType} | Paredes ${s.characteristics.wallType} | Cobertura ${s.characteristics.roofType} | Ventilação ${s.characteristics.ventilationType} | Iluminação ${s.characteristics.lightingType}`;
-        const structLines = doc.splitTextToSize(structText, 182);
-        doc.text(structLines, 14, currentY);
-        currentY += structLines.length * 3.5 + 5;
+        if (s.characteristics && s.characteristics.floorType) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(71, 85, 105);
+          const structText = `Estrutura Física: Piso ${s.characteristics.floorType || '-'} | Paredes ${s.characteristics.wallType || '-'} | Cobertura ${s.characteristics.roofType || '-'} | Ventilação ${s.characteristics.ventilationType || '-'} | Iluminação ${s.characteristics.lightingType || '-'}`;
+          const structLines = doc.splitTextToSize(structText, 182);
+          doc.text(structLines, 14, currentY);
+          currentY += structLines.length * 3.5 + 5;
+        } else {
+          currentY += 2;
+        }
       }
 
     } else if (section.type === 'positions_list') {
