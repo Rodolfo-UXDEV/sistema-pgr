@@ -69,6 +69,7 @@ export const PgrDocumentsPage: React.FC = () => {
   const [year, setYear] = useState(new Date().getFullYear());
   const [validityStart, setValidityStart] = useState('');
   const [validityEnd, setValidityEnd] = useState('');
+  const [elaborationDate, setElaborationDate] = useState('');
   const [status, setStatus] = useState<PgrDocumentStatus>('DRAFT');
   const [technicalResponsibleId, setTechnicalResponsibleId] = useState('');
   const [medicalResponsibleId, setMedicalResponsibleId] = useState('');
@@ -80,14 +81,20 @@ export const PgrDocumentsPage: React.FC = () => {
   const companyEstablishments = establishments.filter(e => !activeCompany || e.companyId === activeCompany.id);
 
   const openNewDocModal = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const twoYearsLaterDate = new Date();
+    twoYearsLaterDate.setFullYear(twoYearsLaterDate.getFullYear() + 2);
+    const twoYearsLater = twoYearsLaterDate.toISOString().split('T')[0];
+
     setEditingDoc(null);
     setEstablishmentId(activeEstablishment?.id || companyEstablishments[0]?.id || '');
     setCode(`PGR-${new Date().getFullYear()}-${String(companyDocs.length + 1).padStart(3, '0')}`);
-    setTitle(`Programa de Gerenciamento de Riscos - ${new Date().getFullYear()}/${new Date().getFullYear() + 1}`);
+    setTitle(`Programa de Gerenciamento de Riscos - ${new Date().getFullYear()}`);
     setVersion('1.0');
     setYear(new Date().getFullYear());
-    setValidityStart(new Date().toISOString().split('T')[0]);
-    setValidityEnd(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+    setElaborationDate(today);
+    setValidityStart(today);
+    setValidityEnd(twoYearsLater);
     setStatus('DRAFT');
     setTechnicalResponsibleId(professionals.find(p => p.role === 'ENGENHEIRO_SEGURANCA' || p.role === 'TECNICO_SEGURANCA')?.id || '');
     setMedicalResponsibleId(professionals.find(p => p.role === 'MEDICO_TRABALHO')?.id || '');
@@ -103,7 +110,8 @@ export const PgrDocumentsPage: React.FC = () => {
     setTitle(doc.title);
     setVersion(doc.version);
     setYear(doc.year);
-    setValidityStart(doc.validityStart);
+    setElaborationDate(doc.elaborationDate || doc.validityStart || new Date().toISOString().split('T')[0]);
+    setValidityStart(doc.validityStart || doc.elaborationDate || new Date().toISOString().split('T')[0]);
     setValidityEnd(doc.validityEnd);
     setStatus(doc.status);
     setTechnicalResponsibleId(doc.technicalResponsibleId || '');
@@ -119,24 +127,29 @@ export const PgrDocumentsPage: React.FC = () => {
       alert('Selecione uma empresa.');
       return;
     }
-    if (!establishmentId || !code.trim() || !title.trim()) {
+    if (!establishmentId || !code.trim() || !title.trim() || !elaborationDate) {
       alert('Preencha os campos obrigatórios.');
       return;
     }
 
     setIsSaving(true);
     try {
+      const vStart = elaborationDate;
+      const dEnd = new Date(elaborationDate + 'T00:00:00');
+      dEnd.setFullYear(dEnd.getFullYear() + 2);
+      const vEnd = validityEnd || dEnd.toISOString().split('T')[0];
+
       const docData: Omit<PGRDocument, 'id' | 'createdAt' | 'updatedAt'> = {
         companyId: activeCompany.id,
         establishmentId,
         code: code.trim(),
         title: title.trim(),
         version: version.trim() || '1.0',
-        year: Number(year),
-        validityStart,
-        validityEnd,
+        year: new Date(elaborationDate + 'T00:00:00').getFullYear() || Number(year),
+        validityStart: vStart,
+        validityEnd: vEnd,
         status,
-        elaborationDate: editingDoc ? editingDoc.elaborationDate : new Date().toISOString().split('T')[0],
+        elaborationDate,
         technicalResponsibleId: technicalResponsibleId || undefined,
         medicalResponsibleId: medicalResponsibleId || undefined,
         generalObjectives: generalObjectives.trim(),
@@ -492,23 +505,22 @@ export const PgrDocumentsPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs">Início da Vigência *</Label>
+                <div className="md:col-span-2">
+                  <Label className="text-xs">Data da elaboração: *</Label>
                   <Input
                     type="date"
-                    value={validityStart}
-                    onChange={(e) => setValidityStart(e.target.value)}
-                    required
-                    className="h-9 mt-1 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs">Fim da Vigência *</Label>
-                  <Input
-                    type="date"
-                    value={validityEnd}
-                    onChange={(e) => setValidityEnd(e.target.value)}
+                    value={elaborationDate}
+                    onChange={(e) => {
+                      const newElab = e.target.value;
+                      setElaborationDate(newElab);
+                      if (newElab) {
+                        setValidityStart(newElab);
+                        const d = new Date(newElab + 'T00:00:00');
+                        d.setFullYear(d.getFullYear() + 2);
+                        setValidityEnd(d.toISOString().split('T')[0]);
+                        setYear(new Date(newElab + 'T00:00:00').getFullYear());
+                      }
+                    }}
                     required
                     className="h-9 mt-1 text-xs"
                   />
