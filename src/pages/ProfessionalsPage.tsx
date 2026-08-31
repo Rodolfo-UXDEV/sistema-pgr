@@ -27,7 +27,6 @@ export const ProfessionalsPage: React.FC = () => {
   const [registrationCouncil, setRegistrationCouncil] = useState('CREA/SC');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [registrationState, setRegistrationState] = useState('SC');
-  const [artRrt, setArtRrt] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -39,7 +38,6 @@ export const ProfessionalsPage: React.FC = () => {
     setRegistrationCouncil('CREA/SC');
     setRegistrationNumber('');
     setRegistrationState('SC');
-    setArtRrt('');
     setEmail('');
     setPhone('');
     setIsModalOpen(true);
@@ -52,7 +50,6 @@ export const ProfessionalsPage: React.FC = () => {
     setRegistrationCouncil(p.registrationCouncil);
     setRegistrationNumber(p.registrationNumber);
     setRegistrationState(p.registrationState);
-    setArtRrt(p.artRrt || '');
     setEmail(p.email || '');
     setPhone(p.phone || '');
     setIsModalOpen(true);
@@ -73,7 +70,7 @@ export const ProfessionalsPage: React.FC = () => {
         registrationCouncil: registrationCouncil.trim(),
         registrationNumber: registrationNumber.trim(),
         registrationState: registrationState.trim(),
-        artRrt: artRrt.trim() || undefined,
+        artRrt: editingProf?.artRrt || undefined,
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
       };
@@ -121,7 +118,7 @@ export const ProfessionalsPage: React.FC = () => {
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Engenheiros, técnicos e médicos responsáveis pela elaboração, ART e coordenação técnica do PGR.
+            Engenheiros, técnicos e médicos responsáveis pela elaboração e coordenação técnica do PGR.
           </p>
         </div>
 
@@ -143,7 +140,6 @@ export const ProfessionalsPage: React.FC = () => {
               <TableHead>Profissional</TableHead>
               <TableHead>Qualificação Técnica</TableHead>
               <TableHead>Registro de Classe</TableHead>
-              <TableHead>ART / RRT</TableHead>
               <TableHead>Contato</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -166,10 +162,6 @@ export const ProfessionalsPage: React.FC = () => {
 
                 <TableCell className="text-xs font-mono font-semibold">
                   {prof.registrationCouncil}: {prof.registrationNumber}/{prof.registrationState}
-                </TableCell>
-
-                <TableCell className="text-xs font-mono text-muted-foreground">
-                  {prof.artRrt || '-'}
                 </TableCell>
 
                 <TableCell className="text-xs text-muted-foreground">
@@ -216,7 +208,7 @@ export const ProfessionalsPage: React.FC = () => {
                 <span>{editingProf ? 'Editar Profissional RT' : 'Cadastrar Responsável Técnico'}</span>
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Registro profissional e dados para assinatura e emissão de ART do PGR.
+                Registro profissional e dados para assinatura e coordenação técnica do PGR.
               </DialogDescription>
             </DialogHeader>
 
@@ -281,16 +273,6 @@ export const ProfessionalsPage: React.FC = () => {
                     onChange={(e) => setRegistrationState(e.target.value)}
                     placeholder="SC"
                     className="h-9 mt-1 text-xs uppercase font-mono"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Número da ART / RRT (CREA / CAU)</Label>
-                  <Input
-                    value={artRrt}
-                    onChange={(e) => setArtRrt(e.target.value)}
-                    placeholder="Ex: ART-2026-9812440-SC"
-                    className="h-9 mt-1 text-xs font-mono"
                   />
                 </div>
 
