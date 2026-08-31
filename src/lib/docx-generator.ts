@@ -282,17 +282,6 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
           );
         }
       }
-    } else if (section.type === 'positions_list') {
-      for (const p of section.positions) {
-        children.push(
-          new Paragraph({
-            children: [new TextRun({ text: `Função: ${p.title} (CBO: ${p.cbo})`, bold: true })],
-            spacing: { before: 200, after: 80 },
-          }),
-          new Paragraph({ text: `Setor: ${p.sectorName} | Efetivo Exposto: ${p.workers} trabalhador(es)` }),
-          new Paragraph({ text: `Descrição da Atividade: ${p.activityDescription || p.routine || '-'}` , spacing: { after: 150 } })
-        );
-      }
     } else if (section.type === 'risk_inventory_table') {
       const items = section.items;
 
