@@ -18,6 +18,7 @@ import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
+import { formatDate } from '@/lib/utils';
 import { 
   ArrowLeft, 
   Download, 
@@ -54,7 +55,23 @@ export const PgrViewerPage: React.FC = () => {
   const [issuerConfig, setIssuerConfig] = useState(getIssuerCompanyConfig());
 
   const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
-  const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0];
+  const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0] || (activeCompany ? {
+    id: 'default-matriz',
+    companyId: activeCompany.id,
+    name: 'Unidade Matriz',
+    code: '001',
+    type: 'MATRIZ' as const,
+    address: activeCompany.address,
+    activity: activeCompany.cnaeDescription || 'Atividades Gerais',
+    cnae: activeCompany.cnae || '',
+    riskGrade: activeCompany.riskGrade || 1,
+    totalWorkers: activeCompany.employeeCount || 1,
+    responsibleName: activeCompany.legalRepresentative || '',
+    responsiblePhone: activeCompany.phone || '',
+    responsibleEmail: activeCompany.email || '',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  } : undefined);
 
   const [resolvedList, setResolvedList] = useState(() => getResolvedPgrSections(pgr?.id));
 
