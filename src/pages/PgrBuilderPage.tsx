@@ -4,6 +4,7 @@ import { usePgr } from '@/context/PgrContext';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { PgrSectionDefinition, PgrCustomSectionData } from '@/types/pgr-builder';
 import { parseContentWithTables } from '@/lib/table-parser';
+import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -205,6 +206,51 @@ export const PgrBuilderPage: React.FC = () => {
     window.dispatchEvent(new Event('pgr_template_updated'));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
+  };
+
+  // Inserção inteligente de formatação inline (negrito e itálico)
+  const applyInlineFormatting = (prefix: string, suffix: string, defaultText: string) => {
+    const textarea = document.getElementById('section-textarea') as HTMLTextAreaElement;
+    if (!textarea) {
+      updateCurrentSection({ content: currentContent + '\n' + prefix + defaultText + suffix });
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = currentContent.substring(start, end);
+    const before = currentContent.substring(0, start);
+    const after = currentContent.substring(end);
+
+    let newText = '';
+    let cursorStart = start;
+    let cursorEnd = end;
+
+    if (selectedText.length > 0) {
+      if (selectedText.startsWith(prefix) && selectedText.endsWith(suffix) && selectedText.length >= prefix.length + suffix.length) {
+        const unwrapped = selectedText.substring(prefix.length, selectedText.length - suffix.length);
+        newText = before + unwrapped + after;
+        cursorStart = start;
+        cursorEnd = start + unwrapped.length;
+      } else {
+        const wrapped = prefix + selectedText + suffix;
+        newText = before + wrapped + after;
+        cursorStart = start;
+        cursorEnd = start + wrapped.length;
+      }
+    } else {
+      const insert = prefix + defaultText + suffix;
+      newText = before + insert + after;
+      cursorStart = start + prefix.length;
+      cursorEnd = cursorStart + defaultText.length;
+    }
+
+    updateCurrentSection({ content: newText });
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(cursorStart, cursorEnd);
+    }, 40);
   };
 
   // Inserção de templates de tabelas e formatações no texto
@@ -639,9 +685,9 @@ export const PgrBuilderPage: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => insertFormatting('**Texto em Negrito**')}
-                        className="h-7 px-2 text-xs font-bold"
-                        title="Negrito"
+                        onClick={() => applyInlineFormatting('**', '**', 'texto em negrito')}
+                        className="h-7 px-2.5 text-xs font-bold hover:bg-muted"
+                        title="Negrito (**texto**)"
                       >
                         <Bold className="h-3.5 w-3.5" />
                       </Button>
@@ -649,9 +695,9 @@ export const PgrBuilderPage: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => insertFormatting('*Texto em Itálico*')}
-                        className="h-7 px-2 text-xs italic"
-                        title="Itálico"
+                        onClick={() => applyInlineFormatting('*', '*', 'texto em itálico')}
+                        className="h-7 px-2.5 text-xs italic hover:bg-muted"
+                        title="Itálico (*texto*)"
                       >
                         <Italic className="h-3.5 w-3.5" />
                       </Button>
@@ -659,18 +705,8 @@ export const PgrBuilderPage: React.FC = () => {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => insertFormatting('\n### Subtítulo do Tópico\n')}
-                        className="h-7 px-2 text-xs font-semibold"
-                        title="Título de Subseção"
-                      >
-                        <Heading className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
                         onClick={() => insertFormatting('\n• Item da lista\n• Segundo item\n')}
-                        className="h-7 px-2 text-xs"
+                        className="h-7 px-2.5 text-xs hover:bg-muted"
                         title="Lista com Marcadores"
                       >
                         <List className="h-3.5 w-3.5" />
@@ -715,38 +751,7 @@ export const PgrBuilderPage: React.FC = () => {
                         {currentSubtitle && <p className="text-xs text-muted-foreground">{currentSubtitle}</p>}
                       </div>
 
-                      {parsedBlocks.map((block, idx) => {
-                        if (block.type === 'table') {
-                          return (
-                            <div key={idx} className="border border-border rounded-lg overflow-hidden shadow-xs my-4 bg-background">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow className="bg-muted/70">
-                                    {block.headers.map((h, hIdx) => (
-                                      <TableHead key={hIdx} className="font-bold text-foreground text-xs">{h}</TableHead>
-                                    ))}
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {block.rows.map((row, rIdx) => (
-                                    <TableRow key={rIdx}>
-                                      {row.map((cell, cIdx) => (
-                                        <TableCell key={cIdx} className="text-xs">{cell}</TableCell>
-                                      ))}
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          );
-                        } else {
-                          return (
-                            <div key={idx} className="whitespace-pre-line text-muted-foreground leading-relaxed">
-                              {block.content}
-                            </div>
-                          );
-                        }
-                      })}
+                      <MarkdownSectionRenderer content={currentContent} />
                     </div>
                   )}
                 </div>

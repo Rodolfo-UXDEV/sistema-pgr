@@ -21,6 +21,20 @@ import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
+function parseTextToTextRuns(text: string): TextRun[] {
+  if (!text) return [new TextRun({ text: '' })];
+  const tokens = text.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
+  return tokens.map((token) => {
+    if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
+      return new TextRun({ text: token.slice(2, -2), bold: true });
+    }
+    if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
+      return new TextRun({ text: token.slice(1, -1), italics: true });
+    }
+    return new TextRun({ text: token });
+  });
+}
+
 export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
   const docData = buildPgrFullDocument(ctx);
 
@@ -232,7 +246,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
               new TableRow({
                 children: row.map((cell) =>
                   new TableCell({
-                    children: [new Paragraph({ text: cell })],
+                    children: [new Paragraph({ children: parseTextToTextRuns(cell) })],
                     borders: cellBorder,
                   })
                 ),
@@ -244,7 +258,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
         } else {
           const paras = block.content.split('\n\n');
           for (const p of paras) {
-            children.push(new Paragraph({ text: p, spacing: { after: 150 } }));
+            children.push(new Paragraph({ children: parseTextToTextRuns(p), spacing: { after: 150 } }));
           }
         }
       }

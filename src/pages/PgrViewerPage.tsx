@@ -14,6 +14,7 @@ import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-tem
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
+import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
@@ -142,48 +143,9 @@ export const PgrViewerPage: React.FC = () => {
     }
   };
 
-  // Renderizador de blocos de texto e tabelas customizadas
+  // Renderizador de blocos de texto e tabelas customizadas com suporte a negrito e itálico
   const renderFormattedSection = (text: string) => {
-    const blocks = parseContentWithTables(text);
-    return (
-      <div className="space-y-4">
-        {blocks.map((block, idx) => {
-          if (block.type === 'table') {
-            return (
-              <div key={idx} className="border border-border rounded-lg overflow-hidden shadow-xs my-3 bg-card">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/60 text-xs">
-                      {block.headers.map((h, hIdx) => (
-                        <TableHead key={hIdx} className="font-bold text-foreground py-2 px-3">
-                          {h}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {block.rows.map((row, rIdx) => (
-                      <TableRow key={rIdx} className="text-xs hover:bg-muted/30">
-                        {row.map((cell, cIdx) => (
-                          <TableCell key={cIdx} className="py-2 px-3 text-foreground">
-                            {cell}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            );
-          }
-          return (
-            <p key={idx} className="text-xs leading-relaxed text-foreground whitespace-pre-line">
-              {block.content}
-            </p>
-          );
-        })}
-      </div>
-    );
+    return <MarkdownSectionRenderer content={text} />;
   };
 
   return (

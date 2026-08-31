@@ -149,16 +149,19 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(8.5);
           doc.setTextColor(51, 65, 85);
-          const lines = doc.splitTextToSize(block.content, 182);
+          const cleanText = block.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+          const lines = doc.splitTextToSize(cleanText, 182);
           checkPageBreak(lines.length * 4 + 5);
           doc.text(lines, 14, currentY);
           currentY += lines.length * 4 + 4;
         } else if (block.type === 'table') {
           checkPageBreak(25);
+          const cleanHeaders = block.headers.map(h => h.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1'));
+          const cleanRows = block.rows.map(row => row.map(cell => cell.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')));
           autoTable(doc, {
             startY: currentY,
-            head: [block.headers],
-            body: block.rows,
+            head: [cleanHeaders],
+            body: cleanRows,
             theme: 'grid',
             headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 8 },
             styles: { fontSize: 7.5, cellPadding: 2 },
