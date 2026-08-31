@@ -16,6 +16,12 @@ import {
   DialogFooter, 
   DialogDescription 
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu';
 import { formatDate } from '@/lib/utils';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
@@ -34,7 +40,8 @@ import {
   Clock,
   FileCode,
   FileSpreadsheet,
-  Sliders
+  Sliders,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -364,37 +371,42 @@ export const PgrDocumentsPage: React.FC = () => {
                           <span>Visualizar</span>
                         </Button>
 
-                        <Button
-                          size="sm"
-                          onClick={() => handleDownloadPdf(doc)}
-                          className="h-8 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
-                          title="Baixar PDF Oficial"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          <span>PDF</span>
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadDocx(doc)}
-                          className="h-8 text-xs gap-1 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 font-semibold"
-                          title="Baixar Word (.docx)"
-                        >
-                          <FileCode className="h-3.5 w-3.5" />
-                          <span>DOCX</span>
-                        </Button>
-
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDownloadExcel(doc)}
-                          className="h-8 text-xs gap-1 border-emerald-200 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 font-semibold"
-                          title="Baixar Planilha Excel (.xlsx)"
-                        >
-                          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
-                          <span>XLSX</span>
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
+                              title="Gerar / Exportar documento"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              <span>Gerar</span>
+                              <ChevronDown className="h-3 w-3 opacity-80" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52 text-xs">
+                            <DropdownMenuItem
+                              onClick={() => handleDownloadPdf(doc)}
+                              className="cursor-pointer gap-2 font-medium py-2 text-foreground hover:bg-muted"
+                            >
+                              <Download className="h-4 w-4 text-emerald-600" />
+                              <span>Baixar PDF Oficial</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDownloadDocx(doc)}
+                              className="cursor-pointer gap-2 font-medium py-2 text-foreground hover:bg-muted"
+                            >
+                              <FileCode className="h-4 w-4 text-blue-600" />
+                              <span>Exportar Word (.docx)</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDownloadExcel(doc)}
+                              className="cursor-pointer gap-2 font-medium py-2 text-foreground hover:bg-muted"
+                            >
+                              <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
+                              <span>Exportar Excel (.xlsx)</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
 
                         <Button
                           variant="ghost"
