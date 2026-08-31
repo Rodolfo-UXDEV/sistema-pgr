@@ -578,16 +578,17 @@ export const PgrDocumentsPage: React.FC = () => {
                   className="mt-1 text-xs min-h-[60px]"
                 />
               </div>
+            </div>
 
-              <DialogFooter className="gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isSaving} className="font-semibold shadow-sm">
-                  {isSaving ? 'Salvando...' : editingDoc ? 'Salvar Alterações' : 'Criar Documento'}
-                </Button>
-              </DialogFooter>
-            </form>
+            <DialogFooter className="gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSaving} className="font-semibold shadow-xs">
+                {isSaving ? 'Salvando...' : editingDoc ? 'Salvar Alterações' : 'Criar Documento'}
+              </Button>
+            </DialogFooter>
+          </form>
           </DialogContent>
         </Dialog>
       )}
