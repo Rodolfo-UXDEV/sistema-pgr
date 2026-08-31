@@ -3,7 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
-import { HazardCategory, RiskInventoryItem, ActionPlanItem } from '@/types/pgr';
+import { HazardCategory, ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 import { ensurePngDataUrl } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
@@ -22,35 +22,31 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   const issuerConfig = getIssuerCompanyConfig();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  // Converte e garante que ambas as imagens sejam PNGs rasterizados válidos para o jsPDF
   const emissoraLogoUrl = issuerConfig.logoUrl || DEFAULT_EMISSORA_LOGO;
   const clienteLogoUrl = docData.header.companyLogo || DEFAULT_CLIENTE_LOGO;
 
   const emissoraPng = await ensurePngDataUrl(emissoraLogoUrl, 600, 150);
   const clientePng = await ensurePngDataUrl(clienteLogoUrl, 600, 150);
 
-  const primaryColor: [number, number, number] = [15, 118, 110]; // Teal 700
-  const secondaryColor: [number, number, number] = [51, 65, 85]; // Slate 700
-  const headerGray: [number, number, number] = [82, 82, 91]; // Dark Charcoal Zinc 600
-  const sectionGray: [number, number, number] = [226, 232, 240]; // Light Gray Slate 200
-  const labelGray: [number, number, number] = [248, 250, 252]; // Slate 50
+  const primaryColor: [number, number, number] = [15, 118, 110];
+  const secondaryColor: [number, number, number] = [51, 65, 85];
+  const headerGray: [number, number, number] = [82, 82, 91];
+  const sectionGray: [number, number, number] = [226, 232, 240];
+  const labelGray: [number, number, number] = [248, 250, 252];
 
-  // Helper para verificar espaço de página
+  let currentY = 20;
+
   const checkPageBreak = (neededHeight: number = 20) => {
-    if (currentY + neededHeight > 275) {
+    if (currentY + neededHeight > 272) {
       doc.addPage();
       currentY = 20;
     }
   };
 
-  // ==========================================
-  // CAPA INSTITUCIONAL OFICIAL
-  // ==========================================
   doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
   doc.rect(0, 0, 210, 12, 'F');
   doc.rect(0, 285, 210, 12, 'F');
 
-  // 1. Logotipo da Empresa Emissora / Consultoria SST
   if (emissoraPng && emissoraPng.startsWith('data:image/')) {
     try {
       doc.addImage(emissoraPng, 'PNG', 65, 16, 80, 20, undefined, 'FAST');
@@ -68,7 +64,6 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   doc.setTextColor(100, 116, 139);
   doc.text(docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 46, { align: 'center' });
 
-  // Título Principal
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -84,7 +79,6 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   doc.setLineWidth(0.8);
   doc.line(40, 89, 170, 89);
 
-  // 2. Dados da Empresa com Logotipo do Cliente
   if (clientePng && clientePng.startsWith('data:image/')) {
     try {
       doc.addImage(clientePng, 'PNG', 65, 95, 80, 20, undefined, 'FAST');
@@ -104,7 +98,6 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   doc.text(`CNPJ: ${docData.header.cnpj}`, 105, 129, { align: 'center' });
   doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 135, { align: 'center' });
 
-  // Bloco de Identificação
   doc.setFillColor(248, 250, 252);
   doc.roundedRect(30, 155, 150, 45, 3, 3, 'FD');
   doc.setDrawColor(203, 213, 225);
@@ -121,39 +114,124 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   doc.text(`Registro de Classe: ${docData.header.techRespCouncil} | ART: ${docData.header.techRespArt}`, 35, 186);
   doc.text(`Data de Elaboração: ${docData.header.elaborationDate}`, 35, 193);
 
-  // Rodapé da Capa
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(100, 116, 139);
   doc.text(`${ctx.company.address.city}/${ctx.company.address.state} — ${docData.header.year}`, 105, 265, { align: 'center' });
 
-  // ==========================================
-  // PÁGINAS DO DOCUMENTO (SEÇÕES 1 A 18)
-  // ==========================================
   doc.addPage();
-  let currentY = 20;
+  currentY = 20;
 
   for (const section of docData.sections) {
-    if (section.type === 'text') {
+    if (currentY > 230) {
+      doc.addPage();
+      currentY = 20;
+    } else {
       checkPageBreak(30);
+    }
 
+    if (section.type === 'company_info') {
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(section.title, 14, currentY);
-      currentY += 6;
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 4;
+
+      const d = section.data;
+      const companyTableData = [
+        [{ content: 'Razão Social', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.razaoSocial || '-' }],
+        [{ content: 'Nome Fantasia', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.nomeFantasia || '-' }],
+        [{ content: 'CNPJ', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.cnpj || '-' }],
+        [{ content: 'Grau de Risco (NR-04)', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.grauDeRisco || '-' }],
+        [{ content: 'Atividade Principal (CNAE)', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.cnae || '-' }],
+        [{ content: 'Endereço da Matriz', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.enderecoMatriz || '-' }],
+        [{ content: 'Estabelecimento Avaliado', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.estabelecimento || '-' }],
+        [{ content: 'Responsável no Local', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.representanteLegal || '-' }],
+        [{ content: 'Total de Trabalhadores', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: d.totalTrabalhadores || '-' }],
+      ];
+
+      autoTable(doc, {
+        startY: currentY,
+        body: companyTableData as any,
+        theme: 'grid',
+        styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 41, 59] },
+        margin: { left: 14, right: 14 },
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+
+    } else if (section.type === 'responsibles_info') {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 4;
+
+      const el = section.elaborador;
+      const med = section.medicoPcmso;
+
+      const respTableData: any[] = [];
+      if (el) {
+        respTableData.push(
+          [{ content: 'Responsável Técnico pela Elaboração do PGR', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }],
+          [{ content: 'Nome do Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.nome || '-' }],
+          [{ content: 'Qualificação / Cargo', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.cargo || '-' }],
+          [{ content: 'Registro Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.conselho || '-' }],
+          [{ content: 'ART / RRT Vinculada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.art || '-' }],
+          [{ content: 'Consultoria Especializada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.empresaConsultoria || '-' }]
+        );
+      }
+
+      if (med) {
+        respTableData.push(
+          [{ content: 'Médico Coordenador do PCMSO (NR-07)', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }],
+          [{ content: 'Nome do Médico', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: med.nome || '-' }],
+          [{ content: 'Registro CRM', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: med.conselho || '-' }]
+        );
+      }
+
+      autoTable(doc, {
+        startY: currentY,
+        body: respTableData as any,
+        theme: 'grid',
+        styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 41, 59] },
+        margin: { left: 14, right: 14 },
+      });
+      currentY = (doc as any).lastAutoTable.finalY + 8;
+
+    } else if (section.type === 'text') {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 4;
 
       const blocks = parseContentWithTables(section.content);
       for (const block of blocks) {
         if (block.type === 'text') {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(8.5);
-          doc.setTextColor(51, 65, 85);
-          const cleanText = block.content.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-          const lines = doc.splitTextToSize(cleanText, 182);
-          checkPageBreak(lines.length * 4 + 5);
-          doc.text(lines, 14, currentY);
-          currentY += lines.length * 4 + 4;
+          const paras = block.content.split('\n\n');
+          for (const para of paras) {
+            if (!para.trim()) continue;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(8);
+            doc.setTextColor(51, 65, 85);
+            const cleanText = para.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+            const lines = doc.splitTextToSize(cleanText, 182);
+            checkPageBreak(lines.length * 3.6 + 4);
+            doc.text(lines, 14, currentY);
+            currentY += lines.length * 3.6 + 3.5;
+          }
         } else if (block.type === 'table') {
           checkPageBreak(25);
           const cleanHeaders = block.headers.map(h => h.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1'));
@@ -163,92 +241,72 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
             head: [cleanHeaders],
             body: cleanRows,
             theme: 'grid',
-            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 8 },
-            styles: { fontSize: 7.5, cellPadding: 2 },
+            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+            styles: { fontSize: 7, cellPadding: 2 },
             margin: { left: 14, right: 14 },
           });
           currentY = (doc as any).lastAutoTable.finalY + 6;
         }
       }
-      currentY += 4;
+      currentY += 3;
 
     } else if (section.type === 'sectors_list') {
-      checkPageBreak(30);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(section.title, 14, currentY);
-      currentY += 6;
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 4;
 
       for (const s of section.sectors) {
         checkPageBreak(25);
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
+        doc.setFontSize(8.5);
         doc.setTextColor(15, 23, 42);
         doc.text(`Setor: ${s.name}`, 14, currentY);
-        currentY += 4;
+        currentY += 3.5;
 
         if (s.description) {
           doc.setFont('helvetica', 'normal');
-          doc.setFontSize(8);
+          doc.setFontSize(7.5);
           doc.setTextColor(71, 85, 105);
           const descLines = doc.splitTextToSize(`Descrição: ${s.description}`, 182);
           doc.text(descLines, 14, currentY);
-          currentY += descLines.length * 3.5 + 2;
+          currentY += descLines.length * 3.2 + 2;
         }
 
         if (s.characteristics && s.characteristics.floorType) {
           doc.setFont('helvetica', 'normal');
-          doc.setFontSize(8);
+          doc.setFontSize(7.5);
           doc.setTextColor(71, 85, 105);
           const structText = `Estrutura Física: Piso ${s.characteristics.floorType || '-'} | Paredes ${s.characteristics.wallType || '-'} | Cobertura ${s.characteristics.roofType || '-'} | Ventilação ${s.characteristics.ventilationType || '-'} | Iluminação ${s.characteristics.lightingType || '-'}`;
           const structLines = doc.splitTextToSize(structText, 182);
           doc.text(structLines, 14, currentY);
-          currentY += structLines.length * 3.5 + 5;
+          currentY += structLines.length * 3.2 + 4;
         } else {
           currentY += 2;
         }
       }
-
-    } else if (section.type === 'positions_list') {
-      checkPageBreak(30);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(section.title, 14, currentY);
-      currentY += 6;
-
-      for (const p of section.positions) {
-        checkPageBreak(20);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(15, 23, 42);
-        doc.text(`Cargo / Função: ${p.title} (CBO: ${p.cbo})`, 14, currentY);
-        currentY += 4;
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.setTextColor(71, 85, 105);
-        doc.text(`Setor: ${p.sectorName} | Efetivo Exposto: ${p.workers} trabalhador(es)`, 14, currentY);
-        currentY += 4;
-
-        const actLines = doc.splitTextToSize(`Descrição da Atividade: ${p.activityDescription || p.routine || '-'}`, 182);
-        doc.text(actLines, 14, currentY);
-        currentY += actLines.length * 3.5 + 4;
-      }
+      currentY += 4;
 
     } else if (section.type === 'risk_inventory_table') {
-      checkPageBreak(30);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(section.title, 14, currentY);
-      currentY += 6;
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 5;
 
       const items = section.items;
       if (!items || items.length === 0) {
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8.5);
+        doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
         doc.text('Nenhum risco registrado no inventário.', 14, currentY);
         currentY += 8;
@@ -347,7 +405,7 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
           const tableBody = [
             // Row 1: Header Dark Gray
             [
-              { content: headerTitle, colSpan: 4, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', fontSize: 8.5 } }
+              { content: headerTitle, colSpan: 4, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', fontSize: 8 } }
             ],
             // Row 2: Risco Categoria & Agente
             [
@@ -410,19 +468,19 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
             [
               { content: 'Categorização do risco/perigo', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
             ],
-            // Row 14: Severidade | Probabilidade | Status do agente | Prioridade Headers
+            // Row 14: Headers Severidade, Probabilidade, Status, Prioridade
             [
               { content: 'Severidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
               { content: 'Probabilidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
               { content: 'Status do agente', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
               { content: 'Prioridade de ação', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
             ],
-            // Row 15: Severidade | Probabilidade | Status do agente | Prioridade Values
+            // Row 15: Values
             [
-              { content: String(item.severity), colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-              { content: String(item.probability), colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-              { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold', textColor: catRgb } },
-              { content: prioridade, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } }
+              { content: item.severity, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+              { content: item.probability, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+              { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+              { content: prioridade, colSpan: 1, styles: { halign: 'center' } }
             ],
             // Section Header: Recomendações
             [
@@ -439,7 +497,7 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
             startY: currentY,
             body: tableBody as any,
             theme: 'grid',
-            styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 41, 59] },
+            styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
             margin: { left: 14, right: 14 },
           });
 
@@ -448,12 +506,15 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
       }
 
     } else if (section.type === 'action_plan_table') {
-      checkPageBreak(35);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(section.title, 14, currentY);
-      currentY += 6;
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 5;
 
       const actions = section.items;
       const gesLabel = ctx.ghes.length > 0 ? `GES ${ctx.ghes[0].code || '1.0'}` : 'GES 1.0';
@@ -507,60 +568,56 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
       currentY = (doc as any).lastAutoTable.finalY + 8;
 
     } else if (section.type === 'closing_signatures') {
-      checkPageBreak(40);
+      checkPageBreak(45);
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(11);
+      doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(section.title, 14, currentY);
-      currentY += 6;
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 5;
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setTextColor(51, 65, 85);
       const closeLines = doc.splitTextToSize(section.text, 182);
       doc.text(closeLines, 14, currentY);
-      currentY += closeLines.length * 4 + 10;
+      currentY += closeLines.length * 3.6 + 8;
 
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
+      doc.setFontSize(8);
       doc.setTextColor(100, 116, 139);
       doc.text(`${section.city}/${section.state}, ${section.date}.`, 196, currentY, { align: 'right' });
-      currentY += 20;
+      currentY += 18;
 
-      // Linhas de Assinaturas
       checkPageBreak(30);
       doc.setDrawColor(148, 163, 184);
       doc.setLineWidth(0.5);
-
-      // Assinatura 1 (RT)
       doc.line(20, currentY, 95, currentY);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
       doc.text(docData.header.techRespName, 57.5, currentY + 4, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`${docData.header.techRespCouncil} | ${docData.header.techRespArt}`, 57.5, currentY + 8, { align: 'center' });
-      doc.text('Responsável Técnico SST', 57.5, currentY + 12, { align: 'center' });
-
-      // Assinatura 2 (Empresa)
       doc.line(115, currentY, 190, currentY);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
       doc.text(ctx.company.legalRepresentative, 152.5, currentY + 4, { align: 'center' });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      doc.text(ctx.company.representativeRole, 152.5, currentY + 8, { align: 'center' });
-      doc.text(ctx.company.name, 152.5, currentY + 12, { align: 'center' });
-
       currentY += 20;
     }
   }
 
-  // Download do arquivo PDF
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 2; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`PGR — Programa de Gerenciamento de Riscos (NR-01) | ${docData.header.companyName}`, 14, 9);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(14, 11, 196, 11);
+    doc.line(14, 283, 196, 283);
+    doc.text(`${docData.header.code} (v${docData.header.version}) | Vigência: ${docData.header.validityPeriod}`, 14, 287);
+    doc.text(`Página ${p} de ${totalPages}`, 196, 287, { align: 'right' });
+  }
+
   const sanitizedCompany = ctx.company.name.replace(/[^a-zA-Z0-9]/g, '_');
   doc.save(`PGR_${sanitizedCompany}_${docData.header.code}.pdf`);
 }
