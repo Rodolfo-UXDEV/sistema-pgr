@@ -456,32 +456,51 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
       currentY += 6;
 
       const actions = section.items;
+      const gesLabel = ctx.ghes.length > 0 ? `GES ${ctx.ghes[0].code || '1.0'}` : 'GES 1.0';
+
+      const defaultMetas = [
+        ['Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.', '2', 'Contínuo', 'Contínuo', 'SESMT / RH', 'EM ANDAMENTO'],
+        ['Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.', '2', 'Contínuo', 'Contínuo', 'SESMT / Manutenção', 'EM ANDAMENTO'],
+        ['Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.', '2', 'Contínuo', 'Contínuo', 'RH / Treinamento', 'PROGRAMADO'],
+        ['Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO'],
+        ['Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.', '2', 'Contínuo', 'Contínuo', 'Consultoria SST', 'A INICIAR'],
+        ['Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.', '2', 'Contínuo', 'Contínuo', 'SESMT', 'A INICIAR'],
+        ['Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.', '2', 'Contínuo', 'Contínuo', 'RH / Gestão', 'A INICIAR'],
+        ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
+      ];
+
       const actionRows = (!actions || actions.length === 0)
-        ? [['Nenhuma ação programada no plano de prevenção.', '-', '-', '-', '-', '-']]
-        : actions.map((act: ActionPlanItem) => [
-            act.what,
-            act.why,
-            act.who,
-            act.whenDate,
-            `R$ ${Number(act.howMuch || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-            act.status.replace('_', ' ').toUpperCase(),
-          ]);
+        ? [
+            [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
+            ...defaultMetas
+          ]
+        : [
+            [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
+            ...actions.map((act: ActionPlanItem) => [
+              act.what,
+              '2',
+              'Contínuo',
+              act.whenDate ? (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate) : 'Contínuo',
+              act.who || 'SESMT',
+              act.status.replace('_', ' ').toUpperCase(),
+            ])
+          ];
 
       autoTable(doc, {
         startY: currentY,
-        head: [['O que (Ação)', 'Por que (Motivo)', 'Quem (Responsável)', 'Prazo', 'Custo (R$)', 'Status']],
-        body: actionRows,
+        head: [['Metas', 'Grau de Prioridade', 'Prazo Inicial', 'Prazo Final', 'Responsável', 'Status']],
+        body: actionRows as any,
         theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 8 },
-        styles: { fontSize: 7.5, cellPadding: 2.5 },
+        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
+        styles: { fontSize: 7, cellPadding: 2, textColor: [30, 41, 59] },
         margin: { left: 14, right: 14 },
         columnStyles: {
-          0: { cellWidth: 45 },
-          1: { cellWidth: 45 },
-          2: { cellWidth: 30 },
+          0: { cellWidth: 72 },
+          1: { cellWidth: 20, halign: 'center' },
+          2: { cellWidth: 22, halign: 'center' },
           3: { cellWidth: 22, halign: 'center' },
-          4: { cellWidth: 22, halign: 'right' },
-          5: { cellWidth: 18, halign: 'center' },
+          4: { cellWidth: 26, halign: 'center' },
+          5: { cellWidth: 20, halign: 'center' },
         },
       });
 

@@ -740,36 +740,71 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
       }
     } else if (section.type === 'action_plan_table') {
       const actions = section.items;
+      const gesLabel = ctx.ghes.length > 0 ? `GES ${ctx.ghes[0].code || '1.0'}` : 'GES 1.0';
 
-      if (!actions || actions.length === 0) {
-        children.push(new Paragraph({ text: 'Nenhuma ação programada no plano.', spacing: { after: 200 } }));
-      } else {
-        const rows = [
-          new TableRow({
-            tableHeader: true,
-            children: [
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'O que (Ação)', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Por que (Motivo)', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Quem (Responsável)', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Quando (Prazo)', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-              new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Status & Eficácia', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-            ],
-          }),
-          ...actions.map((act: ActionPlanItem) =>
+      const defaultMetas = [
+        ['Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.', '2', 'Contínuo', 'Contínuo', 'SESMT / RH', 'EM ANDAMENTO'],
+        ['Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.', '2', 'Contínuo', 'Contínuo', 'SESMT / Manutenção', 'EM ANDAMENTO'],
+        ['Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.', '2', 'Contínuo', 'Contínuo', 'RH / Treinamento', 'PROGRAMADO'],
+        ['Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO'],
+        ['Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.', '2', 'Contínuo', 'Contínuo', 'Consultoria SST', 'A INICIAR'],
+        ['Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.', '2', 'Contínuo', 'Contínuo', 'SESMT', 'A INICIAR'],
+        ['Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.', '2', 'Contínuo', 'Contínuo', 'RH / Gestão', 'A INICIAR'],
+        ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
+      ];
+
+      const dataRows = (!actions || actions.length === 0)
+        ? defaultMetas.map(([meta, prio, start, end, who, st]) => 
+            new TableRow({
+              children: [
+                new TableCell({ children: [new Paragraph({ text: meta })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: prio, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: start, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: end, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: who, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: st, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+              ]
+            })
+          )
+        : actions.map((act: ActionPlanItem) =>
             new TableRow({
               children: [
                 new TableCell({ children: [new Paragraph({ text: act.what })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: act.why })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: act.who })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: act.whenDate })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: `${act.status}\n${act.efficacyVerified ? '✓ Eficácia Comprovada' : 'Pendente'}` })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: '2', alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: 'Contínuo', alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: act.whenDate || 'Contínuo', alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: act.who || 'SESMT', alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: act.status.replace('_', ' ').toUpperCase(), alignment: AlignmentType.CENTER })], borders: cellBorder }),
               ],
             })
-          ),
-        ];
+          );
 
-        children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
-      }
+      const rows = [
+        new TableRow({
+          tableHeader: true,
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Metas', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Grau de Prioridade', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prazo Inicial', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prazo Final', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Responsável', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Status', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+          ],
+        }),
+        new TableRow({
+          children: [
+            new TableCell({
+              columnSpan: 6,
+              children: [new Paragraph({ children: [new TextRun({ text: gesLabel, bold: true })], alignment: AlignmentType.CENTER })],
+              borders: cellBorder,
+              shading: { fill: 'F1F5F9', type: ShadingType.CLEAR, color: 'auto' }
+            })
+          ]
+        }),
+        ...dataRows
+      ];
+
+      children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
     } else if (section.type === 'closing_signatures') {
       children.push(
         new Paragraph({ text: section.text, spacing: { after: 300 } }),

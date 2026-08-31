@@ -737,35 +737,159 @@ export const PgrViewerPage: React.FC = () => {
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
             <span className="text-emerald-600 font-mono">14.</span> {getSectionTitle('sec-14', 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)')}
           </h2>
-          <div className="border border-border rounded-xl overflow-hidden shadow-xs">
+          <div className="border border-border rounded-xl overflow-hidden shadow-xs bg-card">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 text-xs">
-                  <TableHead>O que (Ação)</TableHead>
-                  <TableHead>Por que (Motivo)</TableHead>
-                  <TableHead>Quem (Responsável)</TableHead>
-                  <TableHead>Prazo</TableHead>
-                  <TableHead>Custo</TableHead>
-                  <TableHead>Status</TableHead>
+                <TableRow className="bg-muted/60 text-xs">
+                  <TableHead className="font-bold text-foreground py-2.5 w-[42%]">Metas</TableHead>
+                  <TableHead className="text-center font-bold text-foreground py-2.5 w-[12%]">Grau de Prioridade</TableHead>
+                  <TableHead className="text-center font-bold text-foreground py-2.5 w-[12%]">Prazo Inicial</TableHead>
+                  <TableHead className="text-center font-bold text-foreground py-2.5 w-[12%]">Prazo Final</TableHead>
+                  <TableHead className="text-center font-bold text-foreground py-2.5 w-[12%]">Responsável</TableHead>
+                  <TableHead className="text-center font-bold text-foreground py-2.5 w-[10%]">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pgrContext.actionPlans.map((act) => (
-                  <TableRow key={act.id} className="text-xs">
-                    <TableCell className="font-semibold text-foreground">{act.what}</TableCell>
-                    <TableCell className="text-muted-foreground">{act.why}</TableCell>
-                    <TableCell className="text-muted-foreground">{act.who}</TableCell>
-                    <TableCell className="font-mono text-muted-foreground">{act.whenDate}</TableCell>
-                    <TableCell className="font-mono font-bold text-foreground">
-                      R$ {Number(act.howMuch || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                        {act.status.replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {/* Cabeçalho do GES */}
+                <TableRow className="bg-muted/30 font-bold text-xs text-center border-y border-border">
+                  <TableCell colSpan={6} className="py-1.5 font-bold text-foreground uppercase tracking-wide">
+                    {ghes.length > 0 ? `GES ${ghes[0].code || '1.0'}` : 'GES 1.0'}
+                  </TableCell>
+                </TableRow>
+
+                {pgrContext.actionPlans.length === 0 ? (
+                  <>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">SESMT / RH</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border-emerald-200">
+                          EM ANDAMENTO
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">SESMT / Manutenção</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border-emerald-200">
+                          EM ANDAMENTO
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">RH / Treinamento</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-blue-700 bg-blue-50 border-blue-200">
+                          PROGRAMADO
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">SESMT / Diretoria</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border-emerald-200">
+                          EM ANDAMENTO
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Consultoria SST</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-amber-700 bg-amber-50 border-amber-200">
+                          A INICIAR
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">SESMT</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-amber-700 bg-amber-50 border-amber-200">
+                          A INICIAR
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">RH / Gestão</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-amber-700 bg-amber-50 border-amber-200">
+                          A INICIAR
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow className="text-xs hover:bg-muted/30">
+                      <TableCell className="text-foreground leading-relaxed">
+                        Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.
+                      </TableCell>
+                      <TableCell className="text-center font-mono">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center text-muted-foreground">SESMT / Diretoria</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border-emerald-200">
+                          EM ANDAMENTO
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  </>
+                ) : (
+                  pgrContext.actionPlans.map((act) => (
+                    <TableRow key={act.id} className="text-xs hover:bg-muted/30">
+                      <TableCell className="font-medium text-foreground leading-relaxed">{act.what}</TableCell>
+                      <TableCell className="text-center font-mono font-bold">2</TableCell>
+                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
+                      <TableCell className="text-center font-mono text-muted-foreground">
+                        {act.whenDate ? formatDate(act.whenDate) : 'Contínuo'}
+                      </TableCell>
+                      <TableCell className="text-center text-muted-foreground">{act.who || 'SESMT'}</TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+                          {act.status.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
