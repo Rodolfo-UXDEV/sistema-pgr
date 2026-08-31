@@ -437,30 +437,10 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 13. CARGOS E ATIVIDADES */}
-        <section className="space-y-3">
-          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">13.</span> {getSectionTitle('sec-13', 'CARGO, FUNÇÕES E CARACTERIZAÇÃO DAS ATIVIDADES')}
-          </h2>
-          <div className="space-y-3">
-            {positions.map((p) => (
-              <div key={p.id} className="p-3.5 bg-muted/20 border border-border rounded-xl text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-foreground text-sm">{p.title} (CBO: {p.cbo})</span>
-                  <Badge variant="outline" className="text-[10px]">{p.workerCount} expostos</Badge>
-                </div>
-                <p className="text-muted-foreground">
-                  <strong>Descrição da Atividade:</strong> {p.activityDescription || p.routineActivities || p.description || '-'}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 14. INVENTÁRIO DE RISCOS */}
+        {/* 13. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO) COM CARGOS E ATIVIDADES */}
         <section className="space-y-6">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">14.</span> {getSectionTitle('sec-14', 'INVENTÁRIO CONSOLIDADO DE RISCOS OCUPACIONAIS (NR-01.5.7)')}
+            <span className="text-emerald-600 font-mono">13.</span> {getSectionTitle('sec-13', 'INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)')}
           </h2>
 
           {pgrContext.riskInventory.length === 0 ? (
@@ -468,12 +448,17 @@ export const PgrViewerPage: React.FC = () => {
               Nenhum risco cadastrado no inventário.
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {pgrContext.riskInventory.map((item) => {
                 const sec = sectors.find(s => s.id === item.sectorId);
                 const pos = positions.find(p => p.id === item.positionId);
                 const ghe = ghes.find(g => g.id === item.gheId);
                 const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
+
+                const posTitle = pos?.title ? `${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}` : (ghe?.name || 'Geral');
+                const sectorName = sec?.name || '-';
+                const workerCount = pos?.workerCount || ghe?.workerCount || 1;
+                const activityDesc = pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada';
 
                 // Título do GES no cabeçalho
                 const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
@@ -547,205 +532,199 @@ export const PgrViewerPage: React.FC = () => {
                 }
 
                 return (
-                  <div 
-                    key={item.id} 
-                    className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid"
-                  >
-                    {/* Header Dark Gray */}
-                    <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
-                      {headerTitle}
-                    </div>
-
-                    {/* Row 2: Risco Categoria & Agente */}
-                    <div className="grid grid-cols-12 border-t border-slate-400">
-                      <div 
-                        className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide"
-                        style={{ backgroundColor: catConfig?.color || '#16a34a' }}
-                      >
-                        Risco {catConfig?.label || 'Físico'}
+                  <div key={item.id} className="space-y-2">
+                    {/* Bloco de Caracterização da Função e Atividade acima do APR-HO */}
+                    <div className="space-y-1 text-xs text-foreground">
+                      <div className="font-bold text-sm text-foreground">
+                        Cargo / Função: {posTitle}
                       </div>
-                      <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
-                        <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
-                        <span className="text-slate-800 font-normal">{item.hazardName}</span>
+                      <div className="text-muted-foreground text-xs">
+                        Setor: {sectorName} | Efetivo Exposto: {workerCount} trabalhador(es)
+                      </div>
+                      <div className="text-muted-foreground text-xs leading-relaxed">
+                        Descrição da Atividade: {activityDesc}
                       </div>
                     </div>
 
-                    {/* Row 3: Tipo de Exposição */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                        Tipo de Exposição
+                    {/* Tabela APR-HO */}
+                    <div className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
+                      {/* Header Dark Gray */}
+                      <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
+                        {headerTitle}
                       </div>
-                      <div className="col-span-4 py-1 px-3 text-center border-r border-slate-300 flex items-center justify-center text-slate-800">
-                        {expPart1}
-                      </div>
-                      <div className="col-span-5 py-1 px-3 text-center flex items-center justify-center text-slate-800">
-                        {expPart2}
-                      </div>
-                    </div>
 
-                    {/* Row 4: Fontes ou circunstância */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                        Fontes ou circunstância
+                      {/* Row 2: Risco Categoria & Agente */}
+                      <div className="grid grid-cols-12 border-t border-slate-400">
+                        <div 
+                          className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide"
+                          style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                        >
+                          Risco {catConfig?.label || 'Físico'}
+                        </div>
+                        <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
+                          <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
+                          <span className="text-slate-800 font-normal">{item.hazardName}</span>
+                        </div>
                       </div>
-                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                        {item.sourceDescription || 'NAP'}
-                      </div>
-                    </div>
 
-                    {/* Row 5: Trajetória */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                        Trajetória
+                      {/* Row 3: Tipo de Exposição */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          Tipo de Exposição
+                        </div>
+                        <div className="col-span-4 py-1 px-3 text-center border-r border-slate-300 flex items-center justify-center text-slate-800">
+                          {expPart1}
+                        </div>
+                        <div className="col-span-5 py-1 px-3 text-center flex items-center justify-center text-slate-800">
+                          {expPart2}
+                        </div>
                       </div>
-                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                        {item.trajectory || 'Ar'}
-                      </div>
-                    </div>
 
-                    {/* Row 6: Via de penetração */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                        Via de penetração
+                      {/* Row 4: Fontes ou circunstância */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          Fontes ou circunstância
+                        </div>
+                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                          {item.sourceDescription || 'Setor de Produção'}
+                        </div>
                       </div>
-                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                        {item.penetrationRoute || 'NAP'}
-                      </div>
-                    </div>
 
-                    {/* Row 7: Efeitos a saúde */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                        Efeitos a saúde
+                      {/* Row 5: Trajetória */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          Trajetória
+                        </div>
+                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                          {item.trajectory || 'Ar'}
+                        </div>
                       </div>
-                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                        {item.healthDamage || 'NAP'}
-                      </div>
-                    </div>
 
-                    {/* Row 8: EPC/EPI */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                        EPC/EPI
+                      {/* Row 6: Via de penetração */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          Via de penetração
+                        </div>
+                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                          {item.penetrationRoute || 'Auditiva (Ouvido / Som)'}
+                        </div>
                       </div>
-                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                        {epcEpiFinal}
-                      </div>
-                    </div>
 
-                    {/* Section Header: Medição */}
-                    <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
-                      Medição
-                    </div>
+                      {/* Row 7: Efeitos a saúde */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          Efeitos a saúde
+                        </div>
+                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                          {item.healthDamage || 'Perda Auditiva Induzida por Ruído (PAIR)'}
+                        </div>
+                      </div>
 
-                    {/* Critério & Técnica */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-6 py-1 px-3 border-r border-slate-300 flex items-center">
-                        <span className="font-bold mr-1.5">Critério:</span>
-                        <span className="text-slate-800">{criterio}</span>
+                      {/* Row 8: EPC/EPI */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          EPC/EPI
+                        </div>
+                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                          {epcEpiFinal}
+                        </div>
                       </div>
-                      <div className="col-span-6 py-1 px-3 flex items-center">
-                        <span className="font-bold mr-1.5">Técnica utilizada:</span>
-                        <span className="text-slate-800">{tecnica}</span>
-                      </div>
-                    </div>
 
-                    {/* Data da medição | Resultado | LT Headers */}
-                    <div className="grid grid-cols-12 border-t border-slate-300 bg-slate-50 font-bold text-center">
-                      <div className="col-span-4 py-1 px-2 border-r border-slate-300">
-                        Data da medição
+                      {/* Section Header: Medição */}
+                      <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                        Medição
                       </div>
-                      <div className="col-span-4 py-1 px-2 border-r border-slate-300">
-                        Resultado
-                      </div>
-                      <div className="col-span-4 py-1 px-2">
-                        LT
-                      </div>
-                    </div>
 
-                    {/* Data da medição | Resultado | LT Values */}
-                    <div className="grid grid-cols-12 border-t border-slate-300 text-center">
-                      <div className="col-span-4 py-1 px-2 border-r border-slate-300 text-slate-800">
-                        {dataMedicao}
+                      {/* Row 10: Critério & Técnica */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-6 py-1 px-3 font-semibold border-r border-slate-300 text-slate-900">
+                          Critério: <span className="font-normal text-slate-800">{criterio}</span>
+                        </div>
+                        <div className="col-span-6 py-1 px-3 font-semibold text-slate-900">
+                          Técnica utilizada: <span className="font-normal text-slate-800">{tecnica}</span>
+                        </div>
                       </div>
-                      <div className="col-span-4 py-1 px-2 border-r border-slate-300 font-semibold text-slate-900">
-                        {resultado}
-                      </div>
-                      <div className="col-span-4 py-1 px-2 text-slate-800">
-                        {lt}
-                      </div>
-                    </div>
 
-                    {/* Section Header: Categorização do risco/perigo */}
-                    <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
-                      Categorização do risco/perigo
-                    </div>
+                      {/* Row 11: Data da medição | Resultado | LT Headers */}
+                      <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
+                        <div className="col-span-4 py-1 px-2 border-r border-slate-300">Data da medição</div>
+                        <div className="col-span-4 py-1 px-2 border-r border-slate-300">Resultado</div>
+                        <div className="col-span-4 py-1 px-2">LT</div>
+                      </div>
 
-                    {/* Severidade | Probabilidade | Status do agente | Prioridade Headers */}
-                    <div className="grid grid-cols-12 border-t border-slate-300 bg-slate-50 font-bold text-center">
-                      <div className="col-span-3 py-1 px-2 border-r border-slate-300">
-                        Severidade
+                      {/* Row 12: Data da medição | Resultado | LT Values */}
+                      <div className="grid grid-cols-12 border-t border-slate-300 text-center">
+                        <div className="col-span-4 py-1 px-2 border-r border-slate-300 text-slate-800">{dataMedicao}</div>
+                        <div className="col-span-4 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">{resultado}</div>
+                        <div className="col-span-4 py-1 px-2 text-slate-800">{lt}</div>
                       </div>
-                      <div className="col-span-3 py-1 px-2 border-r border-slate-300">
-                        Probabilidade
-                      </div>
-                      <div className="col-span-3 py-1 px-2 border-r border-slate-300">
-                        Status do agente
-                      </div>
-                      <div className="col-span-3 py-1 px-2">
-                        Prioridade de ação
-                      </div>
-                    </div>
 
-                    {/* Severidade | Probabilidade | Status do agente | Prioridade Values */}
-                    <div className="grid grid-cols-12 border-t border-slate-300 text-center">
-                      <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-semibold text-slate-800">
-                        {item.severity}
+                      {/* Section Header: Categorização do risco/perigo */}
+                      <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                        Categorização do risco/perigo
                       </div>
-                      <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-semibold text-slate-800">
-                        {item.probability}
-                      </div>
-                      <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold" style={{ color: statusColor }}>
-                        {statusAgente}
-                      </div>
-                      <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
-                        {prioridade}
-                      </div>
-                    </div>
 
-                    {/* Section Header: Recomendações */}
-                    <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
-                      Recomendações
-                    </div>
+                      {/* Row 14: Headers Severidade, Probabilidade, Status, Prioridade */}
+                      <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
+                        <div className="col-span-3 py-1 px-2 border-r border-slate-300">Severidade</div>
+                        <div className="col-span-3 py-1 px-2 border-r border-slate-300">Probabilidade</div>
+                        <div className="col-span-3 py-1 px-2 border-r border-slate-300">Status do agente</div>
+                        <div className="col-span-3 py-1 px-2">Prioridade de ação</div>
+                      </div>
 
-                    {/* Recomendações Values */}
-                    <div className="grid grid-cols-12 border-t border-slate-300">
-                      <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                      {/* Row 15: Values */}
+                      <div className="grid grid-cols-12 border-t border-slate-300 text-center">
+                        <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
+                          {item.severity}
+                        </div>
+                        <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
+                          {item.probability}
+                        </div>
+                        <div 
+                          className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-xs"
+                          style={{ color: statusColor }}
+                        >
+                          {statusAgente}
+                        </div>
+                        <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
+                          {prioridade}
+                        </div>
+                      </div>
+
+                      {/* Section Header: Recomendações */}
+                      <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
                         Recomendações
                       </div>
-                      <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                        {item.recommendations || 'NAP'}
-                      </div>
-                    </div>
 
-                    {/* Optional Avaliações e Resultados (Imagens) */}
-                    {item.evaluationImages && item.evaluationImages.length > 0 && (
-                      <div className="border-t border-slate-400 p-2.5 bg-slate-50">
-                        <div className="font-bold text-[10px] uppercase tracking-wider text-slate-600 mb-2">
-                          Avaliações e Resultados (Gráficos e Planilhas):
+                      {/* Recomendações Values */}
+                      <div className="grid grid-cols-12 border-t border-slate-300">
+                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                          Recomendações
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          {item.evaluationImages.map((img, imgIdx) => (
-                            <img
-                              key={imgIdx}
-                              src={img}
-                              alt={`Avaliação ${imgIdx + 1}`}
-                              className="h-28 w-auto rounded border border-slate-300 object-contain bg-white"
-                            />
-                          ))}
+                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                          {item.recommendations || 'NAP'}
                         </div>
                       </div>
-                    )}
+
+                      {/* Optional Avaliações e Resultados (Imagens) */}
+                      {item.evaluationImages && item.evaluationImages.length > 0 && (
+                        <div className="border-t border-slate-400 p-2.5 bg-slate-50">
+                          <div className="font-bold text-[10px] uppercase tracking-wider text-slate-600 mb-2">
+                            Avaliações e Resultados (Gráficos e Planilhas):
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {item.evaluationImages.map((img, imgIdx) => (
+                              <img
+                                key={imgIdx}
+                                src={img}
+                                alt={`Avaliação ${imgIdx + 1}`}
+                                className="h-28 w-auto rounded border border-slate-300 object-contain bg-white"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -753,10 +732,10 @@ export const PgrViewerPage: React.FC = () => {
           )}
         </section>
 
-        {/* 15. PLANO DE AÇÃO */}
+        {/* 14. PLANO DE AÇÃO */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">15.</span> {getSectionTitle('sec-15', 'PLANO DE AÇÃO E CRONOGRAMA (NR-01.5.5 - 5W2H)')}
+            <span className="text-emerald-600 font-mono">14.</span> {getSectionTitle('sec-14', 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)')}
           </h2>
           <div className="border border-border rounded-xl overflow-hidden shadow-xs">
             <Table>
@@ -792,12 +771,12 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 16. TERMO DE ENCERRAMENTO E ASSINATURAS */}
+        {/* 15. TERMO DE ENCERRAMENTO E ASSINATURAS */}
         <section className="space-y-6 pt-6 border-t border-border">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">16.</span> {getSectionTitle('sec-16', 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE')}
+            <span className="text-emerald-600 font-mono">15.</span> {getSectionTitle('sec-15', 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE')}
           </h2>
-          {renderFormattedSection(getSectionContent('sec-16', OFFICIAL_PGR_TEXTS.termoEncerramento))}
+          {renderFormattedSection(getSectionContent('sec-15', OFFICIAL_PGR_TEXTS.termoEncerramento))}
 
           <p className="text-xs text-right text-muted-foreground">
             {activeCompany.address.city}/{activeCompany.address.state}, {docData.header.elaborationDate}.
@@ -820,12 +799,12 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 17. RECIBO DE EPI */}
+        {/* 16. RECIBO DE EPI */}
         <section className="space-y-3 pt-6 border-t border-border">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-emerald-600 font-mono">17.</span> {getSectionTitle('sec-17', 'MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)')}
+            <span className="text-emerald-600 font-mono">16.</span> {getSectionTitle('sec-16', 'MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)')}
           </h2>
-          {renderFormattedSection(getSectionContent('sec-17', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-17')?.defaultContent || ''))}
+          {renderFormattedSection(getSectionContent('sec-16', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-16')?.defaultContent || ''))}
         </section>
 
       </div>

@@ -310,6 +310,25 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
           const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
           const catHex = (catConfig?.color || '#16a34a').replace('#', '');
 
+          const posTitle = pos?.title ? `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}` : (ghe?.name ? `Cargo / Função: ${ghe.name}` : 'Cargo / Função: Geral');
+          const sectorInfo = `Setor: ${sec?.name || '-'} | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount || 1} trabalhador(es)`;
+          const activityDesc = `Descrição da Atividade: ${pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada'}`;
+
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: posTitle, bold: true, size: 20 })],
+              spacing: { before: 280, after: 60 },
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: sectorInfo, size: 18, color: '475569' })],
+              spacing: { after: 60 },
+            }),
+            new Paragraph({
+              children: parseTextToTextRuns(activityDesc),
+              spacing: { after: 120 },
+            })
+          );
+
           const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
           const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 

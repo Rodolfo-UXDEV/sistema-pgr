@@ -259,48 +259,33 @@ export function buildPgrFullDocument(ctx: PgrDocumentContext) {
       {
         id: 'sec-13',
         number: '13',
-        title: getSec('sec-13')?.title || '13. CARGO, FUNÇÕES E CARACTERIZAÇÃO DAS ATIVIDADES',
-        type: 'positions_list' as const,
-        positions: positions.map(p => ({
-          title: p.title,
-          cbo: p.cbo,
-          sectorName: sectors.find(s => s.id === p.sectorId)?.name || '-',
-          workers: p.workerCount,
-          activityDescription: p.activityDescription || p.routineActivities || p.description || 'Não identificada',
-          routine: p.activityDescription || p.routineActivities || p.description || 'Não identificada',
-          nonRoutine: p.nonRoutineActivities || '-'
-        }))
-      },
-      {
-        id: 'sec-14',
-        number: '14',
-        title: getSec('sec-14')?.title || '14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
+        title: getSec('sec-13')?.title || '13. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
         type: 'risk_inventory_table' as const,
         items: riskInventory
       },
       {
-        id: 'sec-15',
-        number: '15',
-        title: getSec('sec-15')?.title || '15. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
+        id: 'sec-14',
+        number: '14',
+        title: getSec('sec-14')?.title || '14. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
         type: 'action_plan_table' as const,
         items: actionPlans
       },
       {
-        id: 'sec-16',
-        number: '16',
-        title: getSec('sec-16')?.title || '16. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
+        id: 'sec-15',
+        number: '15',
+        title: getSec('sec-15')?.title || '15. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
         type: 'closing_signatures' as const,
-        text: getSec('sec-16')?.content || OFFICIAL_PGR_TEXTS.termoEncerramento,
+        text: getSec('sec-15')?.content || OFFICIAL_PGR_TEXTS.termoEncerramento,
         date: formatDate(pgr.elaborationDate),
         city: company.address.city,
         state: company.address.state
       },
       {
-        id: 'sec-17',
-        number: '17',
-        title: getSec('sec-17')?.title || '17. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
+        id: 'sec-16',
+        number: '16',
+        title: getSec('sec-16')?.title || '16. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
         type: 'text' as const,
-        content: getSec('sec-17')?.content || OFFICIAL_PGR_TEXTS.reciboEpi
+        content: getSec('sec-16')?.content || OFFICIAL_PGR_TEXTS.reciboEpi
       }
     ]
   };

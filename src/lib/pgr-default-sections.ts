@@ -354,31 +354,19 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
   {
     id: 'sec-13',
     number: '13',
-    title: '13. CARGO, FUNÇÕES E CARACTERIZAÇÃO DAS ATIVIDADES',
-    subtitle: 'Atividades rotineiras, CBO, setor, GES e trabalhadores expostos',
-    category: 'environments',
+    title: '13. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
+    subtitle: 'Caracterização de cargos, funções, atividades e cartões estruturados APR-HO por perigo e GES',
+    category: 'risks',
     type: 'system_data',
-    description: 'Cargos com CBO, efetivo exposto e descrição minuciosa das tarefas.',
-    defaultContent: `Detalhamento de cada cargo e função da organização, indicando o Código Brasileiro de Ocupações (CBO), o número de trabalhadores expostos, setor de lotação, GES vinculado e descrição das atividades desenvolvidas.`,
+    description: 'Inventário consolidado com caracterização de cargos/funções e avaliações no modelo APR-HO.',
+    defaultContent: `O Inventário de Riscos Ocupacionais consolida a caracterização minuciosa de cada cargo, função e atividades operacionais, juntamente com a identificação dos perigos, fontes geradoras, trajetórias, vias de penetração, população exposta, medições, severidade, probabilidade, nível de risco e medidas de prevenção (EPC e EPI com CA).`,
     isSystemData: true,
-    systemDataSummary: 'Lista todos os Cargos, CBOs e Atividades cadastradas no sistema.'
+    systemDataSummary: 'Exibe a Caracterização do Cargo/Função acima de cada avaliação tabular no modelo APR-HO.'
   },
   {
     id: 'sec-14',
     number: '14',
-    title: '14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
-    subtitle: 'Cartões estruturados APR-HO por GES com perigos, medições, matriz 5x5 e recomendações',
-    category: 'risks',
-    type: 'system_data',
-    description: 'Inventário consolidado estruturado exatamente conforme o modelo APR-HO.',
-    defaultContent: `O Inventário de Riscos Ocupacionais consolida a identificação dos perigos, fontes geradoras, trajetória, via de penetração, população exposta, medições, severidade, probabilidade, nível de risco e medidas de prevenção (EPC e EPI com CA).`,
-    isSystemData: true,
-    systemDataSummary: 'Exibe os cartões tabulares APR-HO com todos os perigos mapeados no sistema.'
-  },
-  {
-    id: 'sec-15',
-    number: '15',
-    title: '15. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
+    title: '14. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
     subtitle: 'Metas por GES, medidas preventivas, responsáveis, prazos, custos e status',
     category: 'actions',
     type: 'system_data',
@@ -388,9 +376,9 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
     systemDataSummary: 'Exibe a tabela 5W2H com todas as ações programadas no sistema.'
   },
   {
-    id: 'sec-16',
-    number: '16',
-    title: '16. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
+    id: 'sec-15',
+    number: '15',
+    title: '15. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
     subtitle: 'Declaração pericial, citação das Portarias Mtb e assinaturas do RT e da Empresa',
     category: 'posttextual',
     type: 'text',
@@ -403,9 +391,9 @@ Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à sa
     isSystemData: false
   },
   {
-    id: 'sec-17',
-    number: '17',
-    title: '17. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
+    id: 'sec-16',
+    number: '16',
+    title: '16. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
     subtitle: 'Termo de entrega, responsabilidade e guarda de EPI conforme NR-06',
     category: 'posttextual',
     type: 'text',
