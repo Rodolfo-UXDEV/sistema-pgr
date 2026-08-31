@@ -444,57 +444,82 @@ export const PgrDocumentsPage: React.FC = () => {
             </DialogHeader>
 
             <form onSubmit={handleSave} className="space-y-4 pt-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Unidade / Estabelecimento *</Label>
-                  <select
-                    value={establishmentId}
-                    onChange={(e) => setEstablishmentId(e.target.value)}
-                    required
-                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
-                  >
-                    {companyEstablishments.map((est) => (
-                      <option key={est.id} value={est.id}>{est.name} ({est.code})</option>
-                    ))}
-                  </select>
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Unidade / Estabelecimento *</Label>
+                    <select
+                      value={establishmentId}
+                      onChange={(e) => setEstablishmentId(e.target.value)}
+                      required
+                      className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
+                    >
+                      {companyEstablishments.map((est) => (
+                        <option key={est.id} value={est.id}>{est.name} ({est.code})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">Status do Documento</Label>
+                    <select
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value as PgrDocumentStatus)}
+                      className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring font-semibold"
+                    >
+                      <option value="DRAFT">Rascunho (Em Elaboração)</option>
+                      <option value="IN_REVIEW">Em Revisão Técnica</option>
+                      <option value="APPROVED">Aprovado / Vigente Oficial</option>
+                      <option value="ARCHIVED">Arquivado / Histórico</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-xs">Código do Documento *</Label>
+                    <Input
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
+                      placeholder="Ex: PGR-2026-001"
+                      required
+                      className="h-9 mt-1 text-xs font-mono font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">Número da Versão</Label>
+                    <Input
+                      value={version}
+                      onChange={(e) => setVersion(e.target.value)}
+                      placeholder="Ex: 1.0"
+                      className="h-9 mt-1 text-xs font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-xs">Data da elaboração: *</Label>
+                    <Input
+                      type="date"
+                      value={elaborationDate}
+                      onChange={(e) => {
+                        const newElab = e.target.value;
+                        setElaborationDate(newElab);
+                        if (newElab) {
+                          setValidityStart(newElab);
+                          const d = new Date(newElab + 'T00:00:00');
+                          d.setFullYear(d.getFullYear() + 2);
+                          setValidityEnd(d.toISOString().split('T')[0]);
+                          setYear(new Date(newElab + 'T00:00:00').getFullYear());
+                        }
+                      }}
+                      required
+                      className="h-9 mt-1 text-xs"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <Label className="text-xs">Status do Documento</Label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value as PgrDocumentStatus)}
-                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring font-semibold"
-                  >
-                    <option value="DRAFT">Rascunho (Em Elaboração)</option>
-                    <option value="IN_REVIEW">Em Revisão Técnica</option>
-                    <option value="APPROVED">Aprovado / Vigente Oficial</option>
-                    <option value="ARCHIVED">Arquivado / Histórico</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label className="text-xs">Código do Documento *</Label>
-                  <Input
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="Ex: PGR-2026-001"
-                    required
-                    className="h-9 mt-1 text-xs font-mono font-bold"
-                  />
-                </div>
-
-                <div>
-                  <Label className="text-xs">Número da Versão</Label>
-                  <Input
-                    value={version}
-                    onChange={(e) => setVersion(e.target.value)}
-                    placeholder="Ex: 1.0"
-                    className="h-9 mt-1 text-xs font-mono"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
                   <Label className="text-xs">Título do Programa *</Label>
                   <Input
                     value={title}
@@ -505,26 +530,7 @@ export const PgrDocumentsPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <Label className="text-xs">Data da elaboração: *</Label>
-                  <Input
-                    type="date"
-                    value={elaborationDate}
-                    onChange={(e) => {
-                      const newElab = e.target.value;
-                      setElaborationDate(newElab);
-                      if (newElab) {
-                        setValidityStart(newElab);
-                        const d = new Date(newElab + 'T00:00:00');
-                        d.setFullYear(d.getFullYear() + 2);
-                        setValidityEnd(d.toISOString().split('T')[0]);
-                        setYear(new Date(newElab + 'T00:00:00').getFullYear());
-                      }
-                    }}
-                    required
-                    className="h-9 mt-1 text-xs"
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
                 <div>
                   <Label className="text-xs">Responsável Técnico (Eng./Téc. Segurança)</Label>
