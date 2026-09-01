@@ -169,7 +169,7 @@ export async function generatePgrExcel(ctx: PgrDocumentContext): Promise<void> {
       currentRow++;
 
       // Row 15: Severidade | Probabilidade | Status do agente | Prioridade Values
-      wsRiskData.push([item.severity, item.probability, statusAgente, prioridade]);
+      wsRiskData.push([item.severity, item.probability, statusAgente, item.actionPriority || prioridade]);
       currentRow++;
 
       // Section Header: Recomendações
