@@ -307,32 +307,36 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
           const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
           const catRgb = hexToRgb(catConfig?.color || '#16a34a');
 
-          const posTitle = pos?.title ? `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}` : (ghe?.name ? `Cargo / Função: ${ghe.name}` : 'Cargo / Função: Geral');
-          const sectorInfo = `Setor: ${sec?.name || '-'} | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount || 1} trabalhador(es)`;
+          const gesLabel = ghe?.code 
+            ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
+            : (ghe?.name ? ghe.name : 'GES-01');
+          const gesSectorInfo = `${gesLabel} | Setor: ${sec?.name || '-'}${pos?.workerCount || ghe?.workerCount ? ` | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount} trabalhador(es)` : ''}`;
+          const posTitle = `Cargo / Função: ${pos?.title || ghe?.name || 'Geral'}${pos?.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
           const rawActivity = pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada';
           const cleanActivity = rawActivity.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
           const actLines = doc.splitTextToSize(`Descrição da Atividade: ${cleanActivity}`, 182);
 
           checkPageBreak(75 + actLines.length * 3.5);
 
-          // Header do Cargo / Função & Atividades acima de cada APR-HO
+          // 1. GES | Setor (Negrito)
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8.5);
           doc.setTextColor(15, 23, 42);
-          doc.text(posTitle, 14, currentY);
+          doc.text(gesSectorInfo, 14, currentY);
           currentY += 4;
 
+          // 2. Cargo / Função (Normal)
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.5);
-          doc.setTextColor(71, 85, 105);
-          doc.text(sectorInfo, 14, currentY);
+          doc.setTextColor(51, 65, 85);
+          doc.text(posTitle, 14, currentY);
           currentY += 3.5;
 
+          // 3. Descrição da Atividade (Normal)
           doc.text(actLines, 14, currentY);
           currentY += actLines.length * 3.2 + 2.5;
 
-          const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
-          const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+          const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
           let expPart1 = 'Habitual';
           let expPart2 = 'Permanente';

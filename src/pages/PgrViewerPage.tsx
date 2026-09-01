@@ -457,9 +457,12 @@ export const PgrViewerPage: React.FC = () => {
                 const workerCount = pos?.workerCount || ghe?.workerCount || 1;
                 const activityDesc = pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada';
 
-                // Título do GES no cabeçalho
-                const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
-                const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+                // Título do GES e Setor
+                const gesLabel = ghe?.code 
+                  ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
+                  : (ghe?.name ? ghe.name : 'GES-01');
+                const gesSectorInfo = `${gesLabel} | Setor: ${sectorName}${workerCount ? ` | Efetivo Exposto: ${workerCount} trabalhador(es)` : ''}`;
+                const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
                 // Separação do Tipo de Exposição
                 let expPart1 = 'Habitual';
@@ -533,12 +536,12 @@ export const PgrViewerPage: React.FC = () => {
                     {/* Bloco de Caracterização da Função e Atividade acima do APR-HO */}
                     <div className="space-y-1 text-xs text-foreground">
                       <div className="font-bold text-sm text-foreground">
+                        {gesSectorInfo}
+                      </div>
+                      <div className="text-foreground text-xs font-normal">
                         Cargo / Função: {posTitle}
                       </div>
-                      <div className="text-muted-foreground text-xs">
-                        Setor: {sectorName} | Efetivo Exposto: {workerCount} trabalhador(es)
-                      </div>
-                      <div className="text-muted-foreground text-xs leading-relaxed">
+                      <div className="text-foreground text-xs font-normal leading-relaxed">
                         Descrição da Atividade: {activityDesc}
                       </div>
                     </div>

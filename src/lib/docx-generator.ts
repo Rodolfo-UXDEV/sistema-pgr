@@ -320,17 +320,20 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
           const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
           const catHex = (catConfig?.color || '#16a34a').replace('#', '');
 
-          const posTitle = pos?.title ? `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}` : (ghe?.name ? `Cargo / Função: ${ghe.name}` : 'Cargo / Função: Geral');
-          const sectorInfo = `Setor: ${sec?.name || '-'} | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount || 1} trabalhador(es)`;
+          const gesLabel = ghe?.code 
+            ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
+            : (ghe?.name ? ghe.name : 'GES-01');
+          const gesSectorInfo = `${gesLabel} | Setor: ${sec?.name || '-'}${pos?.workerCount || ghe?.workerCount ? ` | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount} trabalhador(es)` : ''}`;
+          const posTitle = `Cargo / Função: ${pos?.title || ghe?.name || 'Geral'}${pos?.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
           const activityDesc = `Descrição da Atividade: ${pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada'}`;
 
           children.push(
             new Paragraph({
-              children: [new TextRun({ text: posTitle, bold: true, size: 20 })],
+              children: [new TextRun({ text: gesSectorInfo, bold: true, size: 20 })],
               spacing: { before: 280, after: 60 },
             }),
             new Paragraph({
-              children: [new TextRun({ text: sectorInfo, size: 18, color: '475569' })],
+              children: [new TextRun({ text: posTitle, size: 18, color: '334155' })],
               spacing: { after: 60 },
             }),
             new Paragraph({
@@ -339,8 +342,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
             })
           );
 
-          const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
-          const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+          const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
           let expPart1 = 'Habitual';
           let expPart2 = 'Permanente';
