@@ -281,48 +281,6 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
       }
       currentY += 3;
 
-    } else if (section.type === 'sectors_list') {
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(section.title, 14, currentY);
-      currentY += 2;
-      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.setLineWidth(0.3);
-      doc.line(14, currentY, 196, currentY);
-      currentY += 4;
-
-      for (const s of section.sectors) {
-        checkPageBreak(25);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8.5);
-        doc.setTextColor(15, 23, 42);
-        doc.text(`Setor: ${s.name}`, 14, currentY);
-        currentY += 3.5;
-
-        if (s.description) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          doc.setTextColor(71, 85, 105);
-          const descLines = doc.splitTextToSize(`Descrição: ${s.description}`, 182);
-          doc.text(descLines, 14, currentY);
-          currentY += descLines.length * 3.2 + 2;
-        }
-
-        if (s.characteristics && s.characteristics.floorType) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          doc.setTextColor(71, 85, 105);
-          const structText = `Estrutura Física: Piso ${s.characteristics.floorType || '-'} | Paredes ${s.characteristics.wallType || '-'} | Cobertura ${s.characteristics.roofType || '-'} | Ventilação ${s.characteristics.ventilationType || '-'} | Iluminação ${s.characteristics.lightingType || '-'}`;
-          const structLines = doc.splitTextToSize(structText, 182);
-          doc.text(structLines, 14, currentY);
-          currentY += structLines.length * 3.2 + 4;
-        } else {
-          currentY += 2;
-        }
-      }
-      currentY += 4;
-
     } else if (section.type === 'risk_inventory_table') {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);

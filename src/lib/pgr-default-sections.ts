@@ -344,19 +344,7 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
   {
     id: 'sec-12',
     number: '12',
-    title: '12. CARACTERIZAÇÃO DOS PROCESSOS, AMBIENTES E SETORES',
-    subtitle: 'Descrição física e estrutural dos setores e postos de trabalho',
-    category: 'environments',
-    type: 'system_data',
-    description: 'Setores com tipos de piso, parede, cobertura, ventilação e iluminação.',
-    defaultContent: `Caracterização das instalações físicas de cada setor da empresa, contemplando arranjo físico, condições de piso, cobertura, paredes, ventilação e iluminação.`,
-    isSystemData: true,
-    systemDataSummary: 'Lista todos os Setores e suas Características Físicas cadastradas no sistema.'
-  },
-  {
-    id: 'sec-13',
-    number: '13',
-    title: '13. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
+    title: '12. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
     subtitle: 'Caracterização de cargos, funções, atividades e cartões estruturados APR-HO por perigo e GES',
     category: 'risks',
     type: 'system_data',
@@ -366,9 +354,9 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
     systemDataSummary: 'Exibe a Caracterização do Cargo/Função acima de cada avaliação tabular no modelo APR-HO.'
   },
   {
-    id: 'sec-14',
-    number: '14',
-    title: '14. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
+    id: 'sec-13',
+    number: '13',
+    title: '13. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
     subtitle: 'Metas por GES, medidas preventivas, responsáveis, prazos, custos e status',
     category: 'actions',
     type: 'system_data',
@@ -378,9 +366,9 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
     systemDataSummary: 'Exibe a tabela 5W2H com todas as ações programadas no sistema.'
   },
   {
-    id: 'sec-15',
-    number: '15',
-    title: '15. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
+    id: 'sec-14',
+    number: '14',
+    title: '14. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
     subtitle: 'Declaração pericial, citação das Portarias Mtb e assinaturas do RT e da Empresa',
     category: 'posttextual',
     type: 'text',
@@ -393,9 +381,9 @@ Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à sa
     isSystemData: false
   },
   {
-    id: 'sec-16',
-    number: '16',
-    title: '16. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
+    id: 'sec-15',
+    number: '15',
+    title: '15. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
     subtitle: 'Termo de entrega, responsabilidade e guarda de EPI conforme NR-06',
     category: 'posttextual',
     type: 'text',

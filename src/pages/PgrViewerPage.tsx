@@ -434,30 +434,10 @@ export const PgrViewerPage: React.FC = () => {
           {renderFormattedSection(getSectionContent('sec-11', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-11')?.defaultContent || ''))}
         </section>
 
-        {/* 12. SETORES E AMBIENTES */}
-        <section className="space-y-3">
-          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-[#334155] dark:text-slate-300 font-mono">12.</span> {getSectionTitle('sec-12', 'CARACTERIZAÇÃO DOS PROCESSOS, AMBIENTES E SETORES')}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {sectors.map((s) => (
-              <div key={s.id} className="p-3 bg-muted/20 border border-border rounded-xl text-xs space-y-1">
-                <span className="font-bold text-foreground block text-sm">{s.name}</span>
-                {s.description && <p className="text-muted-foreground">{s.description}</p>}
-                {s.physicalCharacteristics?.floorType && (
-                  <div className="pt-1 text-[11px] text-muted-foreground font-mono">
-                    Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Cobertura: {s.physicalCharacteristics.roofType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 13. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO) COM CARGOS E ATIVIDADES */}
+        {/* 12. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO) COM CARGOS E ATIVIDADES */}
         <section className="space-y-6">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-[#334155] dark:text-slate-300 font-mono">13.</span> {getSectionTitle('sec-13', 'INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)')}
+            <span className="text-[#334155] dark:text-slate-300 font-mono">12.</span> {getSectionTitle('sec-12', 'INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)')}
           </h2>
 
           {pgrContext.riskInventory.length === 0 ? (
@@ -749,10 +729,10 @@ export const PgrViewerPage: React.FC = () => {
           )}
         </section>
 
-        {/* 14. PLANO DE AÇÃO */}
+        {/* 13. PLANO DE AÇÃO */}
         <section className="space-y-3">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-[#334155] dark:text-slate-300 font-mono">14.</span> {getSectionTitle('sec-14', 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)')}
+            <span className="text-[#334155] dark:text-slate-300 font-mono">13.</span> {getSectionTitle('sec-13', 'PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)')}
           </h2>
           <div className="border border-border rounded-xl overflow-hidden shadow-xs bg-card">
             <Table>
@@ -912,12 +892,12 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 15. TERMO DE ENCERRAMENTO E ASSINATURAS */}
+        {/* 14. TERMO DE ENCERRAMENTO E ASSINATURAS */}
         <section className="space-y-6 pt-6 border-t border-border">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-[#334155] dark:text-slate-300 font-mono">15.</span> {getSectionTitle('sec-15', 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE')}
+            <span className="text-[#334155] dark:text-slate-300 font-mono">14.</span> {getSectionTitle('sec-14', 'TERMO DE ENCERRAMENTO E RESPONSABILIDADE')}
           </h2>
-          {renderFormattedSection(getSectionContent('sec-15', OFFICIAL_PGR_TEXTS.termoEncerramento))}
+          {renderFormattedSection(getSectionContent('sec-14', OFFICIAL_PGR_TEXTS.termoEncerramento))}
 
           <p className="text-xs text-right text-muted-foreground">
             {activeCompany.address.city}/{activeCompany.address.state}, {docData.header.elaborationDate}.
@@ -940,12 +920,12 @@ export const PgrViewerPage: React.FC = () => {
           </div>
         </section>
 
-        {/* 16. RECIBO DE EPI */}
+        {/* 15. RECIBO DE EPI */}
         <section className="space-y-3 pt-6 border-t border-border">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-[#334155] dark:text-slate-300 font-mono">16.</span> {getSectionTitle('sec-16', 'MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)')}
+            <span className="text-[#334155] dark:text-slate-300 font-mono">15.</span> {getSectionTitle('sec-15', 'MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)')}
           </h2>
-          {renderFormattedSection(getSectionContent('sec-16', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-16')?.defaultContent || ''))}
+          {renderFormattedSection(getSectionContent('sec-15', DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-15')?.defaultContent || ''))}
         </section>
 
       </div>

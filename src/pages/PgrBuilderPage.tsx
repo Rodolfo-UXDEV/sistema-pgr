@@ -595,25 +595,7 @@ export const PgrBuilderPage: React.FC = () => {
                     </div>
                   )}
 
-                  {selectedSection.id === 'sec-11' && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-bold text-muted-foreground">Setores Cadastrados ({sectors.length}):</p>
-                      <div className="space-y-2">
-                        {sectors.map((s) => (
-                          <div key={s.id} className="p-3 bg-muted/20 border border-border rounded-lg text-xs space-y-1">
-                            <span className="font-bold text-foreground">{s.name}</span>
-                            {s.physicalCharacteristics?.floorType && (
-                              <p className="text-muted-foreground text-[11px]">
-                                Piso: {s.physicalCharacteristics.floorType} | Paredes: {s.physicalCharacteristics.wallType} | Ventilação: {s.physicalCharacteristics.ventilationType} | Iluminação: {s.physicalCharacteristics.lightingType}
-                              </p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedSection.id === 'sec-14' && (
+                  {selectedSection.id === 'sec-12' && (
                     <div className="space-y-2">
                       <p className="text-xs font-bold text-muted-foreground">Riscos Ocupacionais no Inventário ({pgrContext.riskInventory.length}):</p>
                       <div className="border border-border rounded-lg overflow-hidden">
@@ -633,6 +615,34 @@ export const PgrBuilderPage: React.FC = () => {
                                 <TableCell>{HAZARD_CATEGORY_CONFIG[r.hazardCategory]?.label || r.hazardCategory}</TableCell>
                                 <TableCell className="text-center font-mono font-bold">P:{r.probability} × S:{r.severity} = {r.riskScore}</TableCell>
                                 <TableCell><Badge variant="outline">{r.riskLevel}</Badge></TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedSection.id === 'sec-13' && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold text-muted-foreground">Ações do Plano de Ação 5W2H ({pgrContext.actionPlans.length}):</p>
+                      <div className="border border-border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-muted/50 text-[11px]">
+                              <TableHead>O que fazer (What)</TableHead>
+                              <TableHead>Responsável (Who)</TableHead>
+                              <TableHead>Prazo (When)</TableHead>
+                              <TableHead className="text-center">Status</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {pgrContext.actionPlans.map((a) => (
+                              <TableRow key={a.id} className="text-xs">
+                                <TableCell className="font-semibold">{a.what}</TableCell>
+                                <TableCell>{a.who || 'SESMT'}</TableCell>
+                                <TableCell>{a.whenDate || 'Contínuo'}</TableCell>
+                                <TableCell className="text-center"><Badge variant="outline">{a.status}</Badge></TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
