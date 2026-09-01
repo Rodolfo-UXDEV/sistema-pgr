@@ -241,9 +241,40 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
             head: [cleanHeaders],
             body: cleanRows,
             theme: 'grid',
-            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5 },
+            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
             styles: { fontSize: 7, cellPadding: 2 },
             margin: { left: 14, right: 14 },
+            didParseCell: (data) => {
+              if (data.section === 'body') {
+                const text = String(data.cell.raw || '').trim();
+                if (/\(TRI\)/i.test(text)) {
+                  data.cell.styles.fillColor = [16, 185, 129]; // Emerald 500
+                  data.cell.styles.textColor = [255, 255, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                } else if (/\(TOL\)/i.test(text)) {
+                  data.cell.styles.fillColor = [132, 204, 22]; // Lime 500
+                  data.cell.styles.textColor = [255, 255, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                } else if (/\(MOD\)/i.test(text)) {
+                  data.cell.styles.fillColor = [245, 158, 11]; // Amber 500
+                  data.cell.styles.textColor = [255, 255, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                } else if (/\(SUB\)/i.test(text)) {
+                  data.cell.styles.fillColor = [249, 115, 22]; // Orange 500
+                  data.cell.styles.textColor = [255, 255, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                } else if (/\(INT\)/i.test(text)) {
+                  data.cell.styles.fillColor = [225, 29, 72]; // Rose 600
+                  data.cell.styles.textColor = [255, 255, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                }
+              }
+            }
           });
           currentY = (doc as any).lastAutoTable.finalY + 6;
         }

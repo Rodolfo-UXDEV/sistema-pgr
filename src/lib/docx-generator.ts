@@ -244,12 +244,47 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
             }),
             ...block.rows.map((row) =>
               new TableRow({
-                children: row.map((cell) =>
-                  new TableCell({
-                    children: [new Paragraph({ children: parseTextToTextRuns(cell) })],
+                children: row.map((cell) => {
+                  const trimmed = cell.trim();
+                  let fill: string | undefined = undefined;
+                  let textColor: string | undefined = undefined;
+                  let align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT;
+
+                  if (/\(TRI\)/i.test(trimmed)) {
+                    fill = '10B981';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  } else if (/\(TOL\)/i.test(trimmed)) {
+                    fill = '84CC16';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  } else if (/\(MOD\)/i.test(trimmed)) {
+                    fill = 'F59E0B';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  } else if (/\(SUB\)/i.test(trimmed)) {
+                    fill = 'F97316';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  } else if (/\(INT\)/i.test(trimmed)) {
+                    fill = 'E11D48';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  }
+
+                  return new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: fill
+                          ? [new TextRun({ text: trimmed, color: textColor, bold: true })]
+                          : parseTextToTextRuns(cell),
+                        alignment: align,
+                      })
+                    ],
                     borders: cellBorder,
-                  })
-                ),
+                    shading: fill ? { fill, type: ShadingType.CLEAR, color: 'auto' } : undefined,
+                  });
+                }),
               })
             ),
           ];

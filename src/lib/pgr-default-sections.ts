@@ -240,46 +240,48 @@ Os perigos e fatores de risco ocupacionais são classificados nas seguintes cate
 
 9.3. DAS CATEGORIAS DE RISCO E CRITÉRIOS DE AVALIAÇÃO
 
-Tabela 1 — Critério de Probabilidade Quantitativo e Qualitativo:
-| Índice | Perfil de Exposição Qualitativo | Perfil de Exposição Quantitativo |
+Tabela 1 — Gradação da Probabilidade (P1 a P5):
+| Índice | Denominação | Descrição / Critério de Ocorrência |
 | :--- | :--- | :--- |
-| 1 - Muito Baixa | Exposição altamente improvável ou eventual com controles robustos | Exposições < 10% do LEO |
-| 2 - Baixa | Exposição intermitente ou eventual com medidas eficazes | Exposições entre 10% e 50% do LEO (Nível de Ação) |
-| 3 - Média | Exposição rotineira com controles parciais ou dependentes de EPI | Exposições entre 50% e 100% do LEO |
-| 4 - Alta | Exposição habitual contínua com deficiência nos controles | Exposições entre 100% e 500% do LEO (Acima do LT) |
-| 5 - Muito Alta | Exposição crítica e contínua em condições severamente inadequadas | Exposições > 500% do LEO |
+| P1 | Raríssima | Praticamente impossível de ocorrer; medidas de proteção altamente eficazes e redundantes. |
+| P2 | Pouco Provável | Rara ocorrência conhecida; medidas de controle existentes com boa eficácia. |
+| P3 | Provável / Ocasional | Pode ocorrer durante a vida útil da instalação; controles parciais ou falhas eventuais. |
+| P4 | Frequente | Ocorre com frequência no histórico de operações; medidas de controle deficientes. |
+| P5 | Muito Frequente / Certa | Ocorrência sistemática ou contínua; ausência de medidas de controle aplicadas. |
 
-Tabela 2 — Critérios para Classificação dos 5 Níveis de Severidade:
-| Nível | Pontuação | Definição / Consequência Potencial |
+Tabela 2 — Gradação da Severidade (S1 a S5):
+| Nível | Denominação | Definição / Consequência Potencial |
 | :--- | :--- | :--- |
-| Insignificante | 1 | Sem lesão ou com consequências desprezíveis à saúde do trabalhador |
-| Menor | 2 | Lesão leve que demande apenas primeiros socorros, sem afastamento |
-| Moderada | 3 | Lesão ou agravo que exija tratamento médico e/ou afastamento temporário |
-| Grave | 4 | Lesão grave com afastamento prolongado ou incapacidade parcial permanente |
-| Crítica | 5 | Fatalidade, invalidez permanente total ou doença ocupacional irreversível |
+| S1 | Leve / Desprezível | Pequenos ferimentos sem necessidade de afastamento ou primeiros socorros simples. |
+| S2 | Menor / Moderada | Lesão leve com atendimento médico e retorno rápido ao trabalho (< 3 dias). |
+| S3 | Moderada / Grave | Lesão severa reversível, afastamento temporário significativo (> 15 dias). |
+| S4 | Crítica / Severa | Incapacidade permanente parcial ou total, amputações, perda auditiva severa. |
+| S5 | Catastrófica / Fatal | Morte de um ou mais trabalhadores, desastre operacional ou colapso ambiental. |
 
 Tabela 3 — Matriz de Risco 5x5 com Pontuações:
-| Severidade → / Probabilidade ↓ | 1 (Insignificante) | 2 (Menor) | 3 (Moderada) | 4 (Grave) | 5 (Crítica) |
+| Severidade \ Prob. | P1 (Raríssima) | P2 (Pouco Provável) | P3 (Provável / Ocasional) | P4 (Frequente) | P5 (Muito Frequente / Certa) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| 5 - Muito Provável | 5 (Médio) | 10 (Alto) | 15 (Alto) | 20 (Crítico) | 25 (Crítico) |
-| 4 - Provável | 4 (Baixo) | 8 (Médio) | 12 (Alto) | 16 (Crítico) | 20 (Crítico) |
-| 3 - Possível | 3 (Baixo) | 6 (Médio) | 9 (Médio) | 12 (Alto) | 15 (Alto) |
-| 2 - Pouco Provável | 2 (Baixo) | 4 (Baixo) | 6 (Médio) | 8 (Médio) | 10 (Alto) |
-| 1 - Muito Rara | 1 (Baixo) | 2 (Baixo) | 3 (Baixo) | 4 (Baixo) | 5 (Médio) |
+| **S5 (Catastrófica / Fatal)** | 5 (MOD) | 10 (SUB) | 15 (INT) | 20 (INT) | 25 (INT) |
+| **S4 (Crítica / Severa)** | 4 (TOL) | 8 (MOD) | 12 (SUB) | 16 (SUB) | 20 (INT) |
+| **S3 (Moderada / Grave)** | 3 (TOL) | 6 (MOD) | 9 (MOD) | 12 (SUB) | 15 (INT) |
+| **S2 (Menor / Moderada)** | 2 (TRI) | 4 (TOL) | 6 (MOD) | 8 (MOD) | 10 (SUB) |
+| **S1 (Leve / Desprezível)** | 1 (TRI) | 2 (TRI) | 3 (TOL) | 4 (TOL) | 5 (MOD) |
 
 Classificação do Nível de Risco e Diretrizes de Tratamento:
-• 16 a 25 — Extremo / Intolerável: Risco inaceitável. Intervenção imediata e suspensão das atividades até adequação.
-• 10 a 15 — Alto / Substancial: Risco significativo. Controle prioritário com plano de ação estruturado.
-• 5 a 9 — Médio / Moderado: Risco controlável. Monitoramento periódico e manutenção dos controles.
-• 1 a 4 — Baixo / Tolerável: Risco aceitável. Manutenção das medidas de prevenção existentes.
+• 15 a 25 — Intolerável / Crítico (INT): Risco inaceitável. Interrupção imediata da atividade até implantação de medidas que reduzam o risco a níveis aceitáveis.
+• 10 a 16 — Substancial / Alto (SUB): Risco significativo. Ação prioritária e urgente. Não iniciar ou restringir atividade até medidas de mitigação.
+• 5 a 9 — Moderado / Médio (MOD): Risco moderado. Necessário estabelecer plano de ação corretivo e preventivo para redução do risco.
+• 3 a 4 — Tolerável / Baixo (TOL): Risco baixo. Monitorar periodicamente para assegurar que os controles permaneçam eficazes.
+• 1 a 2 — Trivial / Muito Baixo (TRI): Risco muito baixo. Nenhuma ação adicional é necessária. Manter medidas de controle existentes.
 
 9.4. CRITÉRIOS DE PRIORIZAÇÃO DAS AÇÕES
-| Faixa de Pontuação | Classificação | Prioridade | Ação Requerida |
-| :--- | :--- | :--- | :--- |
-| 16 a 25 | Intolerável | Urgente | Intervenção imediata e eliminação do risco |
-| 10 a 15 | Substancial | Alta | Controle prioritário com cronograma rígido |
-| 5 a 9 | Moderado | Média | Monitoramento e melhoria contínua |
-| 1 a 4 | Tolerável | Baixa | Manutenção dos controles existentes |
+| Faixa de Pontuação | Classificação | Prioridade | Prazo Recomendado | Ação Requerida |
+| :--- | :--- | :--- | :--- | :--- |
+| 15 a 25 | Intolerável / Crítico (INT) | Crítica / Imediata | Até 7 dias | Interrupção imediata da atividade e eliminação do risco |
+| 10 a 16 | Substancial / Alto (SUB) | Alta | Até 30 dias | Controle prioritário com cronograma rígido de mitigação |
+| 5 a 9 | Moderado / Médio (MOD) | Média | Até 90 dias | Plano de ação corretivo e monitoramento periódico |
+| 3 a 4 | Tolerável / Baixo (TOL) | Baixa | Até 180 dias | Monitoramento para manutenção da eficácia das medidas |
+| 1 a 2 | Trivial / Muito Baixo (TRI) | Nenhuma | Até 365 dias | Manutenção das medidas de prevenção existentes |
 
 9.5. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
 • GES (Grupo de Exposição Similar): Grupo de trabalhadores que experimentam exposição semelhante a determinado agente ocupacional decorrente do mesmo ambiente e processo.

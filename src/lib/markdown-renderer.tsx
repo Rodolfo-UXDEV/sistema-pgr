@@ -68,6 +68,37 @@ export function renderFormattedBlockContent(content: string): React.ReactNode {
 }
 
 /**
+ * Renderiza células de tabelas tratando chips/cores da Matriz de Risco 5x5
+ */
+export function renderTableCellContent(cell: string): React.ReactNode {
+  const trimmed = cell.trim();
+  const matrixMatch = trimmed.match(/^(\d+)\s*\((TRI|TOL|MOD|SUB|INT)\)$/i);
+  
+  if (matrixMatch) {
+    const score = matrixMatch[1];
+    const code = matrixMatch[2].toUpperCase();
+
+    let bgClass = 'bg-slate-500 text-white';
+    if (code === 'TRI') bgClass = 'bg-emerald-500 text-white hover:bg-emerald-600';
+    else if (code === 'TOL') bgClass = 'bg-lime-500 text-white hover:bg-lime-600';
+    else if (code === 'MOD') bgClass = 'bg-amber-500 text-white hover:bg-amber-600';
+    else if (code === 'SUB') bgClass = 'bg-orange-500 text-white hover:bg-orange-600';
+    else if (code === 'INT') bgClass = 'bg-rose-600 text-white hover:bg-rose-700';
+
+    return (
+      <div className="flex items-center justify-center">
+        <div className={`flex flex-col items-center justify-center w-14 py-1 rounded-md font-bold shadow-xs transition-transform hover:scale-105 ${bgClass}`}>
+          <span className="text-xs leading-none">{score}</span>
+          <span className="text-[9px] uppercase tracking-tighter opacity-90">{code}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return renderMarkdownInline(cell);
+}
+
+/**
  * Componente universal que renderiza qualquer texto contendo tabelas markdown e formatações inline
  */
 export const MarkdownSectionRenderer: React.FC<{ content: string; className?: string }> = ({ content, className }) => {
@@ -83,7 +114,7 @@ export const MarkdownSectionRenderer: React.FC<{ content: string; className?: st
                 <TableHeader>
                   <TableRow className="bg-muted/60 text-xs">
                     {block.headers.map((h, hIdx) => (
-                      <TableHead key={hIdx} className="font-bold text-foreground py-2 px-3">
+                      <TableHead key={hIdx} className="font-bold text-foreground py-2.5 px-3 text-center">
                         {renderMarkdownInline(h)}
                       </TableHead>
                     ))}
@@ -93,8 +124,8 @@ export const MarkdownSectionRenderer: React.FC<{ content: string; className?: st
                   {block.rows.map((row, rIdx) => (
                     <TableRow key={rIdx} className="text-xs hover:bg-muted/30">
                       {row.map((cell, cIdx) => (
-                        <TableCell key={cIdx} className="py-2 px-3 text-foreground">
-                          {renderMarkdownInline(cell)}
+                        <TableCell key={cIdx} className="py-2 px-3 text-foreground text-center">
+                          {renderTableCellContent(cell)}
                         </TableCell>
                       ))}
                     </TableRow>
