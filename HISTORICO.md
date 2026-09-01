@@ -192,6 +192,39 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Atualização do renderizador de inventário na tabela (`RiskInventoryTable.tsx`), no visualizador oficial (`PgrViewerPage.tsx`) e nos geradores Word / PDF (`docx-generator.ts` e `pgr-official-template.ts`).
   - Validação de compilação sem erros (`tsc -b && vite build`) e testes visuais com Puppeteer.
 
+---
+
+### [2026-09-01] - Reestruturação Hierárquica do Capítulo 12 (APR-HO), Novos Campos EMR / Prioridade, Isolamento por Empresa, Ocultação de Exportações e Exclusão em Cascata no Firestore
+
+- **1. Reestruturação Hierárquica do Capítulo 12 (Inventário de Riscos Ocupacionais - Modelo APR-HO):**
+  - Reorganização estrutural para agrupar riscos por **GHE / Setor** através do helper unificado `groupInventoryByGhe` (`src/lib/pgr-groups.ts`).
+  - Definição da nova ordem visual e normativa no visualizador (`PgrViewerPage.tsx`) e no gerador PDF (`pdf-generator.ts`):
+    1. **Título do Bloco em Negrito:** `GES-01 | Setor: [Nome do Setor] | Efetivo Exposto: [X] trabalhador(es) | EMR: [Valor do EMR]`
+    2. **Lista Completa dos Cargos / Funções com CBO e Descrição das Atividades:** Todos os cargos vinculados ao GHE/Setor são listados ordenadamente antes das tabelas de perigos:
+       - `Cargo / Função: [Nome do Cargo] (CBO: [Código CBO])`
+       - `Descrição da Atividade: [Texto descritivo das atividades]`
+    3. **Tabelas APR-HO Consolidadas por Agente:** Tabela completa com identificação do agente/perigo colorida por categoria, fontes, trajetórias, vias de penetração, efeitos à saúde, EPC/EPI, medições ambientais quantitativas e a coluna **Prioridade de Ação** (`Baixa`, `Média`, `Alta`).
+- **2. Novos Campos na Modal de Levantamento de Risco (NR-01.5.7) & Persistência:**
+  - **Lotação & Trabalhadores Expostos:** Reorganização em grade de 2 linhas com 2 campos cada (Setor, Cargo, GHE e Nº de Expostos).
+  - **Exposto de Maior Risco (EMR) (`highestRiskExposed`):** Inclusão de campo de digitação livre para indicar o trabalhador ou função de maior vulnerabilidade.
+  - **Prioridade de Ação (`actionPriority`):** Inclusão de seletor com opções `Baixa`, `Média` e `Alta` alimentando diretamente as tabelas APR-HO.
+  - Persistência e leitura 100% integradas na coleção `risk_inventory` do Google Cloud Firestore.
+- **3. Isolamento Rigoroso de Dados por Empresa e Estabelecimento Ativo:**
+  - Criação da função centralizadora `filterContextForCompany` em `src/lib/pgr-official-template.ts`.
+  - Garantia de que a visualização na web e o download do PDF oficial utilizem única e exclusivamente os setores, cargos, GHEs, riscos e planos da empresa e estabelecimento ativos, eliminando qualquer risco de mistura com dados de testes ou outras empresas.
+- **4. Ocultação Segura das Exportações Word (.docx) e Excel (.xlsx):**
+  - Ocultação dos botões de exportação de Word e Excel na barra superior do visualizador (`PgrViewerPage.tsx`), no construtor (`PgrBuilderPage.tsx`), na listagem de documentos (`PgrDocumentsPage.tsx`) e na tela do inventário de riscos (`RiskInventoryPage.tsx`).
+  - Preservação total do código-fonte dos geradores (`docx-generator.ts` e `excel-generator.ts`) para reativação futura.
+- **5. Limpeza Profunda do Google Cloud Firestore:**
+  - Remoção física definitiva de **56 registros obsoletos e de testes anteriores** no Firestore (empresas de teste, setores antigos como *"Corte a Laser"* e coleções temporárias).
+  - O banco de dados agora contém 100% de integridade com apenas os registros reais e oficiais da empresa **Advanced Innergy Solutions do Brasil Ltda.**.
+- **6. Implementação de Exclusão Real e em Cascata no Firestore (`PgrContext.tsx`):**
+  - Atualização de todas as rotinas de exclusão (`deleteCompany`, `deleteEstablishment`, `deleteSector`, `deletePosition`, `deleteGhe`, `deletePgrDocument`, `deleteRiskItem`, `deleteActionPlan`) para executar deleção física no Firestore e exclusão em cascata de todas as entidades filhas/dependentes, prevenindo acúmulo de dados órfãos.
+- **7. Qualidade, Testes e Deploy:**
+  - Build compilado com **0 erros** no TypeScript e Vite (`tsc -b && vite build`).
+  - Commits sincronizados no repositório GitHub (`origin/main`): `9d407b7`, `8de01e3`, `7cbb0e9`, `1a4d2a6`, `895dd08`, `1b6167b`.
+
+
 
 
 

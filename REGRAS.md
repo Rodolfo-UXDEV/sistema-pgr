@@ -16,12 +16,11 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
 - **Exportação de Documentos:** Geração de relatórios em PDF com suporte a cabeçalho, rodapé, numeração de páginas e formatação técnica oficial.
 - **Qualidade de Código:** TypeScript strict mode, ESLint e Prettier padronizados.
 
-### 1.2 Backend & Banco de Dados (Supabase)
-- **Banco de Dados:** PostgreSQL hospedado no Supabase.
-- **Segurança (RLS):** Toda e qualquer tabela DEVE ter **Row Level Security (RLS)** ativado com políticas claras de `SELECT`, `INSERT`, `UPDATE` e `DELETE`.
-- **Autenticação:** Supabase Auth (E-mail/Senha com RBAC - Role-Based Access Control).
-- **Storage:** Supabase Storage para armazenamento de anexos (documentos complementares, fotos de evidências de perigos, ART/RRT, logotipos de clientes).
-- **Modelagem Relacional:** Chaves estrangeiras com integridade referencial (`ON DELETE RESTRICT` ou `CASCADE` quando aplicável), índices em colunas de busca frequente, timestamps (`created_at`, `updated_at`) e triggers para atualização automática.
+### 1.2 Backend & Banco de Dados (Google Firebase / Cloud Firestore)
+- **Banco de Dados:** Google Cloud Firestore (SDK Modular v12).
+- **Persistência em Tempo Real:** Sincronização automática para coleções estruturadas (`companies`, `establishments`, `sectors`, `positions`, `ghes`, `professionals`, `pgr_documents`, `risk_inventory`, `action_plans`, `pgr_templates`, `pgr_document_sections`).
+- **Segurança & Higiene:** Sanitização via `cleanForFirestore` e exclusão em cascata real e imediata no Firestore para prevenir dados órfãos.
+- **Modelagem & Integridade:** Manutenção de integridade entre entidades pais e filhas, isolamento estrito por empresa e estabelecimento ativo.
 
 ---
 
@@ -42,9 +41,10 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
    - **Acidentes / Mecânicos** (Máquinas desprotegidas, Queda de nível, Eletricidade, etc.)
 2. **Identificação do Perigo / Fator de Risco:**
    - Fonte geradora ou circunstância.
-   - Trabalhadores expostos (quantidade, cargos, GES).
+   - Trabalhadores expostos (quantidade, cargos, GES, EMR - Exposto de Maior Risco).
    - Possíveis lesões ou agravos à saúde.
    - Tipo de exposição (contínua, intermitente, eventual).
+   - Prioridade de Ação (Baixa, Média, Alta).
 3. **Avaliação e Gradação de Risco (Matriz de Risco):**
    - **Probabilidade (1 a 5):** Mede a chance de ocorrência considerando a eficácia das medidas de controle existentes.
    - **Severidade / Gravidade (1 a 5):** Mede a consequência potencial das lesões/danos.
@@ -67,7 +67,7 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
 ## 3. PADRÕES DE DESENVOLVIMENTO & PROCESSO
 
 ### 3.1 Padrão de Commits e Histórico
-- Cada marco de entrega deve ser documentado no arquivo `HISTORICO.md`.
+- Todo marco de entrega deve ser documentado no arquivo `HISTORICO.md`.
 - Commits atômicos e mensagens descritivas em português ou inglês convencional (`feat:`, `fix:`, `refactor:`, `docs:`).
 
 ### 3.2 UI/UX e Acessibilidade
@@ -75,8 +75,11 @@ Este documento estabelece as diretrizes, padrões de desenvolvimento, arquitetur
 - Suporte a modo claro / escuro se desejado, priorizando contraste e leitura de tabelas densas e matrizes de risco com cores padronizadas (Verde, Amarelo, Laranja, Vermelho).
 - Responsividade com foco em Desktop e Tablets para inspeções de campo.
 
-### 3.4 Execução de Testes (Regra Mandatória)
+### 3.3 Execução de Testes (Regra Mandatória)
 - **REGRA OBRIGATÓRIA:** SÓ execute testes (automatizados, scripts Puppeteer, testes de interface ou testes manuais) se o usuário SOLICITAR explicitamente. NÃO execute rotinas ou scripts de teste automaticamente sem pedido prévio do usuário.
 
-### 3.5 Análise e Adequação do Banco de Dados
+### 3.4 Análise e Adequação do Banco de Dados
 - **REGRA OBRIGATÓRIA:** Sempre que o usuário solicitar qualquer ajuste de telas, campos ou regras de negócio, analise proativamente se há necessidade de adequações no banco de dados / modelos de dados e realize as devidas alterações estruturais.
+
+### 3.5 Registro Mandatório no HISTORICO.md
+- **REGRA OBRIGATÓRIA:** Registre SEMPRE todo o avanço, histórico de alterações, decisões arquiteturais e melhorias implementadas no arquivo `HISTORICO.md` na raiz do projeto. Nenhuma entrega ou sessão de trabalho deve ser finalizada sem a atualização correspondente no `HISTORICO.md`.
