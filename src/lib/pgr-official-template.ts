@@ -28,6 +28,72 @@ export interface PgrDocumentContext {
 }
 
 /**
+ * Filtra de maneira estrita todos os dados do contexto para pertencerem unicamente
+ * à empresa e ao estabelecimento do documento PGR em questão.
+ */
+export function filterContextForCompany(rawCtx: PgrDocumentContext): PgrDocumentContext {
+  const { company, establishment, pgr, sectors = [], positions = [], ghes = [], professionals = [], riskInventory = [], actionPlans = [] } = rawCtx;
+  
+  const compId = company?.id || pgr?.companyId;
+  const estId = establishment?.id || pgr?.establishmentId;
+
+  // Setores que pertencem ao estabelecimento
+  const filteredSectors = sectors.filter(s => {
+    if (estId && s.establishmentId) return s.establishmentId === estId;
+    return !s.establishmentId;
+  });
+  const sectorIds = new Set(filteredSectors.map(s => s.id));
+
+  // Cargos que pertencem ao estabelecimento ou a um dos setores da empresa
+  const filteredPositions = positions.filter(p => {
+    if (estId && p.establishmentId && p.establishmentId === estId) return true;
+    if (p.sectorId && sectorIds.has(p.sectorId)) return true;
+    if (!p.establishmentId && !p.sectorId) return true;
+    return false;
+  });
+  const positionIds = new Set(filteredPositions.map(p => p.id));
+
+  // GHEs que pertencem ao estabelecimento ou a um dos setores da empresa
+  const filteredGhes = ghes.filter(g => {
+    if (estId && g.establishmentId && g.establishmentId === estId) return true;
+    if (g.sectorId && sectorIds.has(g.sectorId)) return true;
+    if (g.positionIds && g.positionIds.some(id => positionIds.has(id))) return true;
+    if (!g.establishmentId && !g.sectorId) return true;
+    return false;
+  });
+  const gheIds = new Set(filteredGhes.map(g => g.id));
+
+  // Riscos que pertencem ao PGR, empresa, setor ou GHE filtrados
+  const filteredRisks = riskInventory.filter(r => {
+    if (pgr?.id && r.pgrId && r.pgrId === pgr.id) return true;
+    if (compId && r.companyId && r.companyId === compId) return true;
+    if (r.sectorId && sectorIds.has(r.sectorId)) return true;
+    if (r.gheId && gheIds.has(r.gheId)) return true;
+    return false;
+  });
+
+  // Planos de ação vinculados
+  const filteredActions = actionPlans.filter(a => {
+    if (pgr?.id && a.pgrId && a.pgrId === pgr.id) return true;
+    if (compId && a.companyId && a.companyId === compId) return true;
+    if (estId && a.establishmentId && a.establishmentId === estId) return true;
+    return false;
+  });
+
+  return {
+    company,
+    establishment,
+    pgr,
+    professionals,
+    sectors: filteredSectors.length > 0 ? filteredSectors : sectors.filter(s => !s.establishmentId || s.establishmentId === estId),
+    positions: filteredPositions.length > 0 ? filteredPositions : positions,
+    ghes: filteredGhes.length > 0 ? filteredGhes : ghes,
+    riskInventory: filteredRisks,
+    actionPlans: filteredActions,
+  };
+}
+
+/**
  * Textos Padrão e Normativos do Modelo Oficial EMEPE / ES Engenharia de Segurança
  */
 export const OFFICIAL_PGR_TEXTS = {
@@ -113,7 +179,8 @@ Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à sa
 /**
  * Monta o documento PGR estruturado com todas as 17 seções completas
  */
-export function buildPgrFullDocument(ctx: PgrDocumentContext) {
+export function buildPgrFullDocument(rawCtx: PgrDocumentContext) {
+  const ctx = filterContextForCompany(rawCtx);
   const { company, establishment, sectors, positions, professionals, pgr, riskInventory, actionPlans } = ctx;
   const issuerConfig = getIssuerCompanyConfig();
 

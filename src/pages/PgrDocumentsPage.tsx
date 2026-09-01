@@ -48,6 +48,7 @@ import { useNavigate } from 'react-router-dom';
 export const PgrDocumentsPage: React.FC = () => {
   const { 
     pgrDocuments, 
+    companies,
     activeCompany, 
     activeEstablishment, 
     establishments, 
@@ -181,10 +182,11 @@ export const PgrDocumentsPage: React.FC = () => {
   };
 
   const handleDownloadPdf = (doc: PGRDocument) => {
-    if (!activeCompany) return;
-    const est = establishments.find(e => e.id === doc.establishmentId) || establishments[0];
+    const docCompany = companies.find(c => c.id === doc.companyId) || activeCompany;
+    if (!docCompany) return;
+    const est = establishments.find(e => e.id === doc.establishmentId) || establishments.find(e => e.companyId === docCompany.id) || establishments[0];
     generatePgrPdf({
-      company: activeCompany,
+      company: docCompany,
       establishment: est,
       pgr: doc,
       sectors,

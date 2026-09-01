@@ -1,10 +1,11 @@
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { PgrDocumentContext, buildPgrFullDocument } from '@/lib/pgr-official-template';
+import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany } from '@/lib/pgr-official-template';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, RiskInventoryItem } from '@/types/pgr';
 
-export async function generatePgrExcel(ctx: PgrDocumentContext): Promise<void> {
+export async function generatePgrExcel(rawCtx: PgrDocumentContext): Promise<void> {
+  const ctx = filterContextForCompany(rawCtx);
   const docData = buildPgrFullDocument(ctx);
   const wb = XLSX.utils.book_new();
 

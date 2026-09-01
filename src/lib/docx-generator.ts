@@ -14,7 +14,7 @@ import {
   ShadingType 
 } from 'docx';
 import { saveAs } from 'file-saver';
-import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
@@ -36,7 +36,8 @@ function parseTextToTextRuns(text: string): TextRun[] {
   });
 }
 
-export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
+export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void> {
+  const ctx = filterContextForCompany(rawCtx);
   const docData = buildPgrFullDocument(ctx);
 
   const lightGray = 'F1F5F9';

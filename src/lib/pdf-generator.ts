@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, ActionPlanItem } from '@/types/pgr';
@@ -18,7 +18,8 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
-export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
+export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> {
+  const ctx = filterContextForCompany(rawCtx);
   const docData = buildPgrFullDocument(ctx);
   const issuerConfig = getIssuerCompanyConfig();
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });

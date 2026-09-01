@@ -10,7 +10,7 @@ import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
 import { generatePgrPdf } from '@/lib/pdf-generator';
 import { generatePgrDocx } from '@/lib/docx-generator';
 import { generatePgrExcel } from '@/lib/excel-generator';
-import { buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
+import { buildPgrFullDocument, filterContextForCompany, PgrDocumentContext, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
@@ -18,6 +18,7 @@ import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { groupInventoryByGhe } from '@/lib/pgr-groups';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
+import { ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
 import { formatDate } from '@/lib/utils';
 import { 
@@ -40,6 +41,7 @@ export const PgrViewerPage: React.FC = () => {
   const navigate = useNavigate();
   const { 
     activeCompany, 
+    companies,
     establishments, 
     sectors, 
     positions, 
@@ -56,20 +58,21 @@ export const PgrViewerPage: React.FC = () => {
   const [issuerConfig, setIssuerConfig] = useState(getIssuerCompanyConfig());
 
   const pgr = pgrDocuments.find((p) => p.id === id) || pgrDocuments[0];
-  const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || establishments[0] || (activeCompany ? {
+  const currentCompany = (pgr?.companyId ? companies.find(c => c.id === pgr.companyId) : null) || activeCompany;
+  const establishment = establishments.find((e) => e.id === pgr?.establishmentId) || (currentCompany ? establishments.find((e) => e.companyId === currentCompany.id) : null) || establishments[0] || (currentCompany ? {
     id: 'default-matriz',
-    companyId: activeCompany.id,
+    companyId: currentCompany.id,
     name: 'Unidade Matriz',
     code: '001',
     type: 'MATRIZ' as const,
-    address: activeCompany.address,
-    activity: activeCompany.cnaeDescription || 'Atividades Gerais',
-    cnae: activeCompany.cnae || '',
-    riskGrade: activeCompany.riskGrade || 1,
-    totalWorkers: activeCompany.employeeCount || 1,
-    responsibleName: activeCompany.legalRepresentative || '',
-    responsiblePhone: activeCompany.phone || '',
-    responsibleEmail: activeCompany.email || '',
+    address: currentCompany.address,
+    activity: currentCompany.cnaeDescription || 'Atividades Gerais',
+    cnae: currentCompany.cnae || '',
+    riskGrade: currentCompany.riskGrade || 1,
+    totalWorkers: currentCompany.employeeCount || 1,
+    responsibleName: currentCompany.legalRepresentative || '',
+    responsiblePhone: currentCompany.phone || '',
+    responsibleEmail: currentCompany.email || '',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   } : undefined);
@@ -93,7 +96,7 @@ export const PgrViewerPage: React.FC = () => {
     };
   }, [pgr]);
 
-  if (!pgr || !activeCompany) {
+  if (!pgr || !currentCompany) {
     return (
       <div className="p-8 text-center space-y-4">
         <h2 className="text-xl font-bold">Documento PGR não encontrado</h2>
@@ -103,27 +106,17 @@ export const PgrViewerPage: React.FC = () => {
     );
   }
 
-  const companyEstablishments = establishments.filter(e => e.companyId === activeCompany.id);
-  const companyEstIds = new Set(companyEstablishments.map(e => e.id));
-  if (establishment?.id) companyEstIds.add(establishment.id);
-
-  const companySectors = sectors.filter(s => companyEstIds.has(s.establishmentId));
-  const companySectorIds = new Set(companySectors.map(s => s.id));
-
-  const companyPositions = positions.filter(p => companyEstIds.has(p.establishmentId) || (p.sectorId && companySectorIds.has(p.sectorId)));
-  const companyGhes = ghes.filter(g => companyEstIds.has(g.establishmentId) || (g.sectorId && companySectorIds.has(g.sectorId)));
-
-  const pgrContext = {
-    company: activeCompany,
+  const pgrContext: PgrDocumentContext = filterContextForCompany({
+    company: currentCompany,
     establishment,
-    sectors: companySectors.length > 0 ? companySectors : sectors.filter(s => !s.establishmentId || companyEstIds.has(s.establishmentId)),
-    positions: companyPositions.length > 0 ? companyPositions : positions,
-    ghes: companyGhes.length > 0 ? companyGhes : ghes,
-    professionals,
     pgr,
-    riskInventory: riskInventory.filter(r => r.pgrId === pgr.id || r.companyId === activeCompany.id || (r.sectorId && companySectorIds.has(r.sectorId))),
-    actionPlans: actionPlans.filter(a => a.pgrId === pgr.id || a.companyId === activeCompany.id || (a.establishmentId && companyEstIds.has(a.establishmentId))),
-  };
+    professionals,
+    sectors,
+    positions,
+    ghes,
+    riskInventory,
+    actionPlans,
+  });
 
   const docData = buildPgrFullDocument(pgrContext);
 
@@ -332,11 +325,11 @@ export const PgrViewerPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
               <span className="text-muted-foreground font-semibold block">Razão Social:</span>
-              <span className="font-bold text-foreground">{activeCompany.name}</span>
+              <span className="font-bold text-foreground">{currentCompany.name}</span>
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
               <span className="text-muted-foreground font-semibold block">Nome Fantasia:</span>
-              <span className="font-bold text-foreground">{activeCompany.tradeName || activeCompany.name}</span>
+              <span className="font-bold text-foreground">{currentCompany.tradeName || currentCompany.name}</span>
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
               <span className="text-muted-foreground font-semibold block">CNPJ:</span>
@@ -344,15 +337,15 @@ export const PgrViewerPage: React.FC = () => {
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
               <span className="text-muted-foreground font-semibold block">Grau de Risco (NR-04):</span>
-              <span className="font-bold text-foreground">Grau {activeCompany.riskGrade}</span>
+              <span className="font-bold text-foreground">Grau {currentCompany.riskGrade}</span>
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg md:col-span-2">
               <span className="text-muted-foreground font-semibold block">Atividade Principal (CNAE):</span>
-              <span className="font-bold text-foreground">{activeCompany.cnae} — {activeCompany.cnaeDescription}</span>
+              <span className="font-bold text-foreground">{currentCompany.cnae} — {currentCompany.cnaeDescription}</span>
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg md:col-span-2">
               <span className="text-muted-foreground font-semibold block">Endereço da Matriz:</span>
-              <span className="text-foreground">{activeCompany.address.street}, {activeCompany.address.number} - {activeCompany.address.city}/{activeCompany.address.state}</span>
+              <span className="text-foreground">{currentCompany.address.street}, {currentCompany.address.number} - {currentCompany.address.city}/{currentCompany.address.state}</span>
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg md:col-span-2">
               <span className="text-muted-foreground font-semibold block">Estabelecimento Avaliado:</span>
@@ -360,11 +353,11 @@ export const PgrViewerPage: React.FC = () => {
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
               <span className="text-muted-foreground font-semibold block">Responsável pelo PGR no Estabelecimento:</span>
-              <span className="font-bold text-foreground">{activeCompany.legalRepresentative} ({activeCompany.representativeRole})</span>
+              <span className="font-bold text-foreground">{currentCompany.legalRepresentative} ({currentCompany.representativeRole})</span>
             </div>
             <div className="p-2.5 bg-muted/20 border border-border rounded-lg">
               <span className="text-muted-foreground font-semibold block">Total de Trabalhadores:</span>
-              <span className="font-bold text-foreground">{activeCompany.employeeCount} colaboradores</span>
+              <span className="font-bold text-foreground">{currentCompany.employeeCount} colaboradores</span>
             </div>
           </div>
         </section>
@@ -905,7 +898,7 @@ export const PgrViewerPage: React.FC = () => {
                     </TableRow>
                   </>
                 ) : (
-                  pgrContext.actionPlans.map((act) => (
+                  pgrContext.actionPlans.map((act: ActionPlanItem) => (
                     <TableRow key={act.id} className="text-xs hover:bg-muted/30">
                       <TableCell className="font-medium text-foreground leading-relaxed">{act.what}</TableCell>
                       <TableCell className="text-center font-mono font-bold">2</TableCell>
@@ -935,7 +928,7 @@ export const PgrViewerPage: React.FC = () => {
           {renderFormattedSection(getSectionContent('sec-14', OFFICIAL_PGR_TEXTS.termoEncerramento))}
 
           <p className="text-xs text-right text-muted-foreground">
-            {activeCompany.address.city}/{activeCompany.address.state}, {docData.header.elaborationDate}.
+            {currentCompany.address.city}/{currentCompany.address.state}, {docData.header.elaborationDate}.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 pt-8">
@@ -948,9 +941,9 @@ export const PgrViewerPage: React.FC = () => {
 
             <div className="text-center space-y-1">
               <div className="border-t border-foreground/30 pt-2 w-3/4 mx-auto" />
-              <p className="text-xs font-bold text-foreground">{activeCompany.legalRepresentative}</p>
-              <p className="text-[11px] text-muted-foreground">{activeCompany.representativeRole}</p>
-              <p className="text-[11px] text-muted-foreground">{activeCompany.name}</p>
+              <p className="text-xs font-bold text-foreground">{currentCompany.legalRepresentative}</p>
+              <p className="text-[11px] text-muted-foreground">{currentCompany.representativeRole}</p>
+              <p className="text-[11px] text-muted-foreground">{currentCompany.name}</p>
             </div>
           </div>
         </section>
