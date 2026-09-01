@@ -164,7 +164,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
           new TextRun({
             text: sectionHeading,
             bold: true,
-            color: '01853C',
+            color: '334155',
             size: 24,
           }),
         ],
