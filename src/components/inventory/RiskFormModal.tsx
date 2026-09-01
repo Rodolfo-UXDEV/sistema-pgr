@@ -103,6 +103,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   const [positionId, setPositionId] = useState('');
   const [gheId, setGheId] = useState('');
   const [exposedCount, setExposedCount] = useState(1);
+  const [highestRiskExposed, setHighestRiskExposed] = useState('');
 
   // 2. Risco & Agente
   const [hazardCategory, setHazardCategory] = useState<HazardCategory>('FISICO');
@@ -160,6 +161,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setPositionId(initialItem.positionId || '');
       setGheId(initialItem.gheId || '');
       setExposedCount(initialItem.exposedCount || 1);
+      setHighestRiskExposed(initialItem.highestRiskExposed || '');
 
       setHazardCategory(initialItem.hazardCategory);
       setHazardName(initialItem.hazardName);
@@ -205,6 +207,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setPositionId('');
       setGheId('');
       setExposedCount(1);
+      setHighestRiskExposed('');
 
       setHazardCategory('FISICO');
       setSelectedHazardId('');
@@ -374,6 +377,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
         penetrationRoute: penetrationRoute.trim(),
         exposedCount: Number(exposedCount) || 1,
         exposureType,
+        highestRiskExposed: highestRiskExposed.trim() || undefined,
         probability,
         severity,
         riskScore: score,
@@ -487,6 +491,18 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   className="h-9 mt-1 text-xs w-full font-bold"
                 />
               </div>
+            </div>
+
+            {/* Linha 3: Exposto de Maior Risco (EMR) */}
+            <div className="pt-1">
+              <Label className="text-xs font-semibold">Exposto de Maior Risco (EMR):</Label>
+              <Input
+                type="text"
+                value={highestRiskExposed}
+                onChange={(e) => setHighestRiskExposed(e.target.value)}
+                placeholder="Informe o exposto de maior risco ou trabalhador representativo..."
+                className="h-9 mt-1 text-xs w-full font-medium"
+              />
             </div>
           </div>
 

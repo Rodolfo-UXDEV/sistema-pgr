@@ -304,6 +304,9 @@ export const RiskInventoryTable: React.FC = () => {
                                 {item.penetrationRoute && (
                                   <div><span className="text-muted-foreground">Via de Penetração:</span> {item.penetrationRoute}</div>
                                 )}
+                                {item.highestRiskExposed && (
+                                  <div><span className="text-muted-foreground">Exposto Maior Risco (EMR):</span> <span className="font-semibold text-foreground">{item.highestRiskExposed}</span></div>
+                                )}
                               </div>
                             </div>
 
