@@ -331,12 +331,47 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteCompany = async (id: string) => {
+    // 1. Identificar entidades filhas associadas a esta empresa
+    const relatedEsts = establishments.filter(e => e.companyId === id);
+    const relatedEstIds = new Set(relatedEsts.map(e => e.id));
+
+    const relatedSecs = sectors.filter(s => relatedEstIds.has(s.establishmentId));
+    const relatedSecIds = new Set(relatedSecs.map(s => s.id));
+
+    const relatedPos = positions.filter(p => relatedEstIds.has(p.establishmentId) || (p.sectorId && relatedSecIds.has(p.sectorId)));
+    const relatedGhes = ghes.filter(g => relatedEstIds.has(g.establishmentId) || (g.sectorId && relatedSecIds.has(g.sectorId)));
+    const relatedDocs = pgrDocuments.filter(d => d.companyId === id || relatedEstIds.has(d.establishmentId));
+    const relatedDocIds = new Set(relatedDocs.map(d => d.id));
+
+    const relatedRisks = riskInventory.filter(r => r.companyId === id || relatedDocIds.has(r.pgrId) || (r.sectorId && relatedSecIds.has(r.sectorId)));
+    const relatedActions = actionPlans.filter(a => a.companyId === id || relatedDocIds.has(a.pgrId) || relatedEstIds.has(a.establishmentId));
+
+    // 2. Atualizar estado local
     setCompanies(prev => prev.filter(c => c.id !== id));
+    setEstablishments(prev => prev.filter(e => !relatedEstIds.has(e.id)));
+    setSectors(prev => prev.filter(s => !relatedSecIds.has(s.id)));
+    setPositions(prev => prev.filter(p => !relatedEstIds.has(p.establishmentId) && (!p.sectorId || !relatedSecIds.has(p.sectorId))));
+    setGhes(prev => prev.filter(g => !relatedEstIds.has(g.establishmentId) && (!g.sectorId || !relatedSecIds.has(g.sectorId))));
+    setPgrDocuments(prev => prev.filter(d => !relatedDocIds.has(d.id)));
+    setRiskInventory(prev => prev.filter(r => r.companyId !== id && !relatedDocIds.has(r.pgrId) && (!r.sectorId || !relatedSecIds.has(r.sectorId))));
+    setActionPlans(prev => prev.filter(a => a.companyId !== id && !relatedDocIds.has(a.pgrId) && !relatedEstIds.has(a.establishmentId)));
+
     if (activeCompanyId === id) {
       const remaining = companies.filter(c => c.id !== id);
       setActiveCompany(remaining[0] || null);
     }
-    await deleteFromFirestore(COLLECTIONS.COMPANIES, id);
+
+    // 3. Excluir fisicamente do Firestore
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.COMPANIES, id),
+      ...relatedEsts.map(e => deleteFromFirestore(COLLECTIONS.ESTABLISHMENTS, e.id)),
+      ...relatedSecs.map(s => deleteFromFirestore(COLLECTIONS.SECTORS, s.id)),
+      ...relatedPos.map(p => deleteFromFirestore(COLLECTIONS.POSITIONS, p.id)),
+      ...relatedGhes.map(g => deleteFromFirestore(COLLECTIONS.GHES, g.id)),
+      ...relatedDocs.map(d => deleteFromFirestore(COLLECTIONS.PGR_DOCUMENTS, d.id)),
+      ...relatedRisks.map(r => deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, r.id)),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD ESTABELECIMENTOS
@@ -363,8 +398,39 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteEstablishment = async (id: string) => {
+    const relatedSecs = sectors.filter(s => s.establishmentId === id);
+    const relatedSecIds = new Set(relatedSecs.map(s => s.id));
+
+    const relatedPos = positions.filter(p => p.establishmentId === id || (p.sectorId && relatedSecIds.has(p.sectorId)));
+    const relatedGhes = ghes.filter(g => g.establishmentId === id || (g.sectorId && relatedSecIds.has(g.sectorId)));
+    const relatedDocs = pgrDocuments.filter(d => d.establishmentId === id);
+    const relatedDocIds = new Set(relatedDocs.map(d => d.id));
+
+    const relatedRisks = riskInventory.filter(r => r.establishmentId === id || relatedDocIds.has(r.pgrId) || (r.sectorId && relatedSecIds.has(r.sectorId)));
+    const relatedActions = actionPlans.filter(a => a.establishmentId === id || relatedDocIds.has(a.pgrId));
+
     setEstablishments(prev => prev.filter(e => e.id !== id));
-    await deleteFromFirestore(COLLECTIONS.ESTABLISHMENTS, id);
+    setSectors(prev => prev.filter(s => !relatedSecIds.has(s.id)));
+    setPositions(prev => prev.filter(p => p.establishmentId !== id && (!p.sectorId || !relatedSecIds.has(p.sectorId))));
+    setGhes(prev => prev.filter(g => g.establishmentId !== id && (!g.sectorId || !relatedSecIds.has(g.sectorId))));
+    setPgrDocuments(prev => prev.filter(d => !relatedDocIds.has(d.id)));
+    setRiskInventory(prev => prev.filter(r => r.establishmentId !== id && !relatedDocIds.has(r.pgrId) && (!r.sectorId || !relatedSecIds.has(r.sectorId))));
+    setActionPlans(prev => prev.filter(a => a.establishmentId !== id && !relatedDocIds.has(a.pgrId)));
+
+    if (activeEstablishmentId === id) {
+      const remaining = establishments.filter(e => e.id !== id);
+      setActiveEstablishmentId(remaining[0]?.id || '');
+    }
+
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.ESTABLISHMENTS, id),
+      ...relatedSecs.map(s => deleteFromFirestore(COLLECTIONS.SECTORS, s.id)),
+      ...relatedPos.map(p => deleteFromFirestore(COLLECTIONS.POSITIONS, p.id)),
+      ...relatedGhes.map(g => deleteFromFirestore(COLLECTIONS.GHES, g.id)),
+      ...relatedDocs.map(d => deleteFromFirestore(COLLECTIONS.PGR_DOCUMENTS, d.id)),
+      ...relatedRisks.map(r => deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, r.id)),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD SETORES
@@ -390,8 +456,25 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteSector = async (id: string) => {
+    const relatedGhes = ghes.filter(g => g.sectorId === id);
+    const relatedPos = positions.filter(p => p.sectorId === id);
+    const relatedRisks = riskInventory.filter(r => r.sectorId === id);
+    const relatedRiskIds = new Set(relatedRisks.map(r => r.id));
+    const relatedActions = actionPlans.filter(a => a.riskInventoryId && relatedRiskIds.has(a.riskInventoryId));
+
     setSectors(prev => prev.filter(s => s.id !== id));
-    await deleteFromFirestore(COLLECTIONS.SECTORS, id);
+    setGhes(prev => prev.filter(g => g.sectorId !== id));
+    setPositions(prev => prev.filter(p => p.sectorId !== id));
+    setRiskInventory(prev => prev.filter(r => r.sectorId !== id));
+    setActionPlans(prev => prev.filter(a => !a.riskInventoryId || !relatedRiskIds.has(a.riskInventoryId)));
+
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.SECTORS, id),
+      ...relatedGhes.map(g => deleteFromFirestore(COLLECTIONS.GHES, g.id)),
+      ...relatedPos.map(p => deleteFromFirestore(COLLECTIONS.POSITIONS, p.id)),
+      ...relatedRisks.map(r => deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, r.id)),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD CARGOS
@@ -417,8 +500,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deletePosition = async (id: string) => {
+    const relatedRisks = riskInventory.filter(r => r.positionId === id);
+    const relatedRiskIds = new Set(relatedRisks.map(r => r.id));
+    const relatedActions = actionPlans.filter(a => a.riskInventoryId && relatedRiskIds.has(a.riskInventoryId));
+
     setPositions(prev => prev.filter(p => p.id !== id));
-    await deleteFromFirestore(COLLECTIONS.POSITIONS, id);
+    setGhes(prev => prev.map(g => g.positionIds?.includes(id) ? { ...g, positionIds: g.positionIds.filter(pid => pid !== id) } : g));
+    setRiskInventory(prev => prev.filter(r => r.positionId !== id));
+    setActionPlans(prev => prev.filter(a => !a.riskInventoryId || !relatedRiskIds.has(a.riskInventoryId)));
+
+    const ghesToUpdate = ghes.filter(g => g.positionIds?.includes(id));
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.POSITIONS, id),
+      ...ghesToUpdate.map(g => saveToFirestore(COLLECTIONS.GHES, { ...g, positionIds: (g.positionIds || []).filter(pid => pid !== id) })),
+      ...relatedRisks.map(r => deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, r.id)),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD GHES
@@ -444,8 +541,19 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteGhe = async (id: string) => {
+    const relatedRisks = riskInventory.filter(r => r.gheId === id);
+    const relatedRiskIds = new Set(relatedRisks.map(r => r.id));
+    const relatedActions = actionPlans.filter(a => a.riskInventoryId && relatedRiskIds.has(a.riskInventoryId));
+
     setGhes(prev => prev.filter(g => g.id !== id));
-    await deleteFromFirestore(COLLECTIONS.GHES, id);
+    setRiskInventory(prev => prev.filter(r => r.gheId !== id));
+    setActionPlans(prev => prev.filter(a => !a.riskInventoryId || !relatedRiskIds.has(a.riskInventoryId)));
+
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.GHES, id),
+      ...relatedRisks.map(r => deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, r.id)),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD PROFISSIONAIS
@@ -511,8 +619,24 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deletePgrDocument = async (id: string) => {
+    const relatedRisks = riskInventory.filter(r => r.pgrId === id);
+    const relatedActions = actionPlans.filter(a => a.pgrId === id);
+
     setPgrDocuments(prev => prev.filter(d => d.id !== id));
-    await deleteFromFirestore(COLLECTIONS.PGR_DOCUMENTS, id);
+    setRiskInventory(prev => prev.filter(r => r.pgrId !== id));
+    setActionPlans(prev => prev.filter(a => a.pgrId !== id));
+
+    if (activePgrId === id) {
+      const remaining = pgrDocuments.filter(d => d.id !== id);
+      setActivePgrId(remaining[0]?.id || '');
+    }
+
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.PGR_DOCUMENTS, id),
+      deleteFromFirestore(COLLECTIONS.DOCUMENT_SECTIONS, id),
+      ...relatedRisks.map(r => deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, r.id)),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD INVENTÁRIO DE RISCOS
@@ -562,8 +686,15 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteRiskItem = async (id: string) => {
+    const relatedActions = actionPlans.filter(a => a.riskInventoryId === id);
+
     setRiskInventory(prev => prev.filter(r => r.id !== id));
-    await deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, id);
+    setActionPlans(prev => prev.filter(a => a.riskInventoryId !== id));
+
+    await Promise.all([
+      deleteFromFirestore(COLLECTIONS.RISK_INVENTORY, id),
+      ...relatedActions.map(a => deleteFromFirestore(COLLECTIONS.ACTION_PLANS, a.id)),
+    ]);
   };
 
   // CRUD PLANO DE AÇÃO
