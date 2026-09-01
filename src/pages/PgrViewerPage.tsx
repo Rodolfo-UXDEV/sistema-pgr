@@ -103,16 +103,26 @@ export const PgrViewerPage: React.FC = () => {
     );
   }
 
+  const companyEstablishments = establishments.filter(e => e.companyId === activeCompany.id);
+  const companyEstIds = new Set(companyEstablishments.map(e => e.id));
+  if (establishment?.id) companyEstIds.add(establishment.id);
+
+  const companySectors = sectors.filter(s => companyEstIds.has(s.establishmentId));
+  const companySectorIds = new Set(companySectors.map(s => s.id));
+
+  const companyPositions = positions.filter(p => companyEstIds.has(p.establishmentId) || (p.sectorId && companySectorIds.has(p.sectorId)));
+  const companyGhes = ghes.filter(g => companyEstIds.has(g.establishmentId) || (g.sectorId && companySectorIds.has(g.sectorId)));
+
   const pgrContext = {
     company: activeCompany,
     establishment,
-    sectors,
-    positions,
-    ghes,
+    sectors: companySectors.length > 0 ? companySectors : sectors.filter(s => !s.establishmentId || companyEstIds.has(s.establishmentId)),
+    positions: companyPositions.length > 0 ? companyPositions : positions,
+    ghes: companyGhes.length > 0 ? companyGhes : ghes,
     professionals,
     pgr,
-    riskInventory: riskInventory.filter(r => r.pgrId === pgr.id || r.companyId === activeCompany.id),
-    actionPlans: actionPlans.filter(a => a.pgrId === pgr.id || a.companyId === activeCompany.id),
+    riskInventory: riskInventory.filter(r => r.pgrId === pgr.id || r.companyId === activeCompany.id || (r.sectorId && companySectorIds.has(r.sectorId))),
+    actionPlans: actionPlans.filter(a => a.pgrId === pgr.id || a.companyId === activeCompany.id || (a.establishmentId && companyEstIds.has(a.establishmentId))),
   };
 
   const docData = buildPgrFullDocument(pgrContext);
@@ -442,7 +452,7 @@ export const PgrViewerPage: React.FC = () => {
           </h2>
 
           {(() => {
-            const gheGroups = groupInventoryByGhe(sectors, positions, ghes, pgrContext.riskInventory);
+            const gheGroups = groupInventoryByGhe(pgrContext.sectors, pgrContext.positions, pgrContext.ghes, pgrContext.riskInventory);
 
             if (gheGroups.length === 0) {
               return (
