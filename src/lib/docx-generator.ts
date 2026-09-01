@@ -174,6 +174,48 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
       })
     );
 
+    if (section.id === 'sec-1' || section.title.toLowerCase().includes('indice')) {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'SEQUÊNCIA DO PROGRAMA DE GERENCIAMENTO DE RISCOS (PGR):',
+              bold: true,
+              color: '0F172A',
+              size: 20,
+            }),
+          ],
+          spacing: { before: 100, after: 120 },
+        })
+      );
+
+      const rawLines = (section.content || '').split('\n');
+      for (const line of rawLines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'SEQUÊNCIA DO PGR') continue;
+
+        const isSubItem = line.startsWith('  ') || line.startsWith('\t') || trimmed.startsWith('GES') || trimmed.startsWith('- GES');
+        const cleanText = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '');
+
+        if (isSubItem) {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: `    •  ${cleanText}`, color: '475569', size: 18 })],
+              spacing: { after: 40 },
+            })
+          );
+        } else {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: `•  ${cleanText}`, bold: true, color: '1E293B', size: 20 })],
+              spacing: { before: 80, after: 40 },
+            })
+          );
+        }
+      }
+      continue;
+    }
+
     if (section.type === 'company_info') {
       const d = section.data;
       const rows = [

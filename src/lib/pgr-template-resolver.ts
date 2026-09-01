@@ -53,12 +53,12 @@ export function getResolvedPgrSections(pgrId?: string): ResolvedSection[] {
     const isLocallyModified = !!d?.isModified;
 
     // Resolução do Título
-    const title = d?.title !== undefined 
+    let title = d?.title !== undefined 
       ? d.title! 
       : (g?.title !== undefined ? g.title! : sec.title);
 
     // Resolução do Subtítulo
-    const subtitle = d?.subtitle !== undefined 
+    let subtitle = d?.subtitle !== undefined 
       ? d.subtitle! 
       : (g?.subtitle !== undefined ? g.subtitle! : (sec.subtitle || ''));
 
@@ -67,7 +67,27 @@ export function getResolvedPgrSections(pgrId?: string): ResolvedSection[] {
       ? d.content 
       : (g?.content !== undefined ? g.content : sec.defaultContent);
 
-    // Auto-migração da Seção 10 caso o localStorage/Firestore tenha a matriz no modelo antigo
+    // Auto-migração geral de títulos e conteúdos legados da versão anterior
+    if (sec.id === 'sec-1' && (title.includes('REVISÕES') || !content.includes('SEQUÊNCIA'))) {
+      title = sec.title;
+      subtitle = sec.subtitle || '';
+      content = sec.defaultContent;
+    }
+    if (sec.id === 'sec-2' && title.includes('CADASTRAIS')) {
+      title = sec.title;
+      subtitle = sec.subtitle || '';
+      content = sec.defaultContent;
+    }
+    if (sec.id === 'sec-3' && title.includes('RESPONSÁVEL')) {
+      title = sec.title;
+      subtitle = sec.subtitle || '';
+      content = sec.defaultContent;
+    }
+    if (sec.id === 'sec-4' && title.includes('INTRODUÇÃO')) {
+      title = sec.title;
+      subtitle = sec.subtitle || '';
+      content = sec.defaultContent;
+    }
     if (sec.id === 'sec-10') {
       if (!content.includes('Riscos Psicossociais') || !content.includes('Tabela 6') || !content.includes('Tabela 1 – Critérios de avaliação')) {
         content = sec.defaultContent;

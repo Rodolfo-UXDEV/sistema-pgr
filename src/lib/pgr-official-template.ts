@@ -262,7 +262,7 @@ ${gesItems.map((g, idx) => `  - GES ${idx + 1}.0 – SETOR ${g.sectorName.toUppe
         number: '1',
         title: getSec('sec-1')?.title || '1. INDICE',
         type: 'text' as const,
-        content: getSec('sec-1')?.isLocallyModified || getSec('sec-1')?.isGloballyModified ? getSec('sec-1')!.content : dynamicIndiceContent
+        content: dynamicIndiceContent
       },
       {
         id: 'sec-2',

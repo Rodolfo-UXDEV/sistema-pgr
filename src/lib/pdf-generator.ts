@@ -125,6 +125,54 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   currentY = 20;
 
   for (const section of docData.sections) {
+    if (section.id === 'sec-1' || section.title.toLowerCase().includes('indice')) {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.text(section.title, 14, currentY);
+      currentY += 2;
+      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.setLineWidth(0.3);
+      doc.line(14, currentY, 196, currentY);
+      currentY += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(15, 23, 42);
+      doc.text('SEQUÊNCIA DO PROGRAMA DE GERENCIAMENTO DE RISCOS (PGR):', 14, currentY);
+      currentY += 5;
+
+      const rawLines = (section.content || '').split('\n');
+      for (const line of rawLines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === 'SEQUÊNCIA DO PGR') continue;
+
+        const isSubItem = line.startsWith('  ') || line.startsWith('\t') || trimmed.startsWith('GES') || trimmed.startsWith('- GES');
+        const cleanText = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '');
+
+        checkPageBreak(6);
+
+        if (isSubItem) {
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(71, 85, 105);
+          doc.text(`   •  ${cleanText}`, 18, currentY);
+          currentY += 4.2;
+        } else {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(30, 41, 59);
+          doc.text(`•  ${cleanText}`, 14, currentY);
+          currentY += 4.6;
+        }
+      }
+
+      currentY += 6;
+      doc.addPage();
+      currentY = 20;
+      continue;
+    }
+
     if (currentY > 230) {
       doc.addPage();
       currentY = 20;
