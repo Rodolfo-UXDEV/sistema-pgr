@@ -28,7 +28,7 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
   const emissoraPng = await ensurePngDataUrl(emissoraLogoUrl, 600, 150);
   const clientePng = await ensurePngDataUrl(clienteLogoUrl, 600, 150);
 
-  const primaryColor: [number, number, number] = [15, 118, 110];
+  const primaryColor: [number, number, number] = [1, 133, 60]; // Hex #01853C
   const secondaryColor: [number, number, number] = [51, 65, 85];
   const headerGray: [number, number, number] = [82, 82, 91];
   const sectionGray: [number, number, number] = [226, 232, 240];

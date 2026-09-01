@@ -160,8 +160,14 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
     const sectionHeading = /^\d+\./.test(section.title) ? section.title : `${section.number}. ${section.title}`;
     children.push(
       new Paragraph({
-        text: sectionHeading,
-        heading: HeadingLevel.HEADING_2,
+        children: [
+          new TextRun({
+            text: sectionHeading,
+            bold: true,
+            color: '01853C',
+            size: 24,
+          }),
+        ],
         spacing: { before: 600, after: 200 },
       })
     );
