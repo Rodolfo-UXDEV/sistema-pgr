@@ -461,7 +461,8 @@ export const PgrViewerPage: React.FC = () => {
                 const gesLabel = ghe?.code 
                   ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
                   : (ghe?.name ? ghe.name : 'GES-01');
-                const gesSectorInfo = `${gesLabel} | Setor: ${sectorName}${workerCount ? ` | Efetivo Exposto: ${workerCount} trabalhador(es)` : ''}`;
+                const emrInfo = item.highestRiskExposed ? ` | EMR: ${item.highestRiskExposed}` : '';
+                const gesSectorInfo = `${gesLabel} | Setor: ${sectorName}${workerCount ? ` | Efetivo Exposto: ${workerCount} trabalhador(es)` : ''}${emrInfo}`;
                 const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
                 // Separação do Tipo de Exposição

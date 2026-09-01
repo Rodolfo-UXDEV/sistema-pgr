@@ -310,7 +310,8 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
           const gesLabel = ghe?.code 
             ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
             : (ghe?.name ? ghe.name : 'GES-01');
-          const gesSectorInfo = `${gesLabel} | Setor: ${sec?.name || '-'}${pos?.workerCount || ghe?.workerCount ? ` | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount} trabalhador(es)` : ''}`;
+          const emrInfo = item.highestRiskExposed ? ` | EMR: ${item.highestRiskExposed}` : '';
+          const gesSectorInfo = `${gesLabel} | Setor: ${sec?.name || '-'}${pos?.workerCount || ghe?.workerCount ? ` | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount} trabalhador(es)` : ''}${emrInfo}`;
           const posTitle = `Cargo / Função: ${pos?.title || ghe?.name || 'Geral'}${pos?.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
           const rawActivity = pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada';
           const cleanActivity = rawActivity.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
