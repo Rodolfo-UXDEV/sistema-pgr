@@ -68,30 +68,94 @@ export function renderFormattedBlockContent(content: string): React.ReactNode {
 }
 
 /**
- * Renderiza células de tabelas tratando chips/cores da Matriz de Risco 5x5
+ * Renderiza células de tabelas tratando chips/cores da Matriz de Risco 5x5 e prioridades
  */
 export function renderTableCellContent(cell: string): React.ReactNode {
   const trimmed = cell.trim();
-  const matrixMatch = trimmed.match(/^(\d+)\s*\((TRI|TOL|MOD|SUB|INT)\)$/i);
   
+  // 1. Padrão Código da Matriz: "15 (INT)" ou "5 (MOD)"
+  const matrixMatch = trimmed.match(/^(\d+)\s*\((TRI|TOL|MOD|SUB|INT)\)$/i);
   if (matrixMatch) {
     const score = matrixMatch[1];
     const code = matrixMatch[2].toUpperCase();
 
     let bgClass = 'bg-slate-500 text-white';
-    if (code === 'TRI') bgClass = 'bg-emerald-500 text-white hover:bg-emerald-600';
-    else if (code === 'TOL') bgClass = 'bg-lime-500 text-white hover:bg-lime-600';
-    else if (code === 'MOD') bgClass = 'bg-amber-500 text-white hover:bg-amber-600';
-    else if (code === 'SUB') bgClass = 'bg-orange-500 text-white hover:bg-orange-600';
-    else if (code === 'INT') bgClass = 'bg-rose-600 text-white hover:bg-rose-700';
+    if (code === 'TRI') bgClass = 'bg-emerald-600 text-white';
+    else if (code === 'TOL') bgClass = 'bg-emerald-500 text-white';
+    else if (code === 'MOD') bgClass = 'bg-amber-500 text-white';
+    else if (code === 'SUB') bgClass = 'bg-orange-500 text-white';
+    else if (code === 'INT') bgClass = 'bg-rose-600 text-white';
 
     return (
       <div className="flex items-center justify-center">
-        <div className={`flex flex-col items-center justify-center w-14 py-1 rounded-md font-bold shadow-xs transition-transform hover:scale-105 ${bgClass}`}>
+        <div className={`flex flex-col items-center justify-center w-12 py-0.5 rounded font-bold shadow-xs ${bgClass}`}>
           <span className="text-xs leading-none">{score}</span>
-          <span className="text-[9px] uppercase tracking-tighter opacity-90">{code}</span>
+          <span className="text-[8px] uppercase tracking-tighter opacity-90">{code}</span>
         </div>
       </div>
+    );
+  }
+
+  // 2. Pontuações puras da Matriz 5x5 (ex: "5", "10", "15", "20", "25", "1", "2", "3", "4", etc. em células numéricas)
+  const isSingleNumber = /^([1-9]|1[0-9]|2[0-5])$/.test(trimmed);
+  if (isSingleNumber) {
+    const num = parseInt(trimmed, 10);
+    let bgClass = 'bg-emerald-600 text-white';
+    if (num >= 16) bgClass = 'bg-rose-600 text-white';
+    else if (num >= 10) bgClass = 'bg-orange-500 text-white';
+    else if (num >= 5) bgClass = 'bg-amber-500 text-white';
+
+    return (
+      <div className="flex items-center justify-center">
+        <span className={`inline-flex items-center justify-center w-7 h-6 rounded text-xs font-bold shadow-xs ${bgClass}`}>
+          {num}
+        </span>
+      </div>
+    );
+  }
+
+  // 3. Faixas coloridas de Prioridade (Tabela 6)
+  if (trimmed.startsWith('🟥') || trimmed.startsWith('🟧') || trimmed.startsWith('🟨') || trimmed.startsWith('🟩')) {
+    let badgeColor = 'bg-muted text-foreground border-border';
+    if (trimmed.startsWith('🟥')) badgeColor = 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800';
+    else if (trimmed.startsWith('🟧')) badgeColor = 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800';
+    else if (trimmed.startsWith('🟨')) badgeColor = 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800';
+    else if (trimmed.startsWith('🟩')) badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800';
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-semibold border ${badgeColor}`}>
+        {renderMarkdownInline(trimmed)}
+      </span>
+    );
+  }
+
+  // 4. Badges para Níveis de Risco e Prioridades
+  if (['Intolerável', 'Extremo', 'Urgente'].includes(trimmed)) {
+    return (
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border border-rose-300 rounded">
+        {trimmed}
+      </span>
+    );
+  }
+  if (['Substancial', 'Alto', 'Alta'].includes(trimmed)) {
+    return (
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200 border border-orange-300 rounded">
+        {trimmed}
+      </span>
+    );
+  }
+  if (['Moderado', 'Médio', 'Média'].includes(trimmed)) {
+    return (
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-300 rounded">
+        {trimmed}
+      </span>
+    );
+  }
+  if (['Tolerável', 'Baixo', 'Baixa'].includes(trimmed)) {
+    return (
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border border-emerald-300 rounded">
+        {trimmed}
+      </span>
     );
   }
 

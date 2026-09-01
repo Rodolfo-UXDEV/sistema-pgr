@@ -231,59 +231,76 @@ A organização contratante deve fornecer às empresas contratadas as informaç�
 O inventário de riscos contempla a caracterização dos processos e ambientes de trabalho, a descrição das atividades, a identificação dos perigos, os possíveis danos à saúde, a identificação dos grupos de trabalhadores expostos (GES), a gradação da probabilidade e da severidade, o nível de risco ocupacional e as medidas de controle existentes e propostas.
 
 9.2. DOS RISCOS OCUPACIONAIS
-Os perigos e fatores de risco ocupacionais são classificados nas seguintes categorias:
-• Agentes Físicos: Ruído, calor, frio, vibrações, radiações ionizantes e não ionizantes, pressões anormais e umidade.
-• Agentes Químicos: Poeiras, fumos, névoas, neblinas, gases, vapores e produtos químicos em geral.
-• Agentes Biológicos: Vírus, bactérias, fungos, parasitas e outros microrganismos patogênicos.
-• Riscos Ergonômicos: Levantamento manual de cargas, posturas inadequadas, repetitividade, esforço físico intenso e fatores psicossociais.
-• Riscos de Acidentes / Mecânicos: Máquinas desprotegidas, ferramentas defeituosas, choque elétrico, trabalho em altura, quedas, incêndio e explosão.
+Os riscos ocupacionais são classificados conforme sua natureza e potencial de causar lesões ou agravos à saúde dos trabalhadores sendo eles:
 
-9.3. DAS CATEGORIAS DE RISCO E CRITÉRIOS DE AVALIAÇÃO
-
-Tabela 1 — Gradação da Probabilidade (P1 a P5):
-| Índice | Denominação | Descrição / Critério de Ocorrência |
+| Categoria | Definição | Exemplos |
 | :--- | :--- | :--- |
-| P1 | Raríssima | Praticamente impossível de ocorrer; medidas de proteção altamente eficazes e redundantes. |
-| P2 | Pouco Provável | Rara ocorrência conhecida; medidas de controle existentes com boa eficácia. |
-| P3 | Provável / Ocasional | Pode ocorrer durante a vida útil da instalação; controles parciais ou falhas eventuais. |
-| P4 | Frequente | Ocorre com frequência no histórico de operações; medidas de controle deficientes. |
-| P5 | Muito Frequente / Certa | Ocorrência sistemática ou contínua; ausência de medidas de controle aplicadas. |
+| Agentes Físicos | Formas de energia capazes de causar lesões ou agravos à saúde em função da intensidade e do tempo de exposição. | Ruído, vibração, calor, frio, pressões anormais e radiações não ionizantes. |
+| Agentes Químicos | Substâncias, misturas ou produtos que podem causar danos à saúde pela inalação, absorção ou ingestão. | Poeiras, fumos, névoas, gases, vapores e produtos químicos em geral. |
+| Agentes Biológicos | Microrganismos, parasitas ou materiais biológicos com potencial de causar doenças ou agravos à saúde. | Bactérias, vírus, fungos, parasitas, sangue e outros materiais biológicos. |
+| Riscos Ergonômicos | Fatores relacionados à organização do trabalho e às condições que possam gerar desconforto, fadiga ou adoecimento ocupacional. | Posturas inadequadas, movimentação manual de cargas, repetitividade, esforço físico e mobiliário inadequado. |
+| Riscos Psicossociais Relacionados ao Trabalho | Fatores relacionados à organização, gestão e condições do trabalho que podem afetar o bem-estar, a saúde mental e o desempenho dos trabalhadores. | Pressão e sobrecarga de trabalho, cobrança excessiva, baixa autonomia, conflitos interpessoais, assédio moral ou sexual, falta de apoio, comunicação inadequada, jornadas extensas e desequilíbrio entre demandas e recursos. |
+| Riscos de Acidentes | Condições ou situações com potencial de causar acidentes e comprometer a integridade física dos trabalhadores. | Quedas, choque elétrico, incêndio, explosão, cortes, aprisionamentos, atropelamentos e falhas de sinalização. |
 
-Tabela 2 — Gradação da Severidade (S1 a S5):
-| Nível | Denominação | Definição / Consequência Potencial |
-| :--- | :--- | :--- |
-| S1 | Leve / Desprezível | Pequenos ferimentos sem necessidade de afastamento ou primeiros socorros simples. |
-| S2 | Menor / Moderada | Lesão leve com atendimento médico e retorno rápido ao trabalho (< 3 dias). |
-| S3 | Moderada / Grave | Lesão severa reversível, afastamento temporário significativo (> 15 dias). |
-| S4 | Crítica / Severa | Incapacidade permanente parcial ou total, amputações, perda auditiva severa. |
-| S5 | Catastrófica / Fatal | Morte de um ou mais trabalhadores, desastre operacional ou colapso ambiental. |
+9.3. DAS CATEGORIAS DE RISCO
+9.3.1. Critérios para Priorização das Avaliações dos Riscos
+A avaliação dos riscos tem como finalidade estabelecer prioridades para implementação das medidas de prevenção, considerando requisitos legais, aspectos técnicos, viabilidade de controle e potencial de dano.
 
-Tabela 3 — Matriz de Risco 5x5 com Pontuações:
-| Severidade \ Prob. | P1 (Raríssima) | P2 (Pouco Provável) | P3 (Provável / Ocasional) | P4 (Frequente) | P5 (Muito Frequente / Certa) |
+Tabela 1 – Critérios de avaliação
+| Critério de Avaliação | Descrição |
+| :--- | :--- |
+| Probabilidade | Possibilidade de ocorrência de lesão, doença ocupacional ou acidente. |
+| Severidade | Magnitude das consequências decorrentes da materialização do risco. |
+| Classificação do Risco | Resultado da combinação entre a probabilidade de ocorrência e a severidade das consequências. |
+
+Tabela 2 – Critério de Probabilidade Quantitativo e Qualitativo
+| Índice | Perfil de exposição qualitativo | Perfil de exposição quantitativo |
+| :---: | :--- | :--- |
+| 1 | Exposição muito baixa: Contato não frequente com o agente ou exposição esporádica a concentrações/intensidades desprezíveis. | Exposições < 10% do LEO (Limite de Exposição Ocupacional). |
+| 2 | Exposição baixa: Contato frequente com o agente em baixas concentrações/intensidades. | Exposições > 10% e < 50% do LEO. |
+| 3 | Exposição moderada: Contato frequente com o agente em concentrações/intensidades relevantes. | Exposições > 50% e < 100% do LEO. |
+| 4 | Exposição excessiva: Contato frequente com o agente em concentrações/intensidades acima dos limites aceitáveis. | Exposições > 100% e ≤ 500% do LEO. |
+| 5 | Exposição muito excessiva: Situação crítica de exposição, indicando condições severamente inadequadas de controle. | Exposições > 5 × LEO (superiores a 500% do LEO). |
+
+Tabela 3 – Critérios para classificação de Severidade
+| Nível | Pontuação | Definição |
+| :--- | :---: | :--- |
+| Crítica | 5 | Fatalidade, invalidez permanente ou doença ocupacional irreversível. |
+| Grave | 4 | Lesão grave com afastamento prolongado, hospitalização ou incapacidade parcial permanente. |
+| Moderada | 3 | Lesão ou agravo à saúde que exija tratamento médico e/ou afastamento temporário. |
+| Menor | 2 | Lesão leve que demande apenas primeiros socorros ou tratamento simples, sem afastamento. |
+| Insignificante | 1 | Sem lesão ou com consequências desprezíveis à saúde do trabalhador. |
+
+Tabela 4 – Matriz de Risco 5x5, com Pontuações
+Na matriz de risco 5×5, cada célula representa a pontuação de probabilidade multiplicada pela pontuação de severidade, resultando em uma pontuação de risco de 1 a 25.
+
+| Probabilidade \ Severidade | Insignificante (1) | Menor (2) | Moderada (3) | Grave (4) | Crítica (5) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **S5 (Catastrófica / Fatal)** | 5 (MOD) | 10 (SUB) | 15 (INT) | 20 (INT) | 25 (INT) |
-| **S4 (Crítica / Severa)** | 4 (TOL) | 8 (MOD) | 12 (SUB) | 16 (SUB) | 20 (INT) |
-| **S3 (Moderada / Grave)** | 3 (TOL) | 6 (MOD) | 9 (MOD) | 12 (SUB) | 15 (INT) |
-| **S2 (Menor / Moderada)** | 2 (TRI) | 4 (TOL) | 6 (MOD) | 8 (MOD) | 10 (SUB) |
-| **S1 (Leve / Desprezível)** | 1 (TRI) | 2 (TRI) | 3 (TOL) | 4 (TOL) | 5 (MOD) |
+| **Muito Provável (5)** | 5 | 10 | 15 | 20 | 25 |
+| **Provável (4)** | 4 | 8 | 12 | 16 | 20 |
+| **Possível (3)** | 3 | 6 | 9 | 12 | 15 |
+| **Pouco Provável (2)** | 2 | 4 | 6 | 8 | 10 |
+| **Rara (1)** | 1 | 2 | 3 | 4 | 5 |
 
-Classificação do Nível de Risco e Diretrizes de Tratamento:
-• 15 a 25 — Intolerável / Crítico (INT): Risco inaceitável. Interrupção imediata da atividade até implantação de medidas que reduzam o risco a níveis aceitáveis.
-• 10 a 16 — Substancial / Alto (SUB): Risco significativo. Ação prioritária e urgente. Não iniciar ou restringir atividade até medidas de mitigação.
-• 5 a 9 — Moderado / Médio (MOD): Risco moderado. Necessário estabelecer plano de ação corretivo e preventivo para redução do risco.
-• 3 a 4 — Tolerável / Baixo (TOL): Risco baixo. Monitorar periodicamente para assegurar que os controles permaneçam eficazes.
-• 1 a 2 — Trivial / Muito Baixo (TRI): Risco muito baixo. Nenhuma ação adicional é necessária. Manter medidas de controle existentes.
+Tabela 5 – Critérios para Classificação do Nível de Risco
+| Pontuação | Nível de Risco | Significado | Diretriz de Tratamento |
+| :---: | :--- | :--- | :--- |
+| 16 a 25 | Extremo | Risco inaceitável, com elevado potencial de ocorrência e/ou consequências graves à saúde e segurança dos trabalhadores. | Adotar medidas imediatas para eliminação ou redução do risco. A atividade deve ser reavaliada antes de sua continuidade. |
+| 10 a 15 | Alto | Risco significativo que requer atenção prioritária e controle sistemático. | Implementar medidas de controle com prioridade definida e acompanhar a eficácia das ações adotadas. |
+| 5 a 9 | Médio | Risco controlável por meio das medidas preventivas existentes, desde que mantidas e monitoradas. | Monitorar periodicamente e avaliar oportunidades de melhoria dos controles. |
+| 1 a 4 | Baixo | Risco aceitável nas condições atuais de controle. | Manter as medidas de prevenção existentes e realizar monitoramento periódico. |
 
-9.4. CRITÉRIOS DE PRIORIZAÇÃO DAS AÇÕES
-| Faixa de Pontuação | Classificação | Prioridade | Prazo Recomendado | Ação Requerida |
-| :--- | :--- | :--- | :--- | :--- |
-| 15 a 25 | Intolerável / Crítico (INT) | Crítica / Imediata | Até 7 dias | Interrupção imediata da atividade e eliminação do risco |
-| 10 a 16 | Substancial / Alto (SUB) | Alta | Até 30 dias | Controle prioritário com cronograma rígido de mitigação |
-| 5 a 9 | Moderado / Médio (MOD) | Média | Até 90 dias | Plano de ação corretivo e monitoramento periódico |
-| 3 a 4 | Tolerável / Baixo (TOL) | Baixa | Até 180 dias | Monitoramento para manutenção da eficácia das medidas |
-| 1 a 2 | Trivial / Muito Baixo (TRI) | Nenhuma | Até 365 dias | Manutenção das medidas de prevenção existentes |
+Tabela 6 – Critérios para Priorização das Ações
+A priorização das ações de controle será definida com base no nível de risco obtido a partir do cruzamento entre a Probabilidade de Ocorrência e a Severidade das Consequências. Os riscos classificados como Intoleráveis e Substanciais terão prioridade na implementação das medidas de prevenção, observando-se a hierarquia de controles prevista na NR-01.
 
-9.5. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
+| Faixa de Pontuação | Classificação | Prioridade | Ação |
+| :---: | :--- | :---: | :--- |
+| 🟥 16 a 25 | Intolerável | Urgente | Intervenção imediata. |
+| 🟧 10 a 15 | Substancial | Alta | Controle prioritário. |
+| 🟨 5 a 9 | Moderado | Média | Monitoramento e melhoria contínua. |
+| 🟩 1 a 4 | Tolerável | Baixa | Manutenção dos controles existentes. |
+
+9.4. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
 • GES (Grupo de Exposição Similar): Grupo de trabalhadores que experimentam exposição semelhante a determinado agente ocupacional decorrente do mesmo ambiente e processo.
 • EMR (Exposto de Maior Risco): Trabalhador com potencial de maior exposição dentro de um GES, utilizado para avaliações periciais mais conservadoras.
 • NA (Nível de Ação): Valor a partir do qual devem ser iniciadas ações preventivas para minimizar a probabilidade de que as exposições ultrapassem os limites de tolerância (50% do LEO).`,

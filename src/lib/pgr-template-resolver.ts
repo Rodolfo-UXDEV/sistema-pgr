@@ -69,7 +69,7 @@ export function getResolvedPgrSections(pgrId?: string): ResolvedSection[] {
 
     // Auto-migração da Seção 9 caso o localStorage/Firestore tenha a matriz no modelo antigo
     if (sec.id === 'sec-9') {
-      if (content.includes('Severidade → / Probabilidade ↓') || content.includes('5 - Muito Provável') || !content.includes('P1 (Raríssima)')) {
+      if (!content.includes('Riscos Psicossociais') || !content.includes('Tabela 6') || !content.includes('Tabela 1 – Critérios de avaliação')) {
         content = sec.defaultContent;
       }
     }

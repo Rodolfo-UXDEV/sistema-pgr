@@ -236,8 +236,11 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           }
         } else if (block.type === 'table') {
           checkPageBreak(25);
-          const cleanHeaders = block.headers.map(h => h.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1'));
-          const cleanRows = block.rows.map(row => row.map(cell => cell.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')));
+          const isMatrixTable = block.headers.some(h => /Insignificante|Severidade|Probabilidade/i.test(h));
+          const isPriorityTable = block.headers.some(h => /Faixa de Pontuação|Prioridade|Classificação/i.test(h));
+          const cleanHeaders = block.headers.map(h => h.replace(/[🟥🟧🟨🟩]/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim());
+          const cleanRows = block.rows.map(row => row.map(cell => cell.replace(/[🟥🟧🟨🟩]/g, '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').trim()));
+          
           autoTable(doc, {
             startY: currentY,
             head: [cleanHeaders],
@@ -249,13 +252,8 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             didParseCell: (data) => {
               if (data.section === 'body') {
                 const text = String(data.cell.raw || '').trim();
-                if (/\(TRI\)/i.test(text)) {
+                if (/\(TRI\)/i.test(text) || /\(TOL\)/i.test(text)) {
                   data.cell.styles.fillColor = [16, 185, 129]; // Emerald 500
-                  data.cell.styles.textColor = [255, 255, 255];
-                  data.cell.styles.fontStyle = 'bold';
-                  data.cell.styles.halign = 'center';
-                } else if (/\(TOL\)/i.test(text)) {
-                  data.cell.styles.fillColor = [132, 204, 22]; // Lime 500
                   data.cell.styles.textColor = [255, 255, 255];
                   data.cell.styles.fontStyle = 'bold';
                   data.cell.styles.halign = 'center';
@@ -274,6 +272,41 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   data.cell.styles.textColor = [255, 255, 255];
                   data.cell.styles.fontStyle = 'bold';
                   data.cell.styles.halign = 'center';
+                } else if (isMatrixTable && data.column.index > 0 && /^([1-9]|1[0-9]|2[0-5])$/.test(text)) {
+                  const num = parseInt(text, 10);
+                  if (num >= 16) {
+                    data.cell.styles.fillColor = [225, 29, 72]; // Rose 600
+                    data.cell.styles.textColor = [255, 255, 255];
+                  } else if (num >= 10) {
+                    data.cell.styles.fillColor = [249, 115, 22]; // Orange 500
+                    data.cell.styles.textColor = [255, 255, 255];
+                  } else if (num >= 5) {
+                    data.cell.styles.fillColor = [245, 158, 11]; // Amber 500
+                    data.cell.styles.textColor = [255, 255, 255];
+                  } else {
+                    data.cell.styles.fillColor = [16, 185, 129]; // Emerald 500
+                    data.cell.styles.textColor = [255, 255, 255];
+                  }
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                } else if (isPriorityTable) {
+                  if (text.includes('16 a 25') || text === 'Intolerável' || text === 'Urgente' || text === 'Extremo') {
+                    data.cell.styles.fillColor = [254, 226, 226];
+                    data.cell.styles.textColor = [159, 18, 57];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (text.includes('10 a 15') || text === 'Substancial' || text === 'Alta' || text === 'Alto') {
+                    data.cell.styles.fillColor = [255, 237, 213];
+                    data.cell.styles.textColor = [154, 52, 18];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (text.includes('5 a 9') || text === 'Moderado' || text === 'Média' || text === 'Médio') {
+                    data.cell.styles.fillColor = [254, 243, 199];
+                    data.cell.styles.textColor = [146, 64, 14];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (text.includes('1 a 4') || text === 'Tolerável' || text === 'Baixa' || text === 'Baixo') {
+                    data.cell.styles.fillColor = [209, 250, 229];
+                    data.cell.styles.textColor = [6, 95, 70];
+                    data.cell.styles.fontStyle = 'bold';
+                  }
                 }
               }
             }

@@ -258,12 +258,8 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   let textColor: string | undefined = undefined;
                   let align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT;
 
-                  if (/\(TRI\)/i.test(trimmed)) {
+                  if (/\(TRI\)/i.test(trimmed) || /\(TOL\)/i.test(trimmed)) {
                     fill = '10B981';
-                    textColor = 'FFFFFF';
-                    align = AlignmentType.CENTER;
-                  } else if (/\(TOL\)/i.test(trimmed)) {
-                    fill = '84CC16';
                     textColor = 'FFFFFF';
                     align = AlignmentType.CENTER;
                   } else if (/\(MOD\)/i.test(trimmed)) {
@@ -278,16 +274,38 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     fill = 'E11D48';
                     textColor = 'FFFFFF';
                     align = AlignmentType.CENTER;
+                  } else if (/^([1-9]|1[0-9]|2[0-5])$/.test(trimmed) && block.headers.some(h => /Insignificante|Severidade|Probabilidade/i.test(h))) {
+                    const num = parseInt(trimmed, 10);
+                    if (num >= 16) fill = 'E11D48';
+                    else if (num >= 10) fill = 'F97316';
+                    else if (num >= 5) fill = 'F59E0B';
+                    else fill = '10B981';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  } else if (trimmed.includes('16 a 25') || trimmed === 'Intolerável' || trimmed === 'Urgente' || trimmed === 'Extremo') {
+                    fill = 'FEE2E2';
+                    textColor = '9F1239';
+                  } else if (trimmed.includes('10 a 15') || trimmed === 'Substancial' || trimmed === 'Alta' || trimmed === 'Alto') {
+                    fill = 'FFEDD5';
+                    textColor = '9A3412';
+                  } else if (trimmed.includes('5 a 9') || trimmed === 'Moderado' || trimmed === 'Média' || trimmed === 'Médio') {
+                    fill = 'FEF3C7';
+                    textColor = '92400E';
+                  } else if (trimmed.includes('1 a 4') || trimmed === 'Tolerável' || trimmed === 'Baixa' || trimmed === 'Baixo') {
+                    fill = 'D1FAE5';
+                    textColor = '065F46';
                   }
+
+                  const cleanCellText = trimmed.replace(/[🟥🟧🟨🟩]/g, '').trim();
 
                   return new TableCell({
                     children: [
                       new Paragraph({
                         children: fill
-                          ? [new TextRun({ text: trimmed, color: textColor, bold: true })]
-                          : parseTextToTextRuns(cell),
+                          ? [new TextRun({ text: cleanCellText, color: textColor, bold: true })]
+                          : parseTextToTextRuns(cleanCellText),
                         alignment: align,
-                      })
+                      }),
                     ],
                     borders: cellBorder,
                     shading: fill ? { fill, type: ShadingType.CLEAR, color: 'auto' } : undefined,

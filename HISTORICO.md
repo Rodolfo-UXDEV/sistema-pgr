@@ -220,9 +220,23 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - O banco de dados agora contém 100% de integridade com apenas os registros reais e oficiais da empresa **Advanced Innergy Solutions do Brasil Ltda.**.
 - **6. Implementação de Exclusão Real e em Cascata no Firestore (`PgrContext.tsx`):**
   - Atualização de todas as rotinas de exclusão (`deleteCompany`, `deleteEstablishment`, `deleteSector`, `deletePosition`, `deleteGhe`, `deletePgrDocument`, `deleteRiskItem`, `deleteActionPlan`) para executar deleção física no Firestore e exclusão em cascata de todas as entidades filhas/dependentes, prevenindo acúmulo de dados órfãos.
-- **7. Qualidade, Testes e Deploy:**
+- **7. Implementação Completa das Tabelas Padronizadas do PGR (Arquivo TABELAS PGR.docx):**
+  - **Categorias de Riscos (Item 9.2):** Inclusão formal da tabela com as 6 categorias (Agentes Físicos, Agentes Químicos, Agentes Biológicos, Riscos Ergonômicos, Riscos Psicossociais Relacionados ao Trabalho e Riscos de Acidentes).
+  - **Tabelas 1 a 6 de Metodologia e Avaliação de Riscos (Item 9.3):**
+    - **Tabela 1:** Critérios de Avaliação (Probabilidade, Severidade, Classificação).
+    - **Tabela 2:** Critério de Probabilidade Quantitativo e Qualitativo (Índices 1 a 5 com faixas percentuais de LEO).
+    - **Tabela 3:** Critérios para Classificação de Severidade (Crítica 5 a Insignificante 1).
+    - **Tabela 4:** Matriz de Risco 5x5 com Pontuações (1 a 25) com estilização colorida automática por faixa.
+    - **Tabela 5:** Critérios para Classificação do Nível de Risco (Extremo, Alto, Médio, Baixo com significados e diretrizes de tratamento).
+    - **Tabela 6:** Critérios para Priorização das Ações (Intolerável/Urgente, Substancial/Alta, Moderado/Média, Tolerável/Baixa com badges coloridos).
+  - **Renderização Unificada em Todas as Camadas:**
+    - Atualização do modelo base global no Firestore (`pgr_templates/global_master`).
+    - Visualizador em tela (`PgrViewerPage.tsx` e `markdown-renderer.tsx`) com chips coloridos de alta fidelidade visual.
+    - Gerador de PDF Oficial (`pdf-generator.ts`) com coloração de células e cabeçalhos em `autoTable`.
+    - Gerador de Word (`docx-generator.ts`) com tabelas nativas estilizadas.
+- **8. Qualidade, Testes e Deploy:**
   - Build compilado com **0 erros** no TypeScript e Vite (`tsc -b && vite build`).
-  - Commits sincronizados no repositório GitHub (`origin/main`): `9d407b7`, `8de01e3`, `7cbb0e9`, `1a4d2a6`, `895dd08`, `1b6167b`.
+  - Commits sincronizados no repositório GitHub (`origin/main`): `9d407b7`, `8de01e3`, `7cbb0e9`, `1a4d2a6`, `895dd08`, `1b6167b`, `b430ea8`.
 
 
 
