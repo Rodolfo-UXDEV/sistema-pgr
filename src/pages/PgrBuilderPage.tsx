@@ -144,9 +144,13 @@ export const PgrBuilderPage: React.FC = () => {
     ? customSections[selectedSection.id].subtitle!
     : baseSubtitle;
 
-  const currentContent = customSections[selectedSection.id]?.content !== undefined
+  const rawCurrentContent = customSections[selectedSection.id]?.content !== undefined
     ? customSections[selectedSection.id].content
     : baseContent;
+
+  const currentContent = (selectedSection.id === 'sec-9' && (rawCurrentContent.includes('Severidade → / Probabilidade ↓') || rawCurrentContent.includes('5 - Muito Provável') || !rawCurrentContent.includes('P1 (Raríssima)')))
+    ? selectedSection.defaultContent
+    : rawCurrentContent;
 
   const isCustomizedLocally = !!customSections[selectedSection.id]?.isModified;
 

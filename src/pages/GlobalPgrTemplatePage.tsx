@@ -80,9 +80,13 @@ export const GlobalPgrTemplatePage: React.FC = () => {
     ? globalSections[selectedSection.id].subtitle!
     : (selectedSection.subtitle || '');
 
-  const currentContent = globalSections[selectedSection.id]?.content !== undefined
+  const rawContent = globalSections[selectedSection.id]?.content !== undefined
     ? globalSections[selectedSection.id].content
     : selectedSection.defaultContent;
+
+  const currentContent = (selectedSection.id === 'sec-9' && (rawContent.includes('Severidade → / Probabilidade ↓') || rawContent.includes('5 - Muito Provável') || !rawContent.includes('P1 (Raríssima)')))
+    ? selectedSection.defaultContent
+    : rawContent;
 
   const isCustomized = !!globalSections[selectedSection.id]?.isModified;
 

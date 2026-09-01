@@ -63,9 +63,16 @@ export function getResolvedPgrSections(pgrId?: string): ResolvedSection[] {
       : (g?.subtitle !== undefined ? g.subtitle! : (sec.subtitle || ''));
 
     // Resolução do Conteúdo
-    const content = d?.content !== undefined 
+    let content = d?.content !== undefined 
       ? d.content 
       : (g?.content !== undefined ? g.content : sec.defaultContent);
+
+    // Auto-migração da Seção 9 caso o localStorage/Firestore tenha a matriz no modelo antigo
+    if (sec.id === 'sec-9') {
+      if (content.includes('Severidade → / Probabilidade ↓') || content.includes('5 - Muito Provável') || !content.includes('P1 (Raríssima)')) {
+        content = sec.defaultContent;
+      }
+    }
 
     return {
       id: sec.id,
