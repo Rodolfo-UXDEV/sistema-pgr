@@ -134,6 +134,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   // 4. Categorização do Risco (Matriz 5x5)
   const [severity, setSeverity] = useState(3);
   const [probability, setProbability] = useState(3);
+  const [actionPriority, setActionPriority] = useState<string>('Média');
 
   // 5. Recomendações & Plano de Ação
   const [recommendations, setRecommendations] = useState('');
@@ -191,6 +192,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
 
       setSeverity(initialItem.severity || 3);
       setProbability(initialItem.probability || 3);
+      setActionPriority(initialItem.actionPriority || (initialItem.riskLevel === 'INTOLERAVEL' || initialItem.riskLevel === 'SUBSTANCIAL' ? 'Alta' : initialItem.riskLevel === 'MODERADO' ? 'Média' : 'Baixa'));
 
       setRecommendations(initialItem.recommendations || '');
       setActionRequired(initialItem.actionRequired ?? true);
@@ -226,6 +228,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
 
       setSeverity(3);
       setProbability(3);
+      setActionPriority('Média');
 
       setRecommendations('');
       setActionRequired(true);
@@ -375,6 +378,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
         severity,
         riskScore: score,
         riskLevel: level,
+        actionPriority: actionPriority || (level === 'INTOLERAVEL' || level === 'SUBSTANCIAL' ? 'Alta' : level === 'MODERADO' ? 'Média' : 'Baixa'),
         epcExisting: epcList,
         adminMeasuresExisting: [],
         epiExisting: epiList,
@@ -802,10 +806,20 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
             <Matrix5x5Selector
               severity={severity}
               probability={probability}
-              onChange={(s, p) => {
+              actionPriority={actionPriority}
+              onChange={(s, p, level) => {
                 setSeverity(s);
                 setProbability(p);
+                // Se o usuário ainda não personalizou, atualiza a prioridade sugerida com base no nível
+                if (level === 'INTOLERAVEL' || level === 'SUBSTANCIAL') {
+                  setActionPriority('Alta');
+                } else if (level === 'MODERADO') {
+                  setActionPriority('Média');
+                } else {
+                  setActionPriority('Baixa');
+                }
               }}
+              onPriorityChange={setActionPriority}
             />
           </div>
 

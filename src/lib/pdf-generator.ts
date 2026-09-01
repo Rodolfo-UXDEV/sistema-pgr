@@ -473,7 +473,7 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
               { content: item.severity, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
               { content: item.probability, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
               { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-              { content: prioridade, colSpan: 1, styles: { halign: 'center' } }
+              { content: item.actionPriority || prioridade, colSpan: 1, styles: { halign: 'center' } }
             ],
             // Section Header: Recomendações
             [

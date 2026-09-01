@@ -708,7 +708,7 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
                 }),
                 new TableCell({
                   columnSpan: 1,
-                  children: [new Paragraph({ text: prioridade, alignment: AlignmentType.CENTER })],
+                  children: [new Paragraph({ text: item.actionPriority || prioridade, alignment: AlignmentType.CENTER })],
                   borders: cellBorder,
                 }),
               ],

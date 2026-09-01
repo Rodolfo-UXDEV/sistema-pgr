@@ -14,13 +14,17 @@ import { HelpCircle, Info } from 'lucide-react';
 interface Matrix5x5SelectorProps {
   severity: number;
   probability: number;
+  actionPriority?: string;
   onChange: (severity: number, probability: number, level: RiskLevel, score: number) => void;
+  onPriorityChange?: (priority: string) => void;
 }
 
 export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
   severity,
   probability,
+  actionPriority,
   onChange,
+  onPriorityChange,
 }) => {
   const currentResult = calculateRiskLevel(severity, probability);
   const currentConfig = RISK_LEVEL_CONFIG[currentResult.level];
@@ -202,6 +206,24 @@ export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
             <p className="text-[11px] text-muted-foreground leading-tight">
               {SEVERITY_SCALE[severity - 1]?.desc}
             </p>
+          </div>
+        </div>
+
+        {/* Prioridade de ação */}
+        <div className="mt-4 pt-3 border-t border-border">
+          <div className="space-y-1.5 max-w-xs">
+            <label className="text-xs font-semibold text-foreground">
+              Prioridade de ação:
+            </label>
+            <select
+              value={actionPriority || 'Média'}
+              onChange={(e) => onPriorityChange?.(e.target.value)}
+              className="w-full text-xs font-medium rounded-md border border-input bg-background p-2 focus:ring-1 focus:ring-ring"
+            >
+              <option value="Baixa">Baixa</option>
+              <option value="Média">Média</option>
+              <option value="Alta">Alta</option>
+            </select>
           </div>
         </div>
 

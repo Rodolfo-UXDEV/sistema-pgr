@@ -187,6 +187,7 @@ export interface RiskInventoryItem {
   severity: number; // 1 (Leve) a 5 (Catastrófico/Morte)
   riskScore: number; // 1 a 25
   riskLevel: RiskLevel;
+  actionPriority?: 'Baixa' | 'Média' | 'Alta' | string;
   
   // Medidas de Prevenção e Controle
   epcExisting: string[];

@@ -687,7 +687,7 @@ export const PgrViewerPage: React.FC = () => {
                           {statusAgente}
                         </div>
                         <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
-                          {prioridade}
+                          {item.actionPriority || prioridade}
                         </div>
                       </div>
 

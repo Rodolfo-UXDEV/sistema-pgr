@@ -245,9 +245,16 @@ export const RiskInventoryTable: React.FC = () => {
 
                       <TableCell className="text-center">
                         {item.actionRequired ? (
-                          <Badge variant="success" className="text-[9px] px-1.5 py-0">
-                            Exigido
-                          </Badge>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Badge variant="success" className="text-[9px] px-1.5 py-0">
+                              Exigido
+                            </Badge>
+                            {item.actionPriority && (
+                              <span className="text-[9px] font-semibold text-muted-foreground">
+                                Prio: {item.actionPriority}
+                              </span>
+                            )}
+                          </div>
                         ) : (
                           <span className="text-[10px] text-muted-foreground">Controlado</span>
                         )}
