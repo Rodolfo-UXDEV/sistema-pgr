@@ -427,7 +427,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
               </h4>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-xs font-semibold">SETOR / AMBIENTE *</Label>
                 <select
@@ -472,17 +472,17 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   ))}
                 </select>
               </div>
-            </div>
 
-            <div className="pt-1">
-              <Label className="text-xs font-semibold">QUANTIDADE DE TRABALHADORES EXPOSTOS</Label>
-              <Input
-                type="number"
-                min="1"
-                value={exposedCount}
-                onChange={(e) => setExposedCount(Number(e.target.value))}
-                className="h-9 mt-1 text-xs w-full md:w-48 font-bold"
-              />
+              <div>
+                <Label className="text-xs font-semibold">QUANTIDADE DE TRABALHADORES EXPOSTOS</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  value={exposedCount}
+                  onChange={(e) => setExposedCount(Number(e.target.value))}
+                  className="h-9 mt-1 text-xs w-full font-bold"
+                />
+              </div>
             </div>
           </div>
 
