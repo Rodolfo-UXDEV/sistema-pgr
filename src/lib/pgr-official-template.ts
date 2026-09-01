@@ -153,17 +153,23 @@ b) submeter-se aos exames médicos previstos nas NR;
 c) colaborar com a organização na aplicação das NR; e
 d) usar o equipamento de proteção individual fornecido pelo empregador.`,
 
-  // 8. ESTRUTURA DO PGR
-  estruturaPgr: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-8')?.defaultContent || '',
+  // 1. INDICE
+  indice: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-1')?.defaultContent || '',
 
-  // 9. DESENVOLVIMENTO DO PGR E MATRIZ
-  desenvolvimentoPgr: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-9')?.defaultContent || '',
+  // 9. ESTRUTURA DO PGR
+  estruturaPgr: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-9')?.defaultContent || '',
 
-  // 10. METODOLOGIA DE ANÁLISE POR AGENTE
-  metodologiaAgentes: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-10')?.defaultContent || '',
+  // 10. DESENVOLVIMENTO DO PGR E MATRIZ
+  desenvolvimentoPgr: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-10')?.defaultContent || '',
 
-  // 11. INSTRUMENTOS DE MEDIÇÃO
-  instrumentosMedicao: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-11')?.defaultContent || '',
+  // 11. METODOLOGIA DE ANÁLISE POR AGENTE
+  metodologiaAgentes: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-11')?.defaultContent || '',
+
+  // 12. INSTRUMENTOS DE MEDIÇÃO
+  instrumentosMedicao: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-12')?.defaultContent || '',
+
+  // 13. AVALIAÇÃO, RESULTADOS E INTERPRETAÇÃO
+  avaliacaoResultados: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-13')?.defaultContent || '',
 
   // 16. ENCERRAMENTO
   termoEncerramento: `Este trabalho atende às Portarias Mtb. 3214 de 08/06/78, 3111 de 29/11/89 e 29/12/1994.
@@ -172,8 +178,8 @@ O principal objetivo deste programa foi de elaborar o PGR oferecendo dados e med
 
 Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à saúde de nossos trabalhadores, evidentemente isto é impossível, pois grande parte dos riscos são inerentes a atividades. Daí nossa alternativa é controlarmos a exposição a estes riscos, a fim de que fiquem dentro de parâmetros seguros à saúde desses trabalhadores.`,
 
-  // 15. MODELO DE RECIBO DE EPI
-  reciboEpi: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-15')?.defaultContent || ''
+  // 17. MODELO DE FICHA DE EPIS
+  reciboEpi: DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-17')?.defaultContent || ''
 };
 
 /**
@@ -181,13 +187,53 @@ Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à sa
  */
 export function buildPgrFullDocument(rawCtx: PgrDocumentContext) {
   const ctx = filterContextForCompany(rawCtx);
-  const { company, establishment, sectors, positions, professionals, pgr, riskInventory, actionPlans } = ctx;
+  const { company, establishment, sectors, positions, ghes, professionals, pgr, riskInventory, actionPlans } = ctx;
   const issuerConfig = getIssuerCompanyConfig();
 
   const techResp = professionals.find(p => p.id === pgr.technicalResponsibleId) || professionals[0];
   const medResp = professionals.find(p => p.id === pgr.medicalResponsibleId);
   const resolvedSections = getResolvedPgrSections(pgr.id);
   const getSec = (id: string) => resolvedSections.find(s => s.id === id);
+
+  // Lista única de GESs vinculados para o Índice
+  const gesItems: { name: string; sectorName: string }[] = [];
+  const estId = establishment?.id;
+  const registeredGhes = (ghes || []).filter(g => !estId || g.establishmentId === estId);
+  
+  if (registeredGhes.length > 0) {
+    registeredGhes.forEach(g => {
+      const secName = sectors.find(s => s.id === g.sectorId)?.name || 'Geral';
+      gesItems.push({ name: g.name || g.code || 'GES-01', sectorName: secName });
+    });
+  } else if (sectors && sectors.length > 0) {
+    sectors.forEach((sec, idx) => {
+      gesItems.push({ name: `GES-${String(idx + 1).padStart(2, '0')}`, sectorName: sec.name });
+    });
+  } else {
+    gesItems.push({ name: 'GES 1.0', sectorName: 'ADMINISTRAÇÃO' });
+  }
+
+  const dynamicIndiceContent = `SEQUÊNCIA DO PGR
+
+- CAPA
+- 1. INDICE
+- 2. CONTROLE DE REVISÕES DO DOCUMENTO
+- 3. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO
+- 4. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR
+- 5. INTRODUÇÃO
+- 6. OBJETIVO
+- 7. FUNDAMENTAÇÃO LEGAL
+- 8. RESPONSABILIDADE
+- 9. ESTRUTURA DO PGR
+- 10. DESENVOLVIMENTO DO PGR
+- 11. METODOLOGIA DE ANÁLISE
+- 12. INTRUMENTOS UTILIZADOS NAS AVALIAÇÕES
+- 13. AVALIAÇÃO, RESULTADOS E INTERPRETAÇÃO
+- 14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)
+${gesItems.map((g, idx) => `  - GES ${idx + 1}.0 – SETOR ${g.sectorName.toUpperCase()}`).join('\n')}
+- 15. PLANO DE AÇÃO
+- 16. ENCERRAMENTO
+- 17. MODELO DE FICHA DE EPIS.`;
 
   return {
     header: {
@@ -214,14 +260,21 @@ export function buildPgrFullDocument(rawCtx: PgrDocumentContext) {
       {
         id: 'sec-1',
         number: '1',
-        title: getSec('sec-1')?.title || '1. CONTROLE DE REVISÕES DO DOCUMENTO',
+        title: getSec('sec-1')?.title || '1. INDICE',
         type: 'text' as const,
-        content: getSec('sec-1')?.content || `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.\n\n| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${pgr.version} | ${formatDate(pgr.elaborationDate)} | ${pgr.revisionReason || 'Emissão Inicial do Programa de Gerenciamento de Riscos (PGR)'} |`
+        content: getSec('sec-1')?.isLocallyModified || getSec('sec-1')?.isGloballyModified ? getSec('sec-1')!.content : dynamicIndiceContent
       },
       {
         id: 'sec-2',
         number: '2',
-        title: getSec('sec-2')?.title || '2. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
+        title: getSec('sec-2')?.title || '2. CONTROLE DE REVISÕES DO DOCUMENTO',
+        type: 'text' as const,
+        content: getSec('sec-2')?.content || `O Programa de Gerenciamento de Riscos (PGR) deve ser um processo contínuo a ser revisto a cada 2 (dois) anos ou quando ocorrerem modificações nas tecnologias, processos, postos de trabalho ou após a identificação de inadequações no controle de riscos.\n\n| Revisão | Data | Descrição / Motivo da Revisão |\n| :--- | :--- | :--- |\n| ${pgr.version} | ${formatDate(pgr.elaborationDate)} | ${pgr.revisionReason || 'Emissão Inicial do Programa de Gerenciamento de Riscos (PGR)'} |`
+      },
+      {
+        id: 'sec-3',
+        number: '3',
+        title: getSec('sec-3')?.title || '3. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
         type: 'company_info' as const,
         data: {
           razaoSocial: company.name,
@@ -237,9 +290,9 @@ export function buildPgrFullDocument(rawCtx: PgrDocumentContext) {
         }
       },
       {
-        id: 'sec-3',
-        number: '3',
-        title: getSec('sec-3')?.title || '3. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR',
+        id: 'sec-4',
+        number: '4',
+        title: getSec('sec-4')?.title || '4. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR',
         type: 'responsibles_info' as const,
         elaborador: techResp ? {
           nome: techResp.name,
@@ -257,91 +310,98 @@ export function buildPgrFullDocument(rawCtx: PgrDocumentContext) {
         } : null
       },
       {
-        id: 'sec-4',
-        number: '4',
-        title: getSec('sec-4')?.title || '4. INTRODUÇÃO',
-        type: 'text' as const,
-        content: getSec('sec-4')?.content || OFFICIAL_PGR_TEXTS.introducao
-      },
-      {
         id: 'sec-5',
         number: '5',
-        title: getSec('sec-5')?.title || '5. OBJETIVO',
+        title: getSec('sec-5')?.title || '5. INTRODUÇÃO',
         type: 'text' as const,
-        content: getSec('sec-5')?.content || OFFICIAL_PGR_TEXTS.objetivo
+        content: getSec('sec-5')?.content || OFFICIAL_PGR_TEXTS.introducao
       },
       {
         id: 'sec-6',
         number: '6',
-        title: getSec('sec-6')?.title || '6. FUNDAMENTAÇÃO LEGAL',
+        title: getSec('sec-6')?.title || '6. OBJETIVO',
         type: 'text' as const,
-        content: getSec('sec-6')?.content || OFFICIAL_PGR_TEXTS.fundamentacaoLegal
+        content: getSec('sec-6')?.content || OFFICIAL_PGR_TEXTS.objetivo
       },
       {
         id: 'sec-7',
         number: '7',
-        title: getSec('sec-7')?.title || '7. RESPONSABILIDADES',
+        title: getSec('sec-7')?.title || '7. FUNDAMENTAÇÃO LEGAL',
         type: 'text' as const,
-        content: getSec('sec-7')?.content || OFFICIAL_PGR_TEXTS.responsabilidades
+        content: getSec('sec-7')?.content || OFFICIAL_PGR_TEXTS.fundamentacaoLegal
       },
       {
         id: 'sec-8',
         number: '8',
-        title: getSec('sec-8')?.title || '8. ESTRUTURA DO PGR',
+        title: getSec('sec-8')?.title || '8. RESPONSABILIDADE',
         type: 'text' as const,
-        content: getSec('sec-8')?.content || OFFICIAL_PGR_TEXTS.estruturaPgr
+        content: getSec('sec-8')?.content || OFFICIAL_PGR_TEXTS.responsabilidades
       },
       {
         id: 'sec-9',
         number: '9',
-        title: getSec('sec-9')?.title || '9. DESENVOLVIMENTO DO PGR E MATRIZ DE RISCO 5X5',
+        title: getSec('sec-9')?.title || '9. ESTRUTURA DO PGR',
         type: 'text' as const,
-        content: getSec('sec-9')?.content || OFFICIAL_PGR_TEXTS.desenvolvimentoPgr
+        content: getSec('sec-9')?.content || OFFICIAL_PGR_TEXTS.estruturaPgr
       },
       {
         id: 'sec-10',
         number: '10',
-        title: getSec('sec-10')?.title || '10. METODOLOGIA DE ANÁLISE POR AGENTE OCUPACIONAL',
+        title: getSec('sec-10')?.title || '10. DESENVOLVIMENTO DO PGR',
         type: 'text' as const,
-        content: getSec('sec-10')?.content || OFFICIAL_PGR_TEXTS.metodologiaAgentes
+        content: getSec('sec-10')?.content || OFFICIAL_PGR_TEXTS.desenvolvimentoPgr
       },
       {
         id: 'sec-11',
         number: '11',
-        title: getSec('sec-11')?.title || '11. INSTRUMENTOS UTILIZADOS NAS AVALIAÇÕES DOS RISCOS',
+        title: getSec('sec-11')?.title || '11. METODOLOGIA DE ANÁLISE',
         type: 'text' as const,
-        content: getSec('sec-11')?.content || OFFICIAL_PGR_TEXTS.instrumentosMedicao
+        content: getSec('sec-11')?.content || OFFICIAL_PGR_TEXTS.metodologiaAgentes
       },
       {
         id: 'sec-12',
         number: '12',
-        title: getSec('sec-12')?.title || '12. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
-        type: 'risk_inventory_table' as const,
-        items: riskInventory
+        title: getSec('sec-12')?.title || '12. INTRUMENTOS UTILIZADOS NAS AVALIAÇÕES',
+        type: 'text' as const,
+        content: getSec('sec-12')?.content || OFFICIAL_PGR_TEXTS.instrumentosMedicao
       },
       {
         id: 'sec-13',
         number: '13',
-        title: getSec('sec-13')?.title || '13. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
-        type: 'action_plan_table' as const,
-        items: actionPlans
+        title: getSec('sec-13')?.title || '13. AVALIAÇÃO, RESULTADOS E INTERPRETAÇÃO',
+        type: 'text' as const,
+        content: getSec('sec-13')?.content || OFFICIAL_PGR_TEXTS.avaliacaoResultados
       },
       {
         id: 'sec-14',
         number: '14',
-        title: getSec('sec-14')?.title || '14. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
+        title: getSec('sec-14')?.title || '14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
+        type: 'risk_inventory_table' as const,
+        items: riskInventory
+      },
+      {
+        id: 'sec-15',
+        number: '15',
+        title: getSec('sec-15')?.title || '15. PLANO DE AÇÃO',
+        type: 'action_plan_table' as const,
+        items: actionPlans
+      },
+      {
+        id: 'sec-16',
+        number: '16',
+        title: getSec('sec-16')?.title || '16. ENCERRAMENTO',
         type: 'closing_signatures' as const,
-        text: getSec('sec-14')?.content || OFFICIAL_PGR_TEXTS.termoEncerramento,
+        text: getSec('sec-16')?.content || OFFICIAL_PGR_TEXTS.termoEncerramento,
         date: formatDate(pgr.elaborationDate),
         city: company.address.city,
         state: company.address.state
       },
       {
-        id: 'sec-15',
-        number: '15',
-        title: getSec('sec-15')?.title || '15. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
+        id: 'sec-17',
+        number: '17',
+        title: getSec('sec-17')?.title || '17. MODELO DE FICHA DE EPIS.',
         type: 'text' as const,
-        content: getSec('sec-15')?.content || OFFICIAL_PGR_TEXTS.reciboEpi
+        content: getSec('sec-17')?.content || OFFICIAL_PGR_TEXTS.reciboEpi
       }
     ]
   };

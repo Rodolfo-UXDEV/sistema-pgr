@@ -148,7 +148,7 @@ export const PgrBuilderPage: React.FC = () => {
     ? customSections[selectedSection.id].content
     : baseContent;
 
-  const currentContent = (selectedSection.id === 'sec-9' && (!rawCurrentContent.includes('Riscos Psicossociais') || !rawCurrentContent.includes('Tabela 6') || !rawCurrentContent.includes('Tabela 1 – Critérios de avaliação')))
+  const currentContent = (selectedSection.id === 'sec-10' && (!rawCurrentContent.includes('Riscos Psicossociais') || !rawCurrentContent.includes('Tabela 6') || !rawCurrentContent.includes('Tabela 1 – Critérios de avaliação')))
     ? selectedSection.defaultContent
     : rawCurrentContent;
 

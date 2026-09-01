@@ -84,7 +84,7 @@ export const GlobalPgrTemplatePage: React.FC = () => {
     ? globalSections[selectedSection.id].content
     : selectedSection.defaultContent;
 
-  const currentContent = (selectedSection.id === 'sec-9' && (!rawContent.includes('Riscos Psicossociais') || !rawContent.includes('Tabela 6') || !rawContent.includes('Tabela 1 – Critérios de avaliação')))
+  const currentContent = (selectedSection.id === 'sec-10' && (!rawContent.includes('Riscos Psicossociais') || !rawContent.includes('Tabela 6') || !rawContent.includes('Tabela 1 – Critérios de avaliação')))
     ? selectedSection.defaultContent
     : rawContent;
 

@@ -1,7 +1,7 @@
 import { PgrSectionDefinition } from '@/types/pgr-builder';
 
 /**
- * 17 Seções Oficiais Padronizadas do Modelo PGR (Modelo EMEPE / ES Engenharia de Segurança)
+ * 17 Capítulos Oficiais Padronizados do Modelo PGR (Sequência Oficial NR-01)
  * Textos puros, normativos e metodológicos idênticos ao documento oficial institucional.
  */
 export const DEFAULT_PGR_SECTIONS: PgrSectionDefinition[] = [
@@ -23,7 +23,37 @@ Este documento estabelece as diretrizes e requisitos para o gerenciamento de ris
   {
     id: 'sec-1',
     number: '1',
-    title: '1. CONTROLE DE REVISÕES DO DOCUMENTO',
+    title: '1. INDICE',
+    subtitle: 'Sumário estruturado dos capítulos e grupos de exposição similar',
+    category: 'pretextual',
+    type: 'system_data',
+    description: 'Sumário com a estrutura completa e relação de capítulos do documento.',
+    defaultContent: `SEQUÊNCIA DO PGR
+
+1. INDICE
+2. CONTROLE DE REVISÕES DO DOCUMENTO
+3. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO
+4. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR
+5. INTRODUÇÃO
+6. OBJETIVO
+7. FUNDAMENTAÇÃO LEGAL
+8. RESPONSABILIDADE
+9. ESTRUTURA DO PGR
+10. DESENVOLVIMENTO DO PGR
+11. METODOLOGIA DE ANÁLISE
+12. INTRUMENTOS UTILIZADOS NAS AVALIAÇÕES
+13. AVALIAÇÃO, RESULTADOS E INTERPRETAÇÃO
+14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)
+15. PLANO DE AÇÃO
+16. ENCERRAMENTO
+17. MODELO DE FICHA DE EPIS.`,
+    isSystemData: true,
+    systemDataSummary: 'Gera dinamicamente o sumário oficial com numeração e lista dos GESs avaliados.'
+  },
+  {
+    id: 'sec-2',
+    number: '2',
+    title: '2. CONTROLE DE REVISÕES DO DOCUMENTO',
     subtitle: 'Histórico de versões e motivos de atualização',
     category: 'pretextual',
     type: 'text',
@@ -38,9 +68,9 @@ Este documento estabelece as diretrizes e requisitos para o gerenciamento de ris
     systemDataSummary: 'Inclui o texto de diretrizes e a tabela de controle de revisões editável.'
   },
   {
-    id: 'sec-2',
-    number: '2',
-    title: '2. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
+    id: 'sec-3',
+    number: '3',
+    title: '3. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO',
     subtitle: 'Identificação da matriz, filiais, CNAE, grau de risco e representantes',
     category: 'pretextual',
     type: 'system_data',
@@ -57,9 +87,9 @@ Este documento estabelece as diretrizes e requisitos para o gerenciamento de ris
     systemDataSummary: 'Puxa automaticamente os dados da Empresa e da Unidade selecionada no sistema.'
   },
   {
-    id: 'sec-3',
-    number: '3',
-    title: '3. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR',
+    id: 'sec-4',
+    number: '4',
+    title: '4. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR',
     subtitle: 'Engenheiro de Segurança do Trabalho, Habilitação Técnica, CREA e ART',
     category: 'pretextual',
     type: 'system_data',
@@ -69,9 +99,9 @@ Este documento estabelece as diretrizes e requisitos para o gerenciamento de ris
     systemDataSummary: 'Puxa o Responsável Técnico selecionado (com ART/CREA) e Médico Coordenador.'
   },
   {
-    id: 'sec-4',
-    number: '4',
-    title: '4. INTRODUÇÃO',
+    id: 'sec-5',
+    number: '5',
+    title: '5. INTRODUÇÃO',
     subtitle: 'Diretrizes do Gerenciamento de Riscos Ocupacionais (GRO)',
     category: 'normative',
     type: 'text',
@@ -80,9 +110,9 @@ Este documento estabelece as diretrizes e requisitos para o gerenciamento de ris
     isSystemData: false
   },
   {
-    id: 'sec-5',
-    number: '5',
-    title: '5. OBJETIVO',
+    id: 'sec-6',
+    number: '6',
+    title: '6. OBJETIVO',
     subtitle: 'Prevenção de acidentes, adoecimentos e requisitos da NR-01',
     category: 'normative',
     type: 'text',
@@ -95,9 +125,9 @@ As NR são de observância obrigatória pelas organizações e pelos órgãos p�
     isSystemData: false
   },
   {
-    id: 'sec-6',
-    number: '6',
-    title: '6. FUNDAMENTAÇÃO LEGAL',
+    id: 'sec-7',
+    number: '7',
+    title: '7. FUNDAMENTAÇÃO LEGAL',
     subtitle: 'Base jurídica e Normas Regulamentadoras aplicáveis',
     category: 'normative',
     type: 'text',
@@ -120,9 +150,9 @@ O disposto nestes itens deve ser utilizado para fins de prevenção e gerenciame
     isSystemData: false
   },
   {
-    id: 'sec-7',
-    number: '7',
-    title: '7. RESPONSABILIDADES',
+    id: 'sec-8',
+    number: '8',
+    title: '8. RESPONSABILIDADE',
     subtitle: 'Deveres legais do Empregador e dos Trabalhadores',
     category: 'normative',
     type: 'text',
@@ -152,23 +182,23 @@ d) usar o equipamento de proteção individual fornecido pelo empregador.`,
     isSystemData: false
   },
   {
-    id: 'sec-8',
-    number: '8',
-    title: '8. ESTRUTURA DO PGR',
+    id: 'sec-9',
+    number: '9',
+    title: '9. ESTRUTURA DO PGR',
     subtitle: 'Estratégia, metodologia de ação, manutenção, treinamentos e emergências',
     category: 'methodology',
     type: 'text',
     description: 'Detalhamento da estrutura operacional e fluxo do PGR.',
-    defaultContent: `8.1. ESTRATÉGIA E METODOLOGIA DE AÇÃO
+    defaultContent: `9.1. ESTRATÉGIA E METODOLOGIA DE AÇÃO
 O presente PGR foi elaborado com base no reconhecimento dos perigos e na avaliação dos riscos ocupacionais, com o objetivo de prevenir acidentes e agravos à saúde dos trabalhadores por meio da eliminação, redução ou controle dos riscos identificados.
 
-8.1.2. Reconhecimento
+9.1.2. Reconhecimento
 O reconhecimento dos perigos foi realizado por meio de levantamento preliminar das atividades, processos, ambientes e postos de trabalho, com a participação de gestores e trabalhadores.
 Foram identificadas as atividades rotineiras, não rotineiras e eventuais, bem como verificadas as medidas de prevenção existentes e sua efetividade.
 Quando aplicável, a caracterização de atividades ou operações insalubres e perigosas observará os critérios estabelecidos nas NR-15 e NR-16.
 Nos casos em que os riscos identificados não puderem ser eliminados na etapa preliminar, será realizada a identificação dos perigos e a avaliação dos riscos ocupacionais.
 
-8.1.3. Avaliação
+9.1.3. Avaliação
 A avaliação dos riscos ocupacionais considera as informações levantadas junto aos trabalhadores, à CIPA, quando existente, e os resultados de avaliações qualitativas e quantitativas dos agentes ambientais, fatores ergonômicos e riscos de acidentes.
 Para cada risco identificado será definido o nível de risco ocupacional, considerando a combinação entre a severidade das possíveis consequências e a probabilidade de ocorrência.
 A avaliação da probabilidade considera:
@@ -177,60 +207,60 @@ b) as medidas de prevenção implementadas;
 c) as características das atividades desenvolvidas; e
 d) os valores de referência e critérios técnicos aplicáveis.
 
-8.1.4. Controle
+9.1.4. Controle
 As medidas de controle serão definidas com base nos riscos identificados e avaliados, visando sua eliminação ou redução a níveis aceitáveis.
 Quando as medidas de proteção coletiva forem tecnicamente inviáveis, insuficientes ou estiverem em fase de implementação, serão adotadas, conforme a hierarquia de controle:
 a) medidas administrativas ou de organização do trabalho;
 b) equipamentos de proteção individual (EPI).
 O acompanhamento e a reavaliação das medidas implantadas serão realizados periodicamente para verificar sua eficácia.
 
-8.2. PLANO DE AÇÃO
+9.2. PLANO DE AÇÃO
 Será elaborado plano de ação contendo as medidas de prevenção a serem implementadas, mantidas ou aprimoradas, os responsáveis, os prazos de execução e o acompanhamento dos resultados, em cronograma anual.
 
-8.3. REGISTRO, MANUTENÇÃO E ATUALIZAÇÃO
+9.3. REGISTRO, MANUTENÇÃO E ATUALIZAÇÃO
 O PGR é um processo contínuo e dinâmico, devendo ser revisado sempre que ocorrerem alterações nos processos, ambientes ou condições de trabalho e, no mínimo, uma vez a cada dois anos.
 Os registros e documentos relacionados ao programa serão mantidos atualizados e incorporados ao seu histórico.
 O histórico das atualizações deve ser mantido por um período mínimo de 20 (vinte) anos ou pelo período estabelecido em normatização específica, constituindo-se no banco de dados com o histórico administrativo e técnico do desenvolvimento deste documento.
 
-8.4. DIVULGAÇÃO DAS INFORMAÇÕES
+9.4. DIVULGAÇÃO DAS INFORMAÇÕES
 As informações contidas no Inventário de Riscos e no Plano de Ação serão comunicadas aos trabalhadores por meio de treinamentos, reuniões da CIPA, quando existente, ou outros meios formais adotados pela empresa.
 Os documentos do PGR permanecerão disponíveis aos trabalhadores, seus representantes e à Inspeção do Trabalho.
 Da Informação quando a Admissão e/ou Alteração de Risco: Todo trabalhador, ao ser admitido ou quando mudar de função que implique em alteração de risco deve receber informações sobre os riscos ocupacionais existentes, os meios para prevenir e controlar, as medidas adotadas pela organização e os procedimentos em situação de emergência.
 
-8.5. ACOMPANHAMENTO DA SAÚDE OCUPACIONAL
+9.5. ACOMPANHAMENTO DA SAÚDE OCUPACIONAL
 As ações de saúde ocupacional serão desenvolvidas de forma integrada às medidas de prevenção em SST, observando os riscos ocupacionais identificados e as diretrizes estabelecidas no PCMSO (NR-07).
 
-8.6. ANÁLISE DE ACIDENTES E DOENÇAS RELACIONADAS AO TRABALHO
+9.6. ANÁLISE DE ACIDENTES E DOENÇAS RELACIONADAS AO TRABALHO
 Os acidentes e doenças relacionados ao trabalho serão analisados e documentados, considerando as atividades executadas, o ambiente de trabalho, os materiais utilizados e a organização do trabalho, visando identificar causas e subsidiar a revisão das medidas de prevenção.
 
-8.7. PREPARAÇÃO PARA EMERGÊNCIAS
+9.7. PREPARAÇÃO PARA EMERGÊNCIAS
 Serão estabelecidos e mantidos procedimentos de resposta a emergências compatíveis com os riscos e as características das atividades desenvolvidas (NR-23).
 
-8.8. TREINAMENTOS
+9.8. TREINAMENTOS
 A empresa promoverá a capacitação e o treinamento dos trabalhadores conforme as exigências das Normas Regulamentadoras aplicáveis, com emissão de certificados oficiais.
 
-8.9. DADOS INDICATIVOS
+9.9. DADOS INDICATIVOS
 Os dados relacionados ao monitoramento da saúde dos trabalhadores permanecem sob responsabilidade técnica do médico responsável do PCMSO, conforme os requisitos legais aplicáveis.`,
     isSystemData: false
   },
   {
-    id: 'sec-9',
-    number: '9',
-    title: '9. DESENVOLVIMENTO DO PGR E MATRIZ DE RISCO 5X5',
+    id: 'sec-10',
+    number: '10',
+    title: '10. DESENVOLVIMENTO DO PGR',
     subtitle: 'Conceitos gerais, tabela de probabilidade, severidade, matriz 5x5 e priorização de ações',
     category: 'methodology',
     type: 'text',
     description: 'Metodologia de avaliação e matriz bidimensional 5x5 com tabelas completas.',
-    defaultContent: `9.1. CONCEITOS GERAIS
+    defaultContent: `10.1. CONCEITOS GERAIS
 O Gerenciamento de Riscos Ocupacionais (GRO) compreende a identificação de perigos, a avaliação de riscos e a adoção de medidas de controle nos processos e ambientes de trabalho.
 
-9.1.1. GRO nas Relações de Prestação de Serviços a Terceiros
+10.1.1. GRO nas Relações de Prestação de Serviços a Terceiros
 A organização contratante deve fornecer às empresas contratadas as informações sobre os riscos ocupacionais sob sua gestão e exigir o cumprimento das medidas de prevenção estabelecidas no PGR.
 
-9.1.2. Inventário de Riscos Ocupacionais
+10.1.2. Inventário de Riscos Ocupacionais
 O inventário de riscos contempla a caracterização dos processos e ambientes de trabalho, a descrição das atividades, a identificação dos perigos, os possíveis danos à saúde, a identificação dos grupos de trabalhadores expostos (GES), a gradação da probabilidade e da severidade, o nível de risco ocupacional e as medidas de controle existentes e propostas.
 
-9.2. DOS RISCOS OCUPACIONAIS
+10.2. DOS RISCOS OCUPACIONAIS
 Os riscos ocupacionais são classificados conforme sua natureza e potencial de causar lesões ou agravos à saúde dos trabalhadores sendo eles:
 
 | Categoria | Definição | Exemplos |
@@ -242,8 +272,8 @@ Os riscos ocupacionais são classificados conforme sua natureza e potencial de c
 | Riscos Psicossociais Relacionados ao Trabalho | Fatores relacionados à organização, gestão e condições do trabalho que podem afetar o bem-estar, a saúde mental e o desempenho dos trabalhadores. | Pressão e sobrecarga de trabalho, cobrança excessiva, baixa autonomia, conflitos interpessoais, assédio moral ou sexual, falta de apoio, comunicação inadequada, jornadas extensas e desequilíbrio entre demandas e recursos. |
 | Riscos de Acidentes | Condições ou situações com potencial de causar acidentes e comprometer a integridade física dos trabalhadores. | Quedas, choque elétrico, incêndio, explosão, cortes, aprisionamentos, atropelamentos e falhas de sinalização. |
 
-9.3. DAS CATEGORIAS DE RISCO
-9.3.1. Critérios para Priorização das Avaliações dos Riscos
+10.3. DAS CATEGORIAS DE RISCO
+10.3.1. Critérios para Priorização das Avaliações dos Riscos
 A avaliação dos riscos tem como finalidade estabelecer prioridades para implementação das medidas de prevenção, considerando requisitos legais, aspectos técnicos, viabilidade de controle e potencial de dano.
 
 Tabela 1 – Critérios de avaliação
@@ -300,46 +330,46 @@ A priorização das ações de controle será definida com base no nível de ris
 | 🟨 5 a 9 | Moderado | Média | Monitoramento e melhoria contínua. |
 | 🟩 1 a 4 | Tolerável | Baixa | Manutenção dos controles existentes. |
 
-9.4. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
+10.4. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
 • GES (Grupo de Exposição Similar): Grupo de trabalhadores que experimentam exposição semelhante a determinado agente ocupacional decorrente do mesmo ambiente e processo.
 • EMR (Exposto de Maior Risco): Trabalhador com potencial de maior exposição dentro de um GES, utilizado para avaliações periciais mais conservadoras.
 • NA (Nível de Ação): Valor a partir do qual devem ser iniciadas ações preventivas para minimizar a probabilidade de que as exposições ultrapassem os limites de tolerância (50% do LEO).`,
     isSystemData: false
   },
   {
-    id: 'sec-10',
-    number: '10',
-    title: '10. METODOLOGIA DE ANÁLISE POR AGENTE OCUPACIONAL',
+    id: 'sec-11',
+    number: '11',
+    title: '11. METODOLOGIA DE ANÁLISE',
     subtitle: 'Critérios técnicos para Ruído, Calor, Vibração, Biológicos, Ergonomia, Elétrico e Incêndio',
     category: 'methodology',
     type: 'text',
     description: 'Normas e métodos específicos aplicados para cada agente ambiental.',
-    defaultContent: `10.1. Agente Físico - Ruído (NR-15, Anexos 1 e 2 / NHO-01 Fundacentro)
+    defaultContent: `11.1. Agente Físico - Ruído (NR-15, Anexos 1 e 2 / NHO-01 Fundacentro)
 As avaliações de ruído são realizadas por meio de dosímetros e medidores integradores devidamente calibrados. Considera-se o nível de critério de 85 dB(A) para jornada de 8 horas com fator de duplicação q=5 (NR-15) e q=3 (NHO-01). Quando utilizado protetor auditivo, a eficácia é verificada com base no NRRsf do Certificado de Aprovação (CA).
 
-10.2. Agente Físico - Calor (NR-15, Anexo 3 / NHO-06)
+11.2. Agente Físico - Calor (NR-15, Anexo 3 / NHO-06)
 A exposição ocupacional ao calor é avaliada por meio do Índice de Bulbo Úmido Termômetro de Globo (IBUTG), considerando a taxa metabólica das atividades e as condições térmicas reais nos postos mais representativos.
 
-10.3. Agente Físico - Vibração (NR-15, Anexo 8 / NHO-09 e NHO-10)
+11.3. Agente Físico - Vibração (NR-15, Anexo 8 / NHO-09 e NHO-10)
 A avaliação contempla a Vibração de Corpo Inteiro (VCI - parâmetros aren e VDVR) e a Vibração de Mãos e Braços (VMB - parâmetro aren) com acelerômetros triaxiais comparados aos níveis de ação e limites de tolerância.
 
-10.4. Agentes Biológicos (NR-15, Anexo 14)
+11.4. Agentes Biológicos (NR-15, Anexo 14)
 A avaliação considera as atividades desenvolvidas, ambientes de trabalho e o potencial de exposição a microrganismos e materiais biológicos patogênicos.
 
-10.5. Fatores de Risco Ergonômicos e Psicossociais (NR-17 Ergonomia)
+11.5. Fatores de Risco Ergonômicos e Psicossociais (NR-17 Ergonomia)
 Identificação de condições de trabalho relacionadas à organização do trabalho, levantamento manual de cargas, repetitividade, posturas e fatores psicossociais, mediante Avaliação Ergonômica Preliminar (AEP) e Análise Ergonômica do Trabalho (AET) quando indicado.
 
-10.6. Instalações Elétricas (NR-10)
+11.6. Instalações Elétricas (NR-10)
 Inspeção das instalações elétricas, circuitos, quadros de distribuição, aterramento e procedimentos de segurança para prevenção de choques, queimaduras e arcos elétricos.
 
-10.7. Incêndio e Explosão (NR-23)
+11.7. Incêndio e Explosão (NR-23)
 Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinalização de emergência, extintores e treinamento de brigadistas.`,
     isSystemData: false
   },
   {
-    id: 'sec-11',
-    number: '11',
-    title: '11. INSTRUMENTOS UTILIZADOS NAS AVALIAÇÕES DOS RISCOS',
+    id: 'sec-12',
+    number: '12',
+    title: '12. INTRUMENTOS UTILIZADOS NAS AVALIAÇÕES',
     subtitle: 'Relação de equipamentos de medição, números de série e certificados de calibração',
     category: 'methodology',
     type: 'text',
@@ -359,21 +389,39 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
     isSystemData: false
   },
   {
-    id: 'sec-12',
-    number: '12',
-    title: '12. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
+    id: 'sec-13',
+    number: '13',
+    title: '13. AVALIAÇÃO, RESULTADOS E INTERPRETAÇÃO',
+    subtitle: 'Critérios de interpretação técnica, Nível de Ação (NA) e Limites de Tolerância (LT)',
+    category: 'methodology',
+    type: 'text',
+    description: 'Interpretação técnica dos resultados ambientais e análises periciais.',
+    defaultContent: `13.1. CRITÉRIOS DE INTERPRETAÇÃO E JULGAMENTO TÉCNICO
+A interpretação dos resultados das avaliações qualitativas e quantitativas baseia-se na comparação dos níveis de exposição apurados com os Limites de Tolerância (LT) estabelecidos na NR-15 e os Limites de Exposição Ocupacional (LEO) recomendados pelas Normas de Higiene Ocupacional (NHO) da Fundacentro e ACGIH.
+
+13.2. AVALIAÇÃO DO NÍVEL DE AÇÃO (NA)
+Considera-se Nível de Ação o valor a partir do qual devem ser iniciadas ações preventivas de forma a minimizar a probabilidade de que as exposições ultrapassem os limites de tolerância. Para agentes químicos e ruído, o nível de ação corresponde a 50% (cinquenta por cento) da dose ou do limite de exposição diária.
+
+13.3. ANÁLISE CRÍTICA DAS MEDIDAS DE CONTROLE
+Sempre que os resultados das avaliações indicarem exposição acima do Nível de Ação ou do Limite de Tolerância, ou quando a matriz de risco classificar a exposição como Substancial ou Intolerável, são propostas medidas prioritárias de engenharia, organização do trabalho e uso de EPIs adequados no Plano de Ação (Capítulo 15).`,
+    isSystemData: false
+  },
+  {
+    id: 'sec-14',
+    number: '14',
+    title: '14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)',
     subtitle: 'Caracterização de cargos, funções, atividades e cartões estruturados APR-HO por perigo e GES',
     category: 'risks',
     type: 'system_data',
     description: 'Inventário consolidado com caracterização de cargos/funções e avaliações no modelo APR-HO.',
     defaultContent: `O Inventário de Riscos Ocupacionais consolida a caracterização minuciosa de cada cargo, função e atividades operacionais, juntamente com a identificação dos perigos, fontes geradoras, trajetórias, vias de penetração, população exposta, medições, severidade, probabilidade, nível de risco e medidas de prevenção (EPC e EPI com CA).`,
     isSystemData: true,
-    systemDataSummary: 'Exibe a Caracterização do Cargo/Função acima de cada avaliação tabular no modelo APR-HO.'
+    systemDataSummary: 'Exibe a Caracterização do Cargo/Função acima de cada avaliação tabular no modelo APR-HO agrupada por GES/Setor.'
   },
   {
-    id: 'sec-13',
-    number: '13',
-    title: '13. PLANO DE AÇÃO E CRONOGRAMA DE PREVENÇÃO (5W2H)',
+    id: 'sec-15',
+    number: '15',
+    title: '15. PLANO DE AÇÃO',
     subtitle: 'Metas por GES, medidas preventivas, responsáveis, prazos, custos e status',
     category: 'actions',
     type: 'system_data',
@@ -383,9 +431,9 @@ Medidas de prevenção relativas a sistemas de proteção, rotas de fuga, sinali
     systemDataSummary: 'Exibe a tabela 5W2H com todas as ações programadas no sistema.'
   },
   {
-    id: 'sec-14',
-    number: '14',
-    title: '14. ENCERRAMENTO E TERMO DE RESPONSABILIDADE TÉCNICA',
+    id: 'sec-16',
+    number: '16',
+    title: '16. ENCERRAMENTO',
     subtitle: 'Declaração pericial, citação das Portarias Mtb e assinaturas do RT e da Empresa',
     category: 'posttextual',
     type: 'text',
@@ -398,9 +446,9 @@ Dentro da Segurança do Trabalho o ideal seria eliminarmos todos os riscos à sa
     isSystemData: false
   },
   {
-    id: 'sec-15',
-    number: '15',
-    title: '15. MODELO - RECIBO DE ENTREGA DE EQUIPAMENTO DE PROTEÇÃO INDIVIDUAL (EPI)',
+    id: 'sec-17',
+    number: '17',
+    title: '17. MODELO DE FICHA DE EPIS.',
     subtitle: 'Termo de entrega, responsabilidade e guarda de EPI conforme NR-06',
     category: 'posttextual',
     type: 'text',

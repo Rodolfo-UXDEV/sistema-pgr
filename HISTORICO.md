@@ -234,9 +234,35 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
     - Visualizador em tela (`PgrViewerPage.tsx` e `markdown-renderer.tsx`) com chips coloridos de alta fidelidade visual.
     - Gerador de PDF Oficial (`pdf-generator.ts`) com coloração de células e cabeçalhos em `autoTable`.
     - Gerador de Word (`docx-generator.ts`) com tabelas nativas estilizadas.
-- **8. Qualidade, Testes e Deploy:**
+- **8. Padronização Oficial da Sequência do PGR com Índice Estruturado (17 Capítulos):**
+  - **Novo Capítulo 1 (1. INDICE):** Inclusão formal de sumário estruturado contendo a relação dos 17 capítulos e a listagem dinâmica dos Grupos de Exposição Similar (`GES 1.0 – SETOR ...`).
+  - **Sequência Oficial NR-01 Homologada:**
+    - `CAPA`
+    - `1. INDICE`
+    - `2. CONTROLE DE REVISÕES DO DOCUMENTO`
+    - `3. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO`
+    - `4. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR`
+    - `5. INTRODUÇÃO`
+    - `6. OBJETIVO`
+    - `7. FUNDAMENTAÇÃO LEGAL`
+    - `8. RESPONSABILIDADE`
+    - `9. ESTRUTURA DO PGR`
+    - `10. DESENVOLVIMENTO DO PGR`
+    - `11. METODOLOGIA DE ANÁLISE`
+    - `12. INTRUMENTOS UTILIZADOS NAS AVALIAÇÕES`
+    - `13. AVALIAÇÃO, RESULTADOS E INTERPRETAÇÃO`
+    - `14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)`
+    - `15. PLANO DE AÇÃO`
+    - `16. ENCERRAMENTO`
+    - `17. MODELO DE FICHA DE EPIS.`
+  - **Sincronização Integral em Todas as Camadas:**
+    - Modelo Base Global em *Apoio & Configurações* (`pgr_templates/global_master` no Cloud Firestore).
+    - Visualizador em Tela (`PgrViewerPage.tsx`).
+    - Gerador de PDF Oficial (`pdf-generator.ts`).
+    - Gerador de Word / Excel (`docx-generator.ts` e `excel-generator.ts`).
+- **9. Qualidade, Testes e Deploy:**
   - Build compilado com **0 erros** no TypeScript e Vite (`tsc -b && vite build`).
-  - Commits sincronizados no repositório GitHub (`origin/main`): `9d407b7`, `8de01e3`, `7cbb0e9`, `1a4d2a6`, `895dd08`, `1b6167b`, `b430ea8`.
+  - Commits sincronizados no repositório GitHub (`origin/main`): `9d407b7`, `8de01e3`, `7cbb0e9`, `1a4d2a6`, `895dd08`, `1b6167b`, `b430ea8`, `02cc4fe`, `6d10fb2`.
 
 
 
