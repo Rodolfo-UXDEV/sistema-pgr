@@ -371,6 +371,18 @@ export const PgrDocumentsPage: React.FC = () => {
                           <span>Visualizar</span>
                         </Button>
 
+                        <Button
+                          size="sm"
+                          onClick={() => handleDownloadPdf(doc)}
+                          className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
+                          title="Baixar PDF Oficial do documento"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          <span>Baixar PDF</span>
+                        </Button>
+
+                        {/* Opções Word e Excel temporariamente ocultadas (recurso preservado no código para ativação futura) */}
+                        {/*
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -407,6 +419,7 @@ export const PgrDocumentsPage: React.FC = () => {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                        */}
 
                         <Button
                           variant="ghost"

@@ -216,6 +216,8 @@ export const PgrViewerPage: React.FC = () => {
             <span className="hidden md:inline">Imprimir</span>
           </Button>
 
+          {/* Opções Word e Excel temporariamente ocultadas (recurso preservado no código para ativação futura) */}
+          {/*
           <Button
             variant="outline"
             size="sm"
@@ -236,6 +238,7 @@ export const PgrViewerPage: React.FC = () => {
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
             <span>Baixar Excel (.xlsx)</span>
           </Button>
+          */}
 
           <Button
             size="sm"

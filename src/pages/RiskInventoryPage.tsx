@@ -114,6 +114,8 @@ export const RiskInventoryPage: React.FC = () => {
             <span className="text-rose-600 font-bold">{stats.criticalRisksCount} críticos</span>
           </div>
 
+          {/* Opção Excel temporariamente ocultada (recurso preservado no código para ativação futura) */}
+          {/*
           <Button
             variant="outline"
             size="sm"
@@ -124,6 +126,7 @@ export const RiskInventoryPage: React.FC = () => {
             <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
             <span>Exportar Excel</span>
           </Button>
+          */}
 
           <Button
             variant="outline"
