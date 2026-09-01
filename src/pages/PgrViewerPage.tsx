@@ -16,6 +16,7 @@ import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { groupInventoryByGhe } from '@/lib/pgr-groups';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
 import { formatDate } from '@/lib/utils';
@@ -440,297 +441,314 @@ export const PgrViewerPage: React.FC = () => {
             <span className="text-[#334155] dark:text-slate-300 font-mono">12.</span> {getSectionTitle('sec-12', 'INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)')}
           </h2>
 
-          {pgrContext.riskInventory.length === 0 ? (
-            <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
-              Nenhum risco cadastrado no inventário.
-            </div>
-          ) : (
-            <div className="space-y-8">
-              {pgrContext.riskInventory.map((item) => {
-                const sec = sectors.find(s => s.id === item.sectorId);
-                const pos = positions.find(p => p.id === item.positionId);
-                const ghe = ghes.find(g => g.id === item.gheId);
-                const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
+          {(() => {
+            const gheGroups = groupInventoryByGhe(sectors, positions, ghes, pgrContext.riskInventory);
 
-                const posTitle = pos?.title ? `${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}` : (ghe?.name || 'Geral');
-                const sectorName = sec?.name || '-';
-                const workerCount = pos?.workerCount || ghe?.workerCount || 1;
-                const activityDesc = pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada';
+            if (gheGroups.length === 0) {
+              return (
+                <div className="p-8 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+                  Nenhum setor ou risco cadastrado no inventário.
+                </div>
+              );
+            }
 
-                // Título do GES e Setor
-                const gesLabel = ghe?.code 
-                  ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
-                  : (ghe?.name ? ghe.name : 'GES-01');
-                const emrInfo = item.highestRiskExposed ? ` | EMR: ${item.highestRiskExposed}` : '';
-                const gesSectorInfo = `${gesLabel} | Setor: ${sectorName}${workerCount ? ` | Efetivo Exposto: ${workerCount} trabalhador(es)` : ''}${emrInfo}`;
-                const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+            return (
+              <div className="space-y-10">
+                {gheGroups.map((group) => {
+                  const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
+                  const gheSectorHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
 
-                // Separação do Tipo de Exposição
-                let expPart1 = 'Habitual';
-                let expPart2 = 'Permanente';
-                if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-                  expPart1 = 'Habitual';
-                  expPart2 = 'Intermitente';
-                } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-                  expPart1 = 'Eventual';
-                  expPart2 = 'Intermitente';
-                } else if (item.exposureType === 'EVENTUAL') {
-                  expPart1 = 'Eventual';
-                  expPart2 = 'NAP';
-                } else if (item.exposureType === 'HABITUAL') {
-                  expPart1 = 'Habitual';
-                  expPart2 = 'NAP';
-                } else if (item.exposureType === 'PERMANENTE') {
-                  expPart1 = 'NAP';
-                  expPart2 = 'Permanente';
-                } else if (item.exposureType === 'INTERMITENTE') {
-                  expPart1 = 'NAP';
-                  expPart2 = 'Intermitente';
-                }
-
-                // EPC / EPI formatado
-                const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
-                const epiStr = item.epiExisting && item.epiExisting.length > 0
-                  ? item.epiExisting.map(e => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
-                  : '';
-                const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
-
-                // Medições
-                const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
-                const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
-                const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
-                const dataMedicao = meas?.measurementDate 
-                  ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
-                  : (meas ? '25/02/2026' : 'NAP');
-                const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
-                const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
-
-                // Status do agente e Prioridade
-                let statusAgente = 'Risco Baixo';
-                let statusColor = '#16a34a';
-                let prioridade = 'Baixa';
-
-                if (item.riskLevel === 'TRIVIAL') {
-                  statusAgente = 'Risco Muito Baixo';
-                  statusColor = '#16a34a';
-                  prioridade = 'Nenhuma';
-                } else if (item.riskLevel === 'TOLERAVEL') {
-                  statusAgente = 'Risco Baixo';
-                  statusColor = '#16a34a';
-                  prioridade = 'Baixa';
-                } else if (item.riskLevel === 'MODERADO') {
-                  statusAgente = 'Risco Médio';
-                  statusColor = '#d97706';
-                  prioridade = 'Média';
-                } else if (item.riskLevel === 'SUBSTANCIAL') {
-                  statusAgente = 'Risco Alto';
-                  statusColor = '#ea580c';
-                  prioridade = 'Alta';
-                } else if (item.riskLevel === 'INTOLERAVEL') {
-                  statusAgente = 'Risco Crítico';
-                  statusColor = '#dc2626';
-                  prioridade = 'Crítica / Imediata';
-                }
-
-                return (
-                  <div key={item.id} className="space-y-2">
-                    {/* Bloco de Caracterização da Função e Atividade acima do APR-HO */}
-                    <div className="space-y-1 text-xs text-foreground">
-                      <div className="font-bold text-sm text-foreground">
-                        {gesSectorInfo}
-                      </div>
-                      <div className="text-foreground text-xs font-normal">
-                        Cargo / Função: {posTitle}
-                      </div>
-                      <div className="text-foreground text-xs font-normal leading-relaxed">
-                        Descrição da Atividade: {activityDesc}
-                      </div>
-                    </div>
-
-                    {/* Tabela APR-HO */}
-                    <div className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
-                      {/* Header Dark Gray */}
-                      <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
-                        {headerTitle}
-                      </div>
-
-                      {/* Row 2: Risco Categoria & Agente */}
-                      <div className="grid grid-cols-12 border-t border-slate-400">
-                        <div 
-                          className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide"
-                          style={{ backgroundColor: catConfig?.color || '#16a34a' }}
-                        >
-                          Risco {catConfig?.label || 'Físico'}
+                  return (
+                    <div key={group.id} className="space-y-4 pt-1 pb-6 border-b border-border/70 last:border-b-0">
+                      {/* Bloco de Cabeçalho do GHE / Setor e Lista de Cargos */}
+                      <div className="space-y-2">
+                        {/* 1. Título do GHE / Setor em Negrito */}
+                        <div className="font-bold text-sm text-foreground bg-muted/40 p-2.5 rounded-lg border border-border">
+                          {gheSectorHeader}
                         </div>
-                        <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
-                          <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
-                          <span className="text-slate-800 font-normal">{item.hazardName}</span>
+
+                        {/* 2. Lista de Cargos e Descrições de Atividades deste GHE/Setor */}
+                        <div className="space-y-2 pl-1 pt-1">
+                          {group.positions.map((pos) => (
+                            <div key={pos.id} className="space-y-1 text-xs text-foreground bg-card/60 p-2.5 rounded-md border border-border/50">
+                              <div className="text-foreground text-xs font-semibold">
+                                Cargo / Função: {pos.title}{pos.cbo ? ` (CBO: ${pos.cbo})` : ''}
+                              </div>
+                              <div className="text-foreground/90 text-xs font-normal leading-relaxed">
+                                Descrição da Atividade: {pos.activityDescription}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
-                      {/* Row 3: Tipo de Exposição */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          Tipo de Exposição
+                      {/* 3. Tabelas APR-HO deste GHE/Setor */}
+                      {group.risks.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-muted-foreground bg-muted/10 border border-dashed rounded-lg">
+                          Nenhum risco ocupacional identificado para este setor/GHE.
                         </div>
-                        <div className="col-span-4 py-1 px-3 text-center border-r border-slate-300 flex items-center justify-center text-slate-800">
-                          {expPart1}
-                        </div>
-                        <div className="col-span-5 py-1 px-3 text-center flex items-center justify-center text-slate-800">
-                          {expPart2}
-                        </div>
-                      </div>
+                      ) : (
+                        <div className="space-y-4 pt-2">
+                          {group.risks.map((item) => {
+                            const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
+                            const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
-                      {/* Row 4: Fontes ou circunstância */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          Fontes ou circunstância
-                        </div>
-                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                          {item.sourceDescription || 'Setor de Produção'}
-                        </div>
-                      </div>
+                            // Separação do Tipo de Exposição
+                            let expPart1 = 'Habitual';
+                            let expPart2 = 'Permanente';
+                            if (item.exposureType === 'HABITUAL_INTERMITENTE') {
+                              expPart1 = 'Habitual';
+                              expPart2 = 'Intermitente';
+                            } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
+                              expPart1 = 'Eventual';
+                              expPart2 = 'Intermitente';
+                            } else if (item.exposureType === 'EVENTUAL') {
+                              expPart1 = 'Eventual';
+                              expPart2 = 'NAP';
+                            } else if (item.exposureType === 'HABITUAL') {
+                              expPart1 = 'Habitual';
+                              expPart2 = 'NAP';
+                            } else if (item.exposureType === 'PERMANENTE') {
+                              expPart1 = 'NAP';
+                              expPart2 = 'Permanente';
+                            } else if (item.exposureType === 'INTERMITENTE') {
+                              expPart1 = 'NAP';
+                              expPart2 = 'Intermitente';
+                            }
 
-                      {/* Row 5: Trajetória */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          Trajetória
-                        </div>
-                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                          {item.trajectory || 'Ar'}
-                        </div>
-                      </div>
+                            // EPC / EPI formatado
+                            const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
+                            const epiStr = item.epiExisting && item.epiExisting.length > 0
+                              ? item.epiExisting.map(e => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
+                              : '';
+                            const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
 
-                      {/* Row 6: Via de penetração */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          Via de penetração
-                        </div>
-                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                          {item.penetrationRoute || 'Auditiva (Ouvido / Som)'}
-                        </div>
-                      </div>
+                            // Medições
+                            const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
+                            const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
+                            const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
+                            const dataMedicao = meas?.measurementDate 
+                              ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
+                              : (meas ? '25/02/2026' : 'NAP');
+                            const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
+                            const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
 
-                      {/* Row 7: Efeitos a saúde */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          Efeitos a saúde
-                        </div>
-                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                          {item.healthDamage || 'Perda Auditiva Induzida por Ruído (PAIR)'}
-                        </div>
-                      </div>
+                            // Status do agente e Prioridade
+                            let statusAgente = 'Risco Baixo';
+                            let statusColor = '#16a34a';
+                            let prioridade = 'Baixa';
 
-                      {/* Row 8: EPC/EPI */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          EPC/EPI
-                        </div>
-                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                          {epcEpiFinal}
-                        </div>
-                      </div>
+                            if (item.riskLevel === 'TRIVIAL') {
+                              statusAgente = 'Risco Muito Baixo';
+                              statusColor = '#16a34a';
+                              prioridade = 'Nenhuma';
+                            } else if (item.riskLevel === 'TOLERAVEL') {
+                              statusAgente = 'Risco Baixo';
+                              statusColor = '#16a34a';
+                              prioridade = 'Baixa';
+                            } else if (item.riskLevel === 'MODERADO') {
+                              statusAgente = 'Risco Médio';
+                              statusColor = '#d97706';
+                              prioridade = 'Média';
+                            } else if (item.riskLevel === 'SUBSTANCIAL') {
+                              statusAgente = 'Risco Alto';
+                              statusColor = '#ea580c';
+                              prioridade = 'Alta';
+                            } else if (item.riskLevel === 'INTOLERAVEL') {
+                              statusAgente = 'Risco Crítico';
+                              statusColor = '#dc2626';
+                              prioridade = 'Crítica / Imediata';
+                            }
 
-                      {/* Section Header: Medição */}
-                      <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
-                        Medição
-                      </div>
+                            return (
+                              <div key={item.id} className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
+                                {/* Header Dark Gray */}
+                                <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
+                                  {headerTitle}
+                                </div>
 
-                      {/* Row 10: Critério & Técnica */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-6 py-1 px-3 font-semibold border-r border-slate-300 text-slate-900">
-                          Critério: <span className="font-normal text-slate-800">{criterio}</span>
-                        </div>
-                        <div className="col-span-6 py-1 px-3 font-semibold text-slate-900">
-                          Técnica utilizada: <span className="font-normal text-slate-800">{tecnica}</span>
-                        </div>
-                      </div>
+                                {/* Row 2: Risco Categoria & Agente */}
+                                <div className="grid grid-cols-12 border-t border-slate-400">
+                                  <div 
+                                    className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide"
+                                    style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                                  >
+                                    Risco {catConfig?.label || 'Físico'}
+                                  </div>
+                                  <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
+                                    <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
+                                    <span className="text-slate-800 font-normal">{item.hazardName}</span>
+                                  </div>
+                                </div>
 
-                      {/* Row 11: Data da medição | Resultado | LT Headers */}
-                      <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
-                        <div className="col-span-4 py-1 px-2 border-r border-slate-300">Data da medição</div>
-                        <div className="col-span-4 py-1 px-2 border-r border-slate-300">Resultado</div>
-                        <div className="col-span-4 py-1 px-2">LT</div>
-                      </div>
+                                {/* Row 3: Tipo de Exposição */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Tipo de Exposição
+                                  </div>
+                                  <div className="col-span-4 py-1 px-3 text-slate-800 border-r border-slate-300 flex items-center">
+                                    {expPart1}
+                                  </div>
+                                  <div className="col-span-5 py-1 px-3 text-slate-800 flex items-center">
+                                    {expPart2}
+                                  </div>
+                                </div>
 
-                      {/* Row 12: Data da medição | Resultado | LT Values */}
-                      <div className="grid grid-cols-12 border-t border-slate-300 text-center">
-                        <div className="col-span-4 py-1 px-2 border-r border-slate-300 text-slate-800">{dataMedicao}</div>
-                        <div className="col-span-4 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">{resultado}</div>
-                        <div className="col-span-4 py-1 px-2 text-slate-800">{lt}</div>
-                      </div>
+                                {/* Row 4: Fontes ou circunstância */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Fontes ou circunstância
+                                  </div>
+                                  <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                    {item.sourceDescription || 'Setor de Produção'}
+                                  </div>
+                                </div>
 
-                      {/* Section Header: Categorização do risco/perigo */}
-                      <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
-                        Categorização do risco/perigo
-                      </div>
+                                {/* Row 5: Trajetória */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Trajetória
+                                  </div>
+                                  <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                    {item.trajectory || 'Ar'}
+                                  </div>
+                                </div>
 
-                      {/* Row 14: Headers Severidade, Probabilidade, Status, Prioridade */}
-                      <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
-                        <div className="col-span-3 py-1 px-2 border-r border-slate-300">Severidade</div>
-                        <div className="col-span-3 py-1 px-2 border-r border-slate-300">Probabilidade</div>
-                        <div className="col-span-3 py-1 px-2 border-r border-slate-300">Status do agente</div>
-                        <div className="col-span-3 py-1 px-2">Prioridade de ação</div>
-                      </div>
+                                {/* Row 6: Via de penetração */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Via de penetração
+                                  </div>
+                                  <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                    {item.penetrationRoute || 'Auditiva (Ouvido / Som)'}
+                                  </div>
+                                </div>
 
-                      {/* Row 15: Values */}
-                      <div className="grid grid-cols-12 border-t border-slate-300 text-center">
-                        <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
-                          {item.severity}
-                        </div>
-                        <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
-                          {item.probability}
-                        </div>
-                        <div 
-                          className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-xs"
-                          style={{ color: statusColor }}
-                        >
-                          {statusAgente}
-                        </div>
-                        <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
-                          {item.actionPriority || prioridade}
-                        </div>
-                      </div>
+                                {/* Row 7: Efeitos a saúde */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Efeitos a saúde
+                                  </div>
+                                  <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                    {item.healthDamage || 'Perda Auditiva Induzida por Ruído (PAIR)'}
+                                  </div>
+                                </div>
 
-                      {/* Section Header: Recomendações */}
-                      <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
-                        Recomendações
-                      </div>
+                                {/* Row 8: EPC/EPI */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    EPC/EPI
+                                  </div>
+                                  <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                    {epcEpiFinal}
+                                  </div>
+                                </div>
 
-                      {/* Recomendações Values */}
-                      <div className="grid grid-cols-12 border-t border-slate-300">
-                        <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                          Recomendações
-                        </div>
-                        <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                          {item.recommendations || 'NAP'}
-                        </div>
-                      </div>
+                                {/* Section Header: Medição */}
+                                <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                                  Medição
+                                </div>
 
-                      {/* Optional Avaliações e Resultados (Imagens) */}
-                      {item.evaluationImages && item.evaluationImages.length > 0 && (
-                        <div className="border-t border-slate-400 p-2.5 bg-slate-50">
-                          <div className="font-bold text-[10px] uppercase tracking-wider text-slate-600 mb-2">
-                            Avaliações e Resultados (Gráficos e Planilhas):
-                          </div>
-                          <div className="flex flex-wrap gap-2">
-                            {item.evaluationImages.map((img, imgIdx) => (
-                              <img
-                                key={imgIdx}
-                                src={img}
-                                alt={`Avaliação ${imgIdx + 1}`}
-                                className="h-28 w-auto rounded border border-slate-300 object-contain bg-white"
-                              />
-                            ))}
-                          </div>
+                                {/* Row 10: Critério & Técnica */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-6 py-1 px-3 font-semibold border-r border-slate-300 text-slate-900">
+                                    Critério: <span className="font-normal text-slate-800">{criterio}</span>
+                                  </div>
+                                  <div className="col-span-6 py-1 px-3 font-semibold text-slate-900">
+                                    Técnica utilizada: <span className="font-normal text-slate-800">{tecnica}</span>
+                                  </div>
+                                </div>
+
+                                {/* Row 11: Data da medição | Resultado | LT Headers */}
+                                <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
+                                  <div className="col-span-4 py-1 px-2 border-r border-slate-300">Data da medição</div>
+                                  <div className="col-span-4 py-1 px-2 border-r border-slate-300">Resultado</div>
+                                  <div className="col-span-4 py-1 px-2">LT</div>
+                                </div>
+
+                                {/* Row 12: Data da medição | Resultado | LT Values */}
+                                <div className="grid grid-cols-12 border-t border-slate-300 text-center">
+                                  <div className="col-span-4 py-1 px-2 border-r border-slate-300 text-slate-800">{dataMedicao}</div>
+                                  <div className="col-span-4 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">{resultado}</div>
+                                  <div className="col-span-4 py-1 px-2 text-slate-800">{lt}</div>
+                                </div>
+
+                                {/* Section Header: Categorização do risco/perigo */}
+                                <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                                  Categorização do risco/perigo
+                                </div>
+
+                                {/* Row 14: Headers Severidade, Probabilidade, Status, Prioridade */}
+                                <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
+                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300">Severidade</div>
+                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300">Probabilidade</div>
+                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300">Status do agente</div>
+                                  <div className="col-span-3 py-1 px-2">Prioridade de ação</div>
+                                </div>
+
+                                {/* Row 15: Values */}
+                                <div className="grid grid-cols-12 border-t border-slate-300 text-center">
+                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
+                                    {item.severity}
+                                  </div>
+                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
+                                    {item.probability}
+                                  </div>
+                                  <div 
+                                    className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-xs"
+                                    style={{ color: statusColor }}
+                                  >
+                                    {statusAgente}
+                                  </div>
+                                  <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
+                                    {item.actionPriority || prioridade}
+                                  </div>
+                                </div>
+
+                                {/* Section Header: Recomendações */}
+                                <div className="bg-[#e2e8f0] text-slate-900 text-center font-bold py-1 px-3 border-t border-slate-400">
+                                  Recomendações
+                                </div>
+
+                                {/* Recomendações Values */}
+                                <div className="grid grid-cols-12 border-t border-slate-300">
+                                  <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Recomendações
+                                  </div>
+                                  <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                    {item.recommendations || 'NAP'}
+                                  </div>
+                                </div>
+
+                                {/* Optional Avaliações e Resultados (Imagens) */}
+                                {item.evaluationImages && item.evaluationImages.length > 0 && (
+                                  <div className="border-t border-slate-400 p-2.5 bg-slate-50">
+                                    <div className="font-bold text-[10px] uppercase tracking-wider text-slate-600 mb-2">
+                                      Avaliações e Resultados (Gráficos e Planilhas):
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {item.evaluationImages.map((img, imgIdx) => (
+                                        <img
+                                          key={imgIdx}
+                                          src={img}
+                                          alt={`Avaliação ${imgIdx + 1}`}
+                                          className="h-28 w-auto rounded border border-slate-300 object-contain bg-white"
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            );
+          })()}
         </section>
 
         {/* 13. PLANO DE AÇÃO */}

@@ -18,6 +18,7 @@ import { PgrDocumentContext, buildPgrFullDocument, OFFICIAL_PGR_TEXTS } from '@/
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
+import { groupInventoryByGhe } from '@/lib/pgr-groups';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
@@ -304,451 +305,462 @@ export async function generatePgrDocx(ctx: PgrDocumentContext): Promise<void> {
         }
       }
     } else if (section.type === 'risk_inventory_table') {
-      const items = section.items;
+      const gheGroups = groupInventoryByGhe(ctx.sectors, ctx.positions, ctx.ghes, ctx.riskInventory);
 
-      if (!items || items.length === 0) {
-        children.push(new Paragraph({ text: 'Nenhum risco cadastrado no inventário.', spacing: { after: 200 } }));
+      if (!gheGroups || gheGroups.length === 0) {
+        children.push(new Paragraph({ text: 'Nenhum setor ou risco cadastrado no inventário.', spacing: { after: 200 } }));
       } else {
         const headerGray = '52525B';
         const sectionGray = 'E2E8F0';
         const labelGray = 'F8FAFC';
 
-        for (const item of items) {
-          const sec = ctx.sectors.find(s => s.id === item.sectorId);
-          const pos = ctx.positions.find(p => p.id === item.positionId);
-          const ghe = ctx.ghes.find(g => g.id === item.gheId);
-          const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
-          const catHex = (catConfig?.color || '#16a34a').replace('#', '');
-
-          const gesLabel = ghe?.code 
-            ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
-            : (ghe?.name ? ghe.name : 'GES-01');
-          const emrInfo = item.highestRiskExposed ? ` | EMR: ${item.highestRiskExposed}` : '';
-          const gesSectorInfo = `${gesLabel} | Setor: ${sec?.name || '-'}${pos?.workerCount || ghe?.workerCount ? ` | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount} trabalhador(es)` : ''}${emrInfo}`;
-          const posTitle = `Cargo / Função: ${pos?.title || ghe?.name || 'Geral'}${pos?.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
-          const activityDesc = `Descrição da Atividade: ${pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada'}`;
+        for (const group of gheGroups) {
+          // 1. Título do GHE / Setor em Negrito
+          const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
+          const gheHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
 
           children.push(
             new Paragraph({
-              children: [new TextRun({ text: gesSectorInfo, bold: true, size: 20 })],
+              children: [new TextRun({ text: gheHeader, bold: true, size: 20 })],
               spacing: { before: 280, after: 60 },
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: posTitle, size: 18, color: '334155' })],
-              spacing: { after: 60 },
-            }),
-            new Paragraph({
-              children: parseTextToTextRuns(activityDesc),
-              spacing: { after: 120 },
             })
           );
 
-          const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
-
-          let expPart1 = 'Habitual';
-          let expPart2 = 'Permanente';
-          if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-            expPart1 = 'Habitual';
-            expPart2 = 'Intermitente';
-          } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-            expPart1 = 'Eventual';
-            expPart2 = 'Intermitente';
-          } else if (item.exposureType === 'EVENTUAL') {
-            expPart1 = 'Eventual';
-            expPart2 = 'NAP';
-          } else if (item.exposureType === 'HABITUAL') {
-            expPart1 = 'Habitual';
-            expPart2 = 'NAP';
-          } else if (item.exposureType === 'PERMANENTE') {
-            expPart1 = 'NAP';
-            expPart2 = 'Permanente';
-          } else if (item.exposureType === 'INTERMITENTE') {
-            expPart1 = 'NAP';
-            expPart2 = 'Intermitente';
+          // 2. Cargos e Descrições de Atividades deste GHE/Setor
+          for (const pos of group.positions) {
+            const posLine = `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
+            const actLine = `Descrição da Atividade: ${pos.activityDescription}`;
+            children.push(
+              new Paragraph({
+                children: [new TextRun({ text: posLine, bold: true, size: 18, color: '1E293B' })],
+                spacing: { after: 30 },
+              }),
+              new Paragraph({
+                children: parseTextToTextRuns(actLine),
+                spacing: { after: 70 },
+              })
+            );
           }
 
-          const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
-          const epiStr = item.epiExisting && item.epiExisting.length > 0
-            ? item.epiExisting.map((e: any) => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
-            : '';
-          const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
+          // 3. Tabelas APR-HO deste GHE/Setor
+          if (group.risks.length === 0) {
+            children.push(
+              new Paragraph({
+                children: [new TextRun({ text: 'Nenhum risco ocupacional identificado para este setor/GHE.', italics: true, size: 18, color: '64748B' })],
+                spacing: { after: 140 },
+              })
+            );
+          } else {
+            for (const item of group.risks) {
+              const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
+              const catHex = (catConfig?.color || '#16a34a').replace('#', '');
+              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
-          const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
-          const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
-          const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
-          const dataMedicao = meas?.measurementDate || (meas ? '25/02/2026' : 'NAP');
-          const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
-          const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
+              let expPart1 = 'Habitual';
+              let expPart2 = 'Permanente';
+              if (item.exposureType === 'HABITUAL_INTERMITENTE') {
+                expPart1 = 'Habitual';
+                expPart2 = 'Intermitente';
+              } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
+                expPart1 = 'Eventual';
+                expPart2 = 'Intermitente';
+              } else if (item.exposureType === 'EVENTUAL') {
+                expPart1 = 'Eventual';
+                expPart2 = 'NAP';
+              } else if (item.exposureType === 'HABITUAL') {
+                expPart1 = 'Habitual';
+                expPart2 = 'NAP';
+              } else if (item.exposureType === 'PERMANENTE') {
+                expPart1 = 'NAP';
+                expPart2 = 'Permanente';
+              } else if (item.exposureType === 'INTERMITENTE') {
+                expPart1 = 'NAP';
+                expPart2 = 'Intermitente';
+              }
 
-          let statusAgente = 'Risco Baixo';
-          let statusHex = '16A34A';
-          let prioridade = 'Baixa';
+              const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
+              const epiStr = item.epiExisting && item.epiExisting.length > 0
+                ? item.epiExisting.map((e: any) => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
+                : '';
+              const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
 
-          if (item.riskLevel === 'TRIVIAL') {
-            statusAgente = 'Risco Muito Baixo';
-            statusHex = '16A34A';
-            prioridade = 'Nenhuma';
-          } else if (item.riskLevel === 'TOLERAVEL') {
-            statusAgente = 'Risco Baixo';
-            statusHex = '16A34A';
-            prioridade = 'Baixa';
-          } else if (item.riskLevel === 'MODERADO') {
-            statusAgente = 'Risco Médio';
-            statusHex = 'D97706';
-            prioridade = 'Média';
-          } else if (item.riskLevel === 'SUBSTANCIAL') {
-            statusAgente = 'Risco Alto';
-            statusHex = 'EA580C';
-            prioridade = 'Alta';
-          } else if (item.riskLevel === 'INTOLERAVEL') {
-            statusAgente = 'Risco Crítico';
-            statusHex = 'DC2626';
-            prioridade = 'Crítica / Imediata';
+              const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
+              const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
+              const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
+              const dataMedicao = meas?.measurementDate || (meas ? '25/02/2026' : 'NAP');
+              const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
+              const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
+
+              let statusAgente = 'Risco Baixo';
+              let statusHex = '16A34A';
+              let prioridade = 'Baixa';
+              if (item.riskLevel === 'TRIVIAL') {
+                statusAgente = 'Risco Muito Baixo';
+                statusHex = '16A34A';
+                prioridade = 'Nenhuma';
+              } else if (item.riskLevel === 'TOLERAVEL') {
+                statusAgente = 'Risco Baixo';
+                statusHex = '16A34A';
+                prioridade = 'Baixa';
+              } else if (item.riskLevel === 'MODERADO') {
+                statusAgente = 'Risco Médio';
+                statusHex = 'D97706';
+                prioridade = 'Média';
+              } else if (item.riskLevel === 'SUBSTANCIAL') {
+                statusAgente = 'Risco Alto';
+                statusHex = 'EA580C';
+                prioridade = 'Alta';
+              } else if (item.riskLevel === 'INTOLERAVEL') {
+                statusAgente = 'Risco Crítico';
+                statusHex = 'DC2626';
+                prioridade = 'Crítica / Imediata';
+              }
+
+              const rows = [
+                // Row 1: Header Gray
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 4,
+                      shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: headerTitle, bold: true, color: 'FFFFFF' })],
+                          alignment: AlignmentType.CENTER,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 2: Risco Categoria & Agente
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: `Risco ${catConfig?.label || 'Físico'}`, bold: true, color: 'FFFFFF' })],
+                          alignment: AlignmentType.CENTER,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: 'Agente: ', bold: true }),
+                            new TextRun({ text: item.hazardName }),
+                          ],
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 3: Tipo de Exposição
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Tipo de Exposição', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ text: expPart1, alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 2,
+                      children: [new Paragraph({ text: expPart2, alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 4: Fontes ou circunstância
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Fontes ou circunstância', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [new Paragraph({ text: item.sourceDescription || 'NAP' })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 5: Trajetória
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Trajetória', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [new Paragraph({ text: item.trajectory || 'Ar' })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 6: Via de penetração
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Via de penetração', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [new Paragraph({ text: item.penetrationRoute || 'NAP' })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 7: Efeitos a saúde
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Efeitos a saúde', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [new Paragraph({ text: item.healthDamage || 'NAP' })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 8: EPC/EPI
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'EPC/EPI', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [new Paragraph({ text: epcEpiFinal })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Section Header: Medição
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 4,
+                      shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Medição', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 10: Critério & Técnica
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 2,
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: 'Critério: ', bold: true }),
+                            new TextRun({ text: criterio }),
+                          ],
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 2,
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: 'Técnica utilizada: ', bold: true }),
+                            new TextRun({ text: tecnica }),
+                          ],
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 11: Data da medição | Resultado | LT Headers
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Data da medição', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 2,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Resultado', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'LT', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 12: Data da medição | Resultado | LT Values
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ text: dataMedicao, alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 2,
+                      children: [new Paragraph({ children: [new TextRun({ text: resultado, bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ text: lt, alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Section Header: Categorização do risco/perigo
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 4,
+                      shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Categorização do risco/perigo', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 14: Severidade | Probabilidade | Status do agente | Prioridade Headers
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Severidade', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Probabilidade', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Status do agente', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Prioridade de ação', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 15: Severidade | Probabilidade | Status do agente | Prioridade Values
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ text: String(item.severity), alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ text: String(item.probability), alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ children: [new TextRun({ text: statusAgente, bold: true, color: statusHex })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 1,
+                      children: [new Paragraph({ text: item.actionPriority || prioridade, alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Section Header: Recomendações
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 4,
+                      shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações', bold: true })], alignment: AlignmentType.CENTER })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+
+                // Row 17: Recomendações Values
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações', bold: true })] })],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      columnSpan: 3,
+                      children: [new Paragraph({ text: item.recommendations || 'NAP' })],
+                      borders: cellBorder,
+                    }),
+                  ],
+                }),
+              ];
+
+              children.push(
+                new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }),
+                new Paragraph({ text: '', spacing: { after: 150 } })
+              );
+            }
           }
-
-          const rows = [
-            // Row 1: Header Gray
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 4,
-                  shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [
-                    new Paragraph({
-                      children: [new TextRun({ text: headerTitle, bold: true, color: 'FFFFFF' })],
-                      alignment: AlignmentType.CENTER,
-                    }),
-                  ],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 2: Risco Categoria & Agente
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [
-                    new Paragraph({
-                      children: [new TextRun({ text: `Risco ${catConfig?.label || 'Físico'}`, bold: true, color: 'FFFFFF' })],
-                      alignment: AlignmentType.CENTER,
-                    }),
-                  ],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({ text: 'Agente: ', bold: true }),
-                        new TextRun({ text: item.hazardName }),
-                      ],
-                    }),
-                  ],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 3: Tipo de Exposição
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Tipo de Exposição', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ text: expPart1, alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 2,
-                  children: [new Paragraph({ text: expPart2, alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 4: Fontes ou circunstância
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Fontes ou circunstância', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [new Paragraph({ text: item.sourceDescription || 'NAP' })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 5: Trajetória
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Trajetória', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [new Paragraph({ text: item.trajectory || 'Ar' })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 6: Via de penetração
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Via de penetração', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [new Paragraph({ text: item.penetrationRoute || 'NAP' })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 7: Efeitos a saúde
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Efeitos a saúde', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [new Paragraph({ text: item.healthDamage || 'NAP' })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 8: EPC/EPI
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'EPC/EPI', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [new Paragraph({ text: epcEpiFinal })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Section Header: Medição
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 4,
-                  shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Medição', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 10: Critério & Técnica
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 2,
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({ text: 'Critério: ', bold: true }),
-                        new TextRun({ text: criterio }),
-                      ],
-                    }),
-                  ],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 2,
-                  children: [
-                    new Paragraph({
-                      children: [
-                        new TextRun({ text: 'Técnica utilizada: ', bold: true }),
-                        new TextRun({ text: tecnica }),
-                      ],
-                    }),
-                  ],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 11: Data da medição | Resultado | LT Headers
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Data da medição', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 2,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Resultado', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'LT', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 12: Data da medição | Resultado | LT Values
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ text: dataMedicao, alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 2,
-                  children: [new Paragraph({ children: [new TextRun({ text: resultado, bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ text: lt, alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Section Header: Categorização do risco/perigo
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 4,
-                  shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Categorização do risco/perigo', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 14: Severidade | Probabilidade | Status do agente | Prioridade Headers
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Severidade', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Probabilidade', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Status do agente', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Prioridade de ação', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 15: Severidade | Probabilidade | Status do agente | Prioridade Values
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ text: String(item.severity), alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ text: String(item.probability), alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ children: [new TextRun({ text: statusAgente, bold: true, color: statusHex })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 1,
-                  children: [new Paragraph({ text: item.actionPriority || prioridade, alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Section Header: Recomendações
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 4,
-                  shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações', bold: true })], alignment: AlignmentType.CENTER })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-
-            // Row 17: Recomendações Values
-            new TableRow({
-              children: [
-                new TableCell({
-                  columnSpan: 1,
-                  shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                  children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações', bold: true })] })],
-                  borders: cellBorder,
-                }),
-                new TableCell({
-                  columnSpan: 3,
-                  children: [new Paragraph({ text: item.recommendations || 'NAP' })],
-                  borders: cellBorder,
-                }),
-              ],
-            }),
-          ];
-
-          children.push(
-            new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }),
-            new Paragraph({ text: '', spacing: { after: 200 } })
-          );
         }
       }
     } else if (section.type === 'action_plan_table') {

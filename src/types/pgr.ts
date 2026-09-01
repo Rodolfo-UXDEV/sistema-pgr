@@ -69,6 +69,7 @@ export interface Sector {
   establishmentId: string;
   name: string;
   description?: string;
+  workerCount?: number;
   physicalCharacteristics?: {
     floorType?: string;
     wallType?: string;
@@ -84,6 +85,7 @@ export interface Position {
   id: string;
   establishmentId: string;
   sectorId: string;
+  gheId?: string;
   title: string;
   cbo: string; // Classificação Brasileira de Ocupações
   activityDescription?: string; // Descrição da Atividade

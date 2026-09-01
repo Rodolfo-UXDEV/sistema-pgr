@@ -5,6 +5,7 @@ import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
+import { groupInventoryByGhe } from '@/lib/pgr-groups';
 import { ensurePngDataUrl } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
@@ -292,210 +293,206 @@ export async function generatePgrPdf(ctx: PgrDocumentContext): Promise<void> {
       doc.line(14, currentY, 196, currentY);
       currentY += 5;
 
-      const items = section.items;
-      if (!items || items.length === 0) {
+      const gheGroups = groupInventoryByGhe(ctx.sectors, ctx.positions, ctx.ghes, ctx.riskInventory);
+
+      if (!gheGroups || gheGroups.length === 0) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
         doc.setTextColor(100, 116, 139);
-        doc.text('Nenhum risco registrado no inventário.', 14, currentY);
+        doc.text('Nenhum setor ou risco registrado no inventário.', 14, currentY);
         currentY += 8;
       } else {
-        for (const item of items) {
-          const sec = ctx.sectors.find(s => s.id === item.sectorId);
-          const pos = ctx.positions.find(p => p.id === item.positionId);
-          const ghe = ctx.ghes.find(g => g.id === item.gheId);
-          const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
-          const catRgb = hexToRgb(catConfig?.color || '#16a34a');
+        for (const group of gheGroups) {
+          checkPageBreak(35);
 
-          const gesLabel = ghe?.code 
-            ? (ghe.code.toUpperCase().startsWith('GES') ? ghe.code : `GES-${ghe.code}`) 
-            : (ghe?.name ? ghe.name : 'GES-01');
-          const emrInfo = item.highestRiskExposed ? ` | EMR: ${item.highestRiskExposed}` : '';
-          const gesSectorInfo = `${gesLabel} | Setor: ${sec?.name || '-'}${pos?.workerCount || ghe?.workerCount ? ` | Efetivo Exposto: ${pos?.workerCount || ghe?.workerCount} trabalhador(es)` : ''}${emrInfo}`;
-          const posTitle = `Cargo / Função: ${pos?.title || ghe?.name || 'Geral'}${pos?.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
-          const rawActivity = pos?.activityDescription || pos?.routineActivities || pos?.description || ghe?.description || 'Não identificada';
-          const cleanActivity = rawActivity.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-          const actLines = doc.splitTextToSize(`Descrição da Atividade: ${cleanActivity}`, 182);
+          const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
+          const gheHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
 
-          checkPageBreak(75 + actLines.length * 3.5);
-
-          // 1. GES | Setor (Negrito)
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8.5);
           doc.setTextColor(15, 23, 42);
-          doc.text(gesSectorInfo, 14, currentY);
-          currentY += 4;
+          doc.text(gheHeader, 14, currentY);
+          currentY += 4.5;
 
-          // 2. Cargo / Função (Normal)
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          doc.setTextColor(51, 65, 85);
-          doc.text(posTitle, 14, currentY);
-          currentY += 3.5;
+          for (const pos of group.positions) {
+            checkPageBreak(25);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7.5);
+            doc.setTextColor(30, 41, 59);
+            const posLine = `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
+            doc.text(posLine, 14, currentY);
+            currentY += 3.5;
 
-          // 3. Descrição da Atividade (Normal)
-          doc.text(actLines, 14, currentY);
-          currentY += actLines.length * 3.2 + 2.5;
-
-          const headerTitle = `${gesLabel} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
-
-          let expPart1 = 'Habitual';
-          let expPart2 = 'Permanente';
-          if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-            expPart1 = 'Habitual';
-            expPart2 = 'Intermitente';
-          } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-            expPart1 = 'Eventual';
-            expPart2 = 'Intermitente';
-          } else if (item.exposureType === 'EVENTUAL') {
-            expPart1 = 'Eventual';
-            expPart2 = 'NAP';
-          } else if (item.exposureType === 'HABITUAL') {
-            expPart1 = 'Habitual';
-            expPart2 = 'NAP';
-          } else if (item.exposureType === 'PERMANENTE') {
-            expPart1 = 'NAP';
-            expPart2 = 'Permanente';
-          } else if (item.exposureType === 'INTERMITENTE') {
-            expPart1 = 'NAP';
-            expPart2 = 'Intermitente';
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(7.2);
+            doc.setTextColor(71, 85, 105);
+            const rawAct = pos.activityDescription || 'Atividades operacionais e rotinas da função.';
+            const cleanAct = rawAct.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+            const actLines = doc.splitTextToSize(`Descrição da Atividade: ${cleanAct}`, 182);
+            doc.text(actLines, 14, currentY);
+            currentY += actLines.length * 3.2 + 2;
           }
 
-          const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
-          const epiStr = item.epiExisting && item.epiExisting.length > 0
-            ? item.epiExisting.map((e: any) => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
-            : '';
-          const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
+          currentY += 1.5;
 
-          const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
-          const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
-          const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
-          const dataMedicao = meas?.measurementDate 
-            ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
-            : (meas ? '25/02/2026' : 'NAP');
-          const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
-          const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
+          if (group.risks.length === 0) {
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(7.5);
+            doc.setTextColor(100, 116, 139);
+            doc.text('Nenhum risco ocupacional identificado para este setor/GHE.', 14, currentY);
+            currentY += 6;
+          } else {
+            for (const item of group.risks) {
+              const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
+              const catRgb = hexToRgb(catConfig?.color || '#16a34a');
+              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
-          let statusAgente = 'Risco Baixo';
-          let prioridade = 'Baixa';
+              let expPart1 = 'Habitual';
+              let expPart2 = 'Permanente';
+              if (item.exposureType === 'HABITUAL_INTERMITENTE') {
+                expPart1 = 'Habitual';
+                expPart2 = 'Intermitente';
+              } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
+                expPart1 = 'Eventual';
+                expPart2 = 'Intermitente';
+              } else if (item.exposureType === 'EVENTUAL') {
+                expPart1 = 'Eventual';
+                expPart2 = 'NAP';
+              } else if (item.exposureType === 'HABITUAL') {
+                expPart1 = 'Habitual';
+                expPart2 = 'NAP';
+              } else if (item.exposureType === 'PERMANENTE') {
+                expPart1 = 'NAP';
+                expPart2 = 'Permanente';
+              } else if (item.exposureType === 'INTERMITENTE') {
+                expPart1 = 'NAP';
+                expPart2 = 'Intermitente';
+              }
 
-          if (item.riskLevel === 'TRIVIAL') {
-            statusAgente = 'Risco Muito Baixo';
-            prioridade = 'Nenhuma';
-          } else if (item.riskLevel === 'TOLERAVEL') {
-            statusAgente = 'Risco Baixo';
-            prioridade = 'Baixa';
-          } else if (item.riskLevel === 'MODERADO') {
-            statusAgente = 'Risco Médio';
-            prioridade = 'Média';
-          } else if (item.riskLevel === 'SUBSTANCIAL') {
-            statusAgente = 'Risco Alto';
-            prioridade = 'Alta';
-          } else if (item.riskLevel === 'INTOLERAVEL') {
-            statusAgente = 'Risco Crítico';
-            prioridade = 'Crítica / Imediata';
+              const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
+              const epiStr = item.epiExisting && item.epiExisting.length > 0
+                ? item.epiExisting.map((e: any) => `${e.name} (CA: ${e.ca || 'S/N'})`).join('; ')
+                : '';
+              const epcEpiFinal = [epcStr ? `EPC: ${epcStr}` : '', epiStr ? `EPI: ${epiStr}` : ''].filter(Boolean).join(' | ') || 'NAP';
+
+              const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
+              const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
+              const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
+              const dataMedicao = meas?.measurementDate 
+                ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
+                : (meas ? '25/02/2026' : 'NAP');
+              const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
+              const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
+
+              let statusAgente = 'Risco Baixo';
+              let prioridade = 'Baixa';
+              if (item.riskLevel === 'TRIVIAL') {
+                statusAgente = 'Risco Muito Baixo';
+                prioridade = 'Nenhuma';
+              } else if (item.riskLevel === 'TOLERAVEL') {
+                statusAgente = 'Risco Baixo';
+                prioridade = 'Baixa';
+              } else if (item.riskLevel === 'MODERADO') {
+                statusAgente = 'Risco Médio';
+                prioridade = 'Média';
+              } else if (item.riskLevel === 'SUBSTANCIAL') {
+                statusAgente = 'Risco Alto';
+                prioridade = 'Alta';
+              } else if (item.riskLevel === 'INTOLERAVEL') {
+                statusAgente = 'Risco Crítico';
+                prioridade = 'Crítica / Imediata';
+              }
+
+              const headerGray: [number, number, number] = [82, 82, 91];
+              const sectionGray: [number, number, number] = [226, 232, 240];
+              const labelGray: [number, number, number] = [248, 250, 252];
+
+              const tableBody = [
+                [
+                  { content: headerTitle, colSpan: 4, styles: { fillColor: headerGray, fontStyle: 'bold', halign: 'center', textColor: [255, 255, 255] } }
+                ],
+                [
+                  { content: `Risco ${catConfig?.label || 'Físico'}`, colSpan: 1, styles: { fillColor: catRgb, fontStyle: 'bold', halign: 'center', textColor: [255, 255, 255] } },
+                  { content: `Agente: ${item.hazardName}`, colSpan: 3, styles: { fontStyle: 'bold' } }
+                ],
+                [
+                  { content: 'Tipo de Exposição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: expPart1, colSpan: 1, styles: { halign: 'center' } },
+                  { content: expPart2, colSpan: 2, styles: { halign: 'center' } }
+                ],
+                [
+                  { content: 'Fontes ou circunstância', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: item.sourceDescription || 'Setor de Produção', colSpan: 3 }
+                ],
+                [
+                  { content: 'Trajetória', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: item.trajectory || 'Ar', colSpan: 3 }
+                ],
+                [
+                  { content: 'Via de penetração', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: item.penetrationRoute || 'Auditiva (Ouvido / Som)', colSpan: 3 }
+                ],
+                [
+                  { content: 'Efeitos a saúde', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: item.healthDamage || 'Perda Auditiva Induzida por Ruído (PAIR)', colSpan: 3 }
+                ],
+                [
+                  { content: 'EPC/EPI', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: epcEpiFinal, colSpan: 3 }
+                ],
+                [
+                  { content: 'Medição', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+                ],
+                [
+                  { content: `Critério: ${criterio}`, colSpan: 2, styles: { fontStyle: 'bold' } },
+                  { content: `Técnica utilizada: ${tecnica}`, colSpan: 2, styles: { fontStyle: 'bold' } }
+                ],
+                [
+                  { content: 'Data da medição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+                  { content: 'Resultado', colSpan: 2, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+                  { content: 'LT', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
+                ],
+                [
+                  { content: dataMedicao, colSpan: 1, styles: { halign: 'center' } },
+                  { content: resultado, colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } },
+                  { content: lt, colSpan: 1, styles: { halign: 'center' } }
+                ],
+                [
+                  { content: 'Categorização do risco/perigo', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+                ],
+                [
+                  { content: 'Severidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+                  { content: 'Probabilidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+                  { content: 'Status do agente', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
+                  { content: 'Prioridade de ação', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
+                ],
+                [
+                  { content: item.severity, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+                  { content: item.probability, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+                  { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+                  { content: item.actionPriority || prioridade, colSpan: 1, styles: { halign: 'center' } }
+                ],
+                [
+                  { content: 'Recomendações', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+                ],
+                [
+                  { content: 'Recomendações', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
+                  { content: item.recommendations || 'NAP', colSpan: 3 }
+                ]
+              ];
+
+              autoTable(doc, {
+                startY: currentY,
+                body: tableBody as any,
+                theme: 'grid',
+                styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
+                margin: { left: 14, right: 14 },
+              });
+
+              currentY = (doc as any).lastAutoTable.finalY + 6;
+            }
           }
-
-          const tableBody = [
-            // Row 1: Header Dark Gray
-            [
-              { content: headerTitle, colSpan: 4, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', fontSize: 8 } }
-            ],
-            // Row 2: Risco Categoria & Agente
-            [
-              { content: `Risco ${catConfig?.label || 'Físico'}`, colSpan: 1, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
-              { content: `Agente: ${item.hazardName}`, colSpan: 3, styles: { fontStyle: 'bold', textColor: [15, 23, 42] } }
-            ],
-            // Row 3: Tipo de Exposição
-            [
-              { content: 'Tipo de Exposição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: expPart1, colSpan: 1, styles: { halign: 'center' } },
-              { content: expPart2, colSpan: 2, styles: { halign: 'center' } }
-            ],
-            // Row 4: Fontes ou circunstância
-            [
-              { content: 'Fontes ou circunstância', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: item.sourceDescription || 'NAP', colSpan: 3 }
-            ],
-            // Row 5: Trajetória
-            [
-              { content: 'Trajetória', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: item.trajectory || 'Ar', colSpan: 3 }
-            ],
-            // Row 6: Via de penetração
-            [
-              { content: 'Via de penetração', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: item.penetrationRoute || 'NAP', colSpan: 3 }
-            ],
-            // Row 7: Efeitos a saúde
-            [
-              { content: 'Efeitos a saúde', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: item.healthDamage || 'NAP', colSpan: 3 }
-            ],
-            // Row 8: EPC/EPI
-            [
-              { content: 'EPC/EPI', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: epcEpiFinal, colSpan: 3 }
-            ],
-            // Section Header: Medição
-            [
-              { content: 'Medição', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
-            ],
-            // Row 10: Critério & Técnica
-            [
-              { content: `Critério: ${criterio}`, colSpan: 2, styles: { fontStyle: 'bold' } },
-              { content: `Técnica utilizada: ${tecnica}`, colSpan: 2, styles: { fontStyle: 'bold' } }
-            ],
-            // Row 11: Data da medição | Resultado | LT Headers
-            [
-              { content: 'Data da medição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-              { content: 'Resultado', colSpan: 2, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-              { content: 'LT', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
-            ],
-            // Row 12: Data da medição | Resultado | LT Values
-            [
-              { content: dataMedicao, colSpan: 1, styles: { halign: 'center' } },
-              { content: resultado, colSpan: 2, styles: { fontStyle: 'bold', halign: 'center' } },
-              { content: lt, colSpan: 1, styles: { halign: 'center' } }
-            ],
-            // Section Header: Categorização do risco/perigo
-            [
-              { content: 'Categorização do risco/perigo', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
-            ],
-            // Row 14: Headers Severidade, Probabilidade, Status, Prioridade
-            [
-              { content: 'Severidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-              { content: 'Probabilidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-              { content: 'Status do agente', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-              { content: 'Prioridade de ação', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
-            ],
-            // Row 15: Values
-            [
-              { content: item.severity, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-              { content: item.probability, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-              { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-              { content: item.actionPriority || prioridade, colSpan: 1, styles: { halign: 'center' } }
-            ],
-            // Section Header: Recomendações
-            [
-              { content: 'Recomendações', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
-            ],
-            // Row 17: Recomendações Values
-            [
-              { content: 'Recomendações', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-              { content: item.recommendations || 'NAP', colSpan: 3 }
-            ]
-          ];
-
-          autoTable(doc, {
-            startY: currentY,
-            body: tableBody as any,
-            theme: 'grid',
-            styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
-            margin: { left: 14, right: 14 },
-          });
-
-          currentY = (doc as any).lastAutoTable.finalY + 8;
+          currentY += 2;
         }
       }
 
