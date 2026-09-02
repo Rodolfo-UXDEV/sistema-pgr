@@ -15,6 +15,53 @@ export interface GheGroupData {
   risks: RiskInventoryItem[];
 }
 
+export const HAZARD_CATEGORY_ORDER: Record<string, number> = {
+  fisico: 1,
+  quimico: 2,
+  biologico: 3,
+  ergonomico: 4,
+  psicossocial: 4,
+  acidente: 5,
+};
+
+/**
+ * Identifica se o risco foi cadastrado como 'Não há exposição / Não se aplica'
+ * ou ausência de risco, permitindo renderização condensada de 1 linha.
+ */
+export function isNoExposureRisk(item: RiskInventoryItem): boolean {
+  const name = (item.hazardName || '').toLowerCase().trim();
+  const desc = (item.sourceDescription || '').toLowerCase().trim();
+  const health = (item.healthDamage || '').toLowerCase().trim();
+  
+  const keywords = [
+    'não há exposição',
+    'nao ha exposicao',
+    'não se aplica',
+    'nao se aplica',
+    'ausência de risco',
+    'ausencia de risco',
+    'sem exposição',
+    'sem exposicao',
+    'inexistente',
+    'ausente'
+  ];
+
+  return keywords.some(k => name.includes(k) || desc.includes(k) || health.includes(k)) || name === 'nap';
+}
+
+/**
+ * Ordena os riscos pela sequência normativa padrão:
+ * 1º Físico, 2º Químico, 3º Biológico, 4º Ergonômico, 5º Acidentes
+ */
+export function sortRisksByNormativeCategory(items: RiskInventoryItem[]): RiskInventoryItem[] {
+  return [...items].sort((a, b) => {
+    const orderA = HAZARD_CATEGORY_ORDER[a.hazardCategory] || 99;
+    const orderB = HAZARD_CATEGORY_ORDER[b.hazardCategory] || 99;
+    if (orderA !== orderB) return orderA - orderB;
+    return (a.hazardName || '').localeCompare(b.hazardName || '');
+  });
+}
+
 /**
  * Agrupa o inventário de riscos hierarquicamente por GHE / Setor,
  * contendo seus respectivos cargos, descrições de atividades e tabelas APR-HO.
@@ -76,7 +123,7 @@ export function groupInventoryByGhe(
             workerCount: totalWorkers,
             emr,
             positions: formattedPositions,
-            risks: secRisks,
+            risks: sortRisksByNormativeCategory(secRisks),
           });
         });
       } else {
@@ -114,7 +161,7 @@ export function groupInventoryByGhe(
           workerCount: totalWorkers,
           emr,
           positions: formattedPositions,
-          risks: secRisks,
+          risks: sortRisksByNormativeCategory(secRisks),
         });
       }
     });
@@ -134,7 +181,7 @@ export function groupInventoryByGhe(
         title: 'Colaboradores Gerais',
         activityDescription: 'Atividades operacionais gerais e rotinas da empresa.',
       }],
-      risks: remainingRisks,
+      risks: sortRisksByNormativeCategory(remainingRisks),
     });
   }
 

@@ -5,7 +5,7 @@ import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
-import { groupInventoryByGhe } from '@/lib/pgr-groups';
+import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
@@ -603,6 +603,35 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             for (const item of group.risks) {
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catRgb = hexToRgb(catConfig?.color || '#16a34a');
+
+              if (isNoExposureRisk(item)) {
+                checkPageBreak(16);
+
+                const noExpRows: any[] = [
+                  [
+                    { 
+                      content: `Risco ${catConfig?.label || item.hazardCategory}`, 
+                      styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', cellWidth: 46 } 
+                    },
+                    { 
+                      content: `Agente: ${item.hazardName || 'Não há exposição / Não se Aplica'}`, 
+                      styles: { fontStyle: 'bold', textColor: [51, 65, 85], halign: 'left' } 
+                    }
+                  ]
+                ];
+
+                autoTable(doc, {
+                  startY: cursor.y,
+                  body: noExpRows,
+                  theme: 'grid',
+                  styles: { fontSize: 7.5, cellPadding: 2 },
+                  margin: { left: 14, right: 14 },
+                });
+
+                cursor.y = (doc as any).lastAutoTable.finalY + 3;
+                continue;
+              }
+
               const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
               let expPart1 = 'Habitual';

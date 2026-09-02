@@ -11,14 +11,15 @@ import {
   AlignmentType, 
   BorderStyle, 
   WidthType, 
-  ShadingType 
+  ShadingType,
+  VerticalAlign 
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
-import { groupInventoryByGhe } from '@/lib/pgr-groups';
+import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 
@@ -415,6 +416,46 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
             for (const item of group.risks) {
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catHex = (catConfig?.color || '#16a34a').replace('#', '');
+
+              if (isNoExposureRisk(item)) {
+                const noExpRow = new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 28, type: WidthType.PERCENTAGE },
+                      shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
+                      verticalAlign: VerticalAlign.CENTER,
+                      children: [
+                        new Paragraph({
+                          alignment: AlignmentType.CENTER,
+                          children: [new TextRun({ text: `Risco ${catConfig?.label || item.hazardCategory}`, bold: true, color: 'FFFFFF', size: 16 })],
+                        }),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 72, type: WidthType.PERCENTAGE },
+                      verticalAlign: VerticalAlign.CENTER,
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: 'Agente: ', bold: true, size: 16 }),
+                            new TextRun({ text: item.hazardName || 'Não há exposição / Não se Aplica', size: 16, color: '334155' }),
+                          ],
+                        }),
+                      ],
+                    }),
+                  ],
+                });
+
+                children.push(
+                  new Table({
+                    rows: [noExpRow],
+                    width: { size: 100, type: WidthType.PERCENTAGE },
+                  }),
+                  new Paragraph({ text: '', spacing: { after: 60 } })
+                );
+                continue;
+              }
+
               const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
               let expPart1 = 'Habitual';

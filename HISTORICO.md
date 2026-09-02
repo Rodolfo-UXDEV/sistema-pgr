@@ -332,6 +332,34 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
 4. **Altura Adequada para Cartões APR-HO:**
    - Ajustado `checkPageBreak(85)` antes de cada cartão da APR-HO, garantindo que nenhum cartão seja quebrado ao meio de forma desagradável.
 
+---
+
+### [02/09/2026] Marco: Ordem Normativa Fixa dos Riscos e Cartão Condensado de "Não Há Exposição" (Vídeo da Cliente)
+
+Com base na solicitação e demonstração visual gravada pela cliente em vídeo (`WhatsApp Video 2026-09-02 at 14.40.41.mp4`), foram implementadas as seguintes melhorias:
+
+1. **Ordem Fixa Normativa das Categorias de Risco no Inventário (APR-HO):**
+   - Criação da hierarquia normativa padrão `HAZARD_CATEGORY_ORDER`:
+     1º 🟩 **Físico** (`fisico`)
+     2º 🟥 **Químico** (`quimico`)
+     3º 🟫 **Biológico** (`biologico`)
+     4º 🟨 **Ergonômico / Psicossocial** (`ergonomico`, `psicossocial`)
+     5º 🟦 **Acidentes** (`acidente`)
+   - A função `groupInventoryByGhe` em `src/lib/pgr-groups.ts` agora ordena todos os riscos automaticamente por essa sequência normativa, padronizando a exibição em **todas** as frentes:
+     - Visualizador em tela (`PgrViewerPage.tsx`);
+     - Geração de PDF Oficial jsPDF (`pdf-generator.ts`);
+     - Geração de documento Word DOCX (`docx-generator.ts`).
+
+2. **Formato Condensado de 1 Linha para "Não há exposição / Não se aplica":**
+   - Criação da função utilitária `isNoExposureRisk(item)` para identificar avaliações com ausência de exposição ocupacional.
+   - Quando um risco não possui exposição ativa (ex.: Químico ou Biológico em ambientes onde não se aplica):
+     - Não desenha mais o cartão completo de 14 linhas cheio de "NAP".
+     - Desenha uma **tabela compacta de linha única** (~8 mm de altura):
+       - Coluna da esquerda: Tarja sólida com a cor normativa oficial e texto branco em negrito `Risco {Categoria}`;
+       - Coluna da direita: Texto claro com `Agente: Não há exposição / Não se Aplica`.
+     - Implementado com máxima fidelidade no **PDF oficial**, na tela do **PGR Viewer** e no arquivo **Word (DOCX)**.
+
+
 
 
 

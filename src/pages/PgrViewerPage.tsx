@@ -16,7 +16,7 @@ import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
-import { groupInventoryByGhe } from '@/lib/pgr-groups';
+import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
@@ -519,6 +519,23 @@ export const PgrViewerPage: React.FC = () => {
                         <div className="space-y-4 pt-2">
                           {group.risks.map((item) => {
                             const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
+
+                            if (isNoExposureRisk(item)) {
+                              return (
+                                <div key={item.id} className="flex items-center border border-border rounded-lg overflow-hidden bg-card text-xs shadow-sm">
+                                  <div 
+                                    className="px-4 py-2.5 text-white font-bold text-center text-xs min-w-[150px] shrink-0"
+                                    style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                                  >
+                                    Risco {catConfig?.label || item.hazardCategory}
+                                  </div>
+                                  <div className="px-4 py-2.5 font-semibold text-foreground text-xs">
+                                    Agente: <span className="font-normal text-muted-foreground">{item.hazardName || 'Não há exposição / Não se Aplica'}</span>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
                             // Separação do Tipo de Exposição
