@@ -306,6 +306,33 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - `PgrViewerPage.tsx`: Remoção de vigência do quadro superior e tratamento de ART condicional na Seção 4.
   - `PgrDocumentsPage.tsx`: Coluna da listagem de documentos alterada para *Data de Elaboração*, facilitando a conferência cronológica.
 
+---
+
+### [02/09/2026] Marco de Correção Estrutural: Eliminação Definitiva de Páginas em Branco no PDF
+
+#### Diagnóstico Técnico das Causas Raiz:
+1. **Dessincronização de Coordenada Y no Motor Markdown (`renderMarkdownParagraphToPdf`):**
+   - O argumento `currentY` era passado por valor como número primitivo. Consequentemente, o callback `checkPageBreak` utilizava a variável do escopo superior enquanto as linhas do parágrafo incrementavam apenas a cópia local.
+   - Quando um parágrafo ultrapassava a margem inferior (272 mm), a quebra de página não ocorria em tempo real durante a renderização das linhas, e o valor retornado (> 272) forçava o próximo parágrafo a disparar `doc.addPage()` imediatamente, porém desenhando no rodapé/fora da página e deixando a página anterior com espaço vazio residual, gerando um efeito dominó de páginas vazias consecutivas.
+2. **Quebras Redundantes Acumuladas:**
+   - Chamadas subsequentes de `addPage()` no início e no fim de blocos (como no Inventário, Plano de Ação e Encerramento) criavam páginas em branco quando `currentY` já havia sido reinicializado para `20`.
+   - Quebra indevida no encerramento gerava uma página fantasma ao final do documento.
+3. **Quebra Precoce de Tabelas APR-HO:**
+   - A margem para os cartões de APR-HO (`checkPageBreak(50)`) era insuficiente para cards com altura real (~85-95 mm), causando divisões indesejadas e páginas mal distribuídas.
+
+#### Soluções Implementadas (`src/lib/pdf-generator.ts`):
+1. **Cursor Sincronizado por Referência (`cursor: { y: number }`):**
+   - Todas as funções de renderização agora compartilham o mesmo objeto de estado `cursor = { y: 20 }`.
+   - Cada linha desenhada verifica `checkPageBreak(lineHeight + 2)`, atualizando a coordenada em tempo real e desenhando imediatamente no topo (Y = 20) da nova página, sem perda de alinhamento ou vazamento de coordenadas.
+2. **Função Idempotente `ensureNewPage()`:**
+   - Implementada função protetora que só cria uma nova página caso haja conteúdo na página atual (`if (cursor.y > 20)`). Se o documento já estiver no topo de uma página limpa, a função não cria páginas redundantes.
+3. **Remoção de Quebras de Fim de Bloco & Defesa Contra Páginas Finais Vazias:**
+   - As seções não mais chamam `addPage()` ao término; cada seção apenas solicita nova página no seu início se necessário.
+   - Adicionada verificação final `if (cursor.y === 20 && doc.getNumberOfPages() > 1) doc.deletePage(...)` para garantir que o PDF termine exatamente onde o conteúdo encerra.
+4. **Altura Adequada para Cartões APR-HO:**
+   - Ajustado `checkPageBreak(85)` antes de cada cartão da APR-HO, garantindo que nenhum cartão seja quebrado ao meio de forma desagradável.
+
+
 
 
 
