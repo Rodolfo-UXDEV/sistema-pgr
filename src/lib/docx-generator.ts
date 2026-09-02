@@ -138,12 +138,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
       spacing: { after: 100 },
     }),
     new Paragraph({
-      text: `VIGÊNCIA: ${docData.header.validityPeriod}`,
+      text: `RESPONSÁVEL TÉCNICO: ${docData.header.techRespName} (${docData.header.techRespCouncil})`,
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
     }),
     new Paragraph({
-      text: `RESPONSÁVEL TÉCNICO: ${docData.header.techRespName} (${docData.header.techRespCouncil})`,
+      text: `DATA DE ELABORAÇÃO: ${docData.header.elaborationDate}`,
       alignment: AlignmentType.CENTER,
       spacing: { after: 1600 },
     }),

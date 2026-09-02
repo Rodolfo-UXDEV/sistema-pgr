@@ -264,6 +264,49 @@ Este arquivo registra cronologicamente todas as etapas, decisões, funcionalidad
   - Build compilado com **0 erros** no TypeScript e Vite (`tsc -b && vite build`).
   - Commits sincronizados no repositório GitHub (`origin/main`): `9d407b7`, `8de01e3`, `7cbb0e9`, `1a4d2a6`, `895dd08`, `1b6167b`, `b430ea8`, `02cc4fe`, `6d10fb2`.
 
+---
+
+### [2026-09-02] - Adequações Normativas e Estruturais Solicitadas pela Cliente (Áudios)
+
+- **1. Capa Oficial do PGR:**
+  - **Logos Proporcionais:** Inclusão e renderização das logomarcas da ES Engenharia (topo) e da empresa cliente (centro) com preservação rigorosa do aspect ratio original via cálculo vetorial (`getImageProperties`), eliminando qualquer achatamento ou distorção.
+  - **Quadro Técnico Simplificado:** Remoção definitiva dos campos de *Vigência* e *ART* da capa, mantendo Código/Revisão, Responsável Técnico, Registro CREA/CRM e Data de Elaboração.
+- **2. Paginação Oficial e Quebras de Página Exatas no PDF:**
+  - **Página 1:** Capa Oficial.
+  - **Página 2:** `1. INDICE` (página exclusiva).
+  - **Página 3:** `2. CONTROLE DE REVISÕES DO DOCUMENTO` (página exclusiva).
+  - **Página 4:** `3. INFORMAÇÕES CADASTRAIS DO EMPREGADOR E ESTABELECIMENTO` (página exclusiva).
+  - **Página 5:** `4. RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR` (página exclusiva).
+  - **Página 6:** `5. INTRODUÇÃO` (página exclusiva).
+  - **Páginas seguintes:** Capítulos 6 a 13 em fluxo contínuo/sequencial.
+  - **Capítulo 14 (INVENTÁRIO DE RISCOS OCUPACIONAIS - MODELO APR-HO):**
+    - Inicia obrigatoriamente em uma **nova página**.
+    - Exibe cabeçalho do GHE/Setor e descrição das atividades dos cargos.
+    - Imediatamente após a descrição dos cargos, a **APR-HO inicia em uma nova página dedicada**.
+    - Cada novo GHE cadastrado também inicia em uma nova página.
+  - **Capítulo 15 (PLANO DE AÇÃO):** Inicia em uma **nova página dedicada**.
+  - **Capítulo 16 (ENCERRAMENTO E ASSINATURAS):** Inicia em uma **nova página dedicada**.
+  - **Capítulo 17 (MODELO DE FICHA DE EPIS):** Inicia em uma **nova página dedicada**.
+- **3. Cores Normativas na Tabela de Categorias de Risco (Item 10.2):**
+  - Aplicação das cores de identificação nas categorias de risco:
+    - 🟩 **Agentes Físicos:** Verde (`#16a34a` / `RGB(22, 163, 74)`)
+    - 🟥 **Agentes Químicos:** Vermelho (`#dc2626` / `RGB(220, 38, 38)`)
+    - 🟫 **Agentes Biológicos:** Marrom (`#78350f` / `RGB(120, 53, 15)`)
+    - 🟨 **Riscos Ergonômicos:** Amarelo (`#eab308` / `RGB(234, 179, 8)`)
+    - 🟨 **Riscos Psicossociais Relacionados ao Trabalho:** Amarelo (`#eab308` / `RGB(234, 179, 8)`)
+    - 🟦 **Riscos de Acidentes:** Azul (`#2563eb` / `RGB(37, 99, 235)`)
+  - Renderizado no PDF (`pdf-generator.ts`), no visualizador em tela (`markdown-renderer.tsx`) e no gerador DOCX (`docx-generator.ts`).
+- **4. Motor de Renderização de Negrito no PDF:**
+  - Implementação de analisador léxico de markdown (`parseMarkdownTokens` e `renderMarkdownParagraphToPdf`) no jsPDF.
+  - Textos demarcados com `**negrito**` agora são desenhados de forma fidedigna com fonte em negrito real (`doc.setFont('helvetica', 'bold')`), com word-wrapping preciso e cálculo de largura proporcional.
+- **5. Cabeçalho e Rodapé Padronizados com Dados da ES Engenharia:**
+  - **Cabeçalho (páginas >= 2):** Logo da ES Engenharia em escala proporcional + título formal do documento (`PGR — Programa de Gerenciamento de Riscos (NR-01) | Empresa`) e linha separadora.
+  - **Rodapé (páginas >= 2):** Razão Social, CNPJ e endereço oficial da ES Engenharia (`ES Engenharia de Segurança do Trabalho LTDA. | CNPJ: ... | Endereço ...`) e numeração de páginas (`Página X de Y`), sem menção a vigência.
+- **6. Ajustes de Interface do Sistema:**
+  - `PgrViewerPage.tsx`: Remoção de vigência do quadro superior e tratamento de ART condicional na Seção 4.
+  - `PgrDocumentsPage.tsx`: Coluna da listagem de documentos alterada para *Data de Elaboração*, facilitando a conferência cronológica.
+
+
 
 
 

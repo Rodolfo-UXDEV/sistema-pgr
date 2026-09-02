@@ -158,6 +158,49 @@ export function renderTableCellContent(cell: string): React.ReactNode {
       </span>
     );
   }
+  // 5. Badges das Categorias de Risco Ocupacional (Item 10.2 do PGR)
+  if (trimmed === 'Agentes Físicos' || trimmed === 'Físico') {
+    return (
+      <span className="inline-block px-2.5 py-1 text-xs font-bold bg-emerald-600 text-white rounded shadow-xs">
+        {trimmed}
+      </span>
+    );
+  }
+  if (trimmed === 'Agentes Químicos' || trimmed === 'Químico') {
+    return (
+      <span className="inline-block px-2.5 py-1 text-xs font-bold bg-red-600 text-white rounded shadow-xs">
+        {trimmed}
+      </span>
+    );
+  }
+  if (trimmed === 'Agentes Biológicos' || trimmed === 'Biológico') {
+    return (
+      <span className="inline-block px-2.5 py-1 text-xs font-bold bg-[#78350f] text-white rounded shadow-xs">
+        {trimmed}
+      </span>
+    );
+  }
+  if (trimmed === 'Riscos Ergonômicos' || trimmed === 'Ergonômico') {
+    return (
+      <span className="inline-block px-2.5 py-1 text-xs font-bold bg-amber-400 text-slate-900 rounded shadow-xs">
+        {trimmed}
+      </span>
+    );
+  }
+  if (trimmed === 'Riscos Psicossociais Relacionados ao Trabalho' || trimmed === 'Psicossocial' || trimmed.includes('Psicossociais')) {
+    return (
+      <span className="inline-block px-2.5 py-1 text-xs font-bold bg-amber-400 text-slate-900 rounded shadow-xs">
+        {trimmed}
+      </span>
+    );
+  }
+  if (trimmed === 'Riscos de Acidentes' || trimmed === 'Acidente' || trimmed === 'Acidentes') {
+    return (
+      <span className="inline-block px-2.5 py-1 text-xs font-bold bg-blue-600 text-white rounded shadow-xs">
+        {trimmed}
+      </span>
+    );
+  }
 
   return renderMarkdownInline(cell);
 }

@@ -289,7 +289,7 @@ export const PgrDocumentsPage: React.FC = () => {
               <TableHead>Código & Título</TableHead>
               <TableHead>Unidade / Estabelecimento</TableHead>
               <TableHead className="text-center">Versão</TableHead>
-              <TableHead>Vigência</TableHead>
+              <TableHead>Data de Elaboração</TableHead>
               <TableHead>Responsável Técnico (RT)</TableHead>
               <TableHead className="text-center">Status</TableHead>
               <TableHead className="text-right">Ações & Exportação</TableHead>
@@ -325,7 +325,7 @@ export const PgrDocumentsPage: React.FC = () => {
                     </TableCell>
 
                     <TableCell className="text-xs font-mono text-muted-foreground">
-                      {formatDate(doc.validityStart)} a {formatDate(doc.validityEnd)}
+                      {doc.elaborationDate ? (doc.elaborationDate.includes('-') ? doc.elaborationDate.split('-').reverse().join('/') : doc.elaborationDate) : formatDate(doc.validityStart)}
                     </TableCell>
 
                     <TableCell className="text-xs">

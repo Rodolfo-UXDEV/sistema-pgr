@@ -295,9 +295,7 @@ export const PgrViewerPage: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-left max-w-xl mx-auto p-4 bg-background border border-border rounded-xl font-medium">
             <div><strong>Código:</strong> {docData.header.code} (v{docData.header.version})</div>
-            <div><strong>Ano de Vigência:</strong> {docData.header.year}</div>
-            <div><strong>Período:</strong> {docData.header.validityPeriod}</div>
-            <div><strong>Elaboração:</strong> {docData.header.elaborationDate}</div>
+            <div><strong>Data de Elaboração:</strong> {docData.header.elaborationDate}</div>
             <div className="sm:col-span-2">
               <strong>Responsável Técnico:</strong> {docData.header.techRespName} ({docData.header.techRespCouncil})
             </div>
@@ -385,7 +383,10 @@ export const PgrViewerPage: React.FC = () => {
               <strong>Responsável Técnico pela Elaboração:</strong> {docData.header.techRespName} ({docData.header.techRespCouncil})
             </div>
             <div>
-              <strong>ART / RRT:</strong> {docData.header.techRespArt} | <strong>Consultoria SST:</strong> {OFFICIAL_PGR_TEXTS.consultingCompany} ({OFFICIAL_PGR_TEXTS.consultingCrea})
+              {docData.header.techRespArt && docData.header.techRespArt !== 'ART Emitida' && docData.header.techRespArt !== '-' && (
+                <><strong>ART / RRT:</strong> {docData.header.techRespArt} | </>
+              )}
+              <strong>Consultoria SST:</strong> {issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany} ({issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea})
             </div>
           </div>
         </section>

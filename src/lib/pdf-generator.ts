@@ -18,6 +18,113 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
+/**
+ * Tokeniza parágrafo preservando trechos em negrito (**texto**)
+ */
+function parseMarkdownTokens(text: string): { text: string; bold: boolean }[] {
+  const rawTokens: { text: string; bold: boolean }[] = [];
+  const parts = text.split(/(\*\*[\s\S]*?\*\*)/g);
+  for (const part of parts) {
+    if (!part) continue;
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      rawTokens.push({ text: part.slice(2, -2), bold: true });
+    } else {
+      rawTokens.push({ text: part, bold: false });
+    }
+  }
+  return rawTokens;
+}
+
+/**
+ * Renderiza um parágrafo no jsPDF com suporte fiel a palavras em negrito e quebra de linha
+ */
+function renderMarkdownParagraphToPdf(
+  doc: jsPDF,
+  paragraph: string,
+  startX: number,
+  currentY: number,
+  maxWidth: number,
+  lineHeight: number,
+  checkPageBreak: (neededHeight: number) => void
+): number {
+  if (!paragraph.trim()) return currentY;
+
+  // Se for título de subitem ou tabela (ex: 10.1. CONCEITOS ou Tabela 1 – ...)
+  if (/^(?:\d+\.|\d+\.\d+|\d+\.\d+\.\d+|Tabela\s+\d+)/i.test(paragraph.trim()) && paragraph.length < 130) {
+    checkPageBreak(lineHeight + 4);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(30, 41, 59);
+    const clean = paragraph.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
+    const lines = doc.splitTextToSize(clean, maxWidth);
+    doc.text(lines, startX, currentY);
+    currentY += lines.length * lineHeight + 2;
+    return currentY;
+  }
+
+  const tokens = parseMarkdownTokens(paragraph);
+
+  interface WordPiece {
+    text: string;
+    bold: boolean;
+    width: number;
+    isSpace: boolean;
+  }
+
+  const pieces: WordPiece[] = [];
+  for (const token of tokens) {
+    const parts = token.text.split(/(\s+)/);
+    for (const item of parts) {
+      if (!item) continue;
+      doc.setFont('helvetica', token.bold ? 'bold' : 'normal');
+      doc.setFontSize(8);
+      const isSpace = /^\s+$/.test(item);
+      pieces.push({
+        text: item,
+        bold: token.bold,
+        width: doc.getTextWidth(item),
+        isSpace,
+      });
+    }
+  }
+
+  let linePieces: WordPiece[] = [];
+  let currentLineWidth = 0;
+
+  const flushLine = () => {
+    if (linePieces.length === 0) return;
+    checkPageBreak(lineHeight + 2);
+    let drawX = startX;
+    for (const piece of linePieces) {
+      doc.setFont('helvetica', piece.bold ? 'bold' : 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(51, 65, 85);
+      doc.text(piece.text, drawX, currentY);
+      drawX += piece.width;
+    }
+    currentY += lineHeight;
+    linePieces = [];
+    currentLineWidth = 0;
+  };
+
+  for (const piece of pieces) {
+    if (piece.text.includes('\n')) {
+      flushLine();
+      continue;
+    }
+    if (currentLineWidth + piece.width > maxWidth && linePieces.length > 0) {
+      flushLine();
+      if (piece.isSpace) continue;
+    }
+    linePieces.push(piece);
+    currentLineWidth += piece.width;
+  }
+  flushLine();
+  currentY += 2;
+
+  return currentY;
+}
+
 export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> {
   const ctx = filterContextForCompany(rawCtx);
   const docData = buildPgrFullDocument(ctx);
@@ -49,9 +156,17 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   doc.rect(0, 0, 210, 12, 'F');
   doc.rect(0, 285, 210, 12, 'F');
 
+  // Logo da ES no Topo da Capa (com proporção preservada para nunca desconfigurar)
   if (emissoraPng && emissoraPng.startsWith('data:image/')) {
     try {
-      doc.addImage(emissoraPng, 'PNG', 65, 16, 80, 20, undefined, 'FAST');
+      const imgProps = doc.getImageProperties(emissoraPng);
+      const maxW = 75;
+      const maxH = 22;
+      const ratio = Math.min(maxW / imgProps.width, maxH / imgProps.height);
+      const w = imgProps.width * ratio;
+      const h = imgProps.height * ratio;
+      const x = (210 - w) / 2;
+      doc.addImage(emissoraPng, 'PNG', x, 16 + (maxH - h) / 2, w, h, undefined, 'FAST');
     } catch (e) {
       console.error('Erro ao adicionar logo da emissora no PDF:', e);
     }
@@ -83,7 +198,14 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
   if (clientePng && clientePng.startsWith('data:image/')) {
     try {
-      doc.addImage(clientePng, 'PNG', 65, 95, 80, 20, undefined, 'FAST');
+      const cProps = doc.getImageProperties(clientePng);
+      const maxW = 75;
+      const maxH = 20;
+      const ratio = Math.min(maxW / cProps.width, maxH / cProps.height);
+      const w = cProps.width * ratio;
+      const h = cProps.height * ratio;
+      const x = (210 - w) / 2;
+      doc.addImage(clientePng, 'PNG', x, 95 + (maxH - h) / 2, w, h, undefined, 'FAST');
     } catch (e) {
       console.error('Erro ao adicionar logo do cliente no PDF:', e);
     }
@@ -101,20 +223,19 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 135, { align: 'center' });
 
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(30, 155, 150, 45, 3, 3, 'FD');
+  doc.roundedRect(30, 155, 150, 38, 3, 3, 'FD');
   doc.setDrawColor(203, 213, 225);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text(`DOCUMENTO TÉCNICO: ${docData.header.code} (REV: ${docData.header.version})`, 35, 165);
+  doc.text(`DOCUMENTO TÉCNICO: ${docData.header.code} (REV: ${docData.header.version})`, 35, 164);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(51, 65, 85);
-  doc.text(`Vigência: ${docData.header.validityPeriod}`, 35, 172);
-  doc.text(`Responsável Técnico: ${docData.header.techRespName}`, 35, 179);
-  doc.text(`Registro de Classe: ${docData.header.techRespCouncil} | ART: ${docData.header.techRespArt}`, 35, 186);
-  doc.text(`Data de Elaboração: ${docData.header.elaborationDate}`, 35, 193);
+  doc.text(`Responsável Técnico: ${docData.header.techRespName}`, 35, 172);
+  doc.text(`Registro de Classe: ${docData.header.techRespCouncil}`, 35, 180);
+  doc.text(`Data de Elaboração: ${docData.header.elaborationDate}`, 35, 188);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
@@ -212,6 +333,10 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         margin: { left: 14, right: 14 },
       });
       currentY = (doc as any).lastAutoTable.finalY + 8;
+      // Página exclusiva para Seção 3 (Dados Cadastrais)
+      doc.addPage();
+      currentY = 20;
+      continue;
 
     } else if (section.type === 'responsibles_info') {
       doc.setFont('helvetica', 'bold');
@@ -233,8 +358,14 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           [{ content: 'Responsável Técnico pela Elaboração do PGR', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }],
           [{ content: 'Nome do Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.nome || '-' }],
           [{ content: 'Qualificação / Cargo', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.cargo || '-' }],
-          [{ content: 'Registro Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.conselho || '-' }],
-          [{ content: 'ART / RRT Vinculada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.art || '-' }],
+          [{ content: 'Registro Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.conselho || '-' }]
+        );
+        if (el.art && el.art !== 'ART Emitida' && el.art !== '-' && el.art.trim() !== '') {
+          respTableData.push(
+            [{ content: 'ART / RRT Vinculada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.art }]
+          );
+        }
+        respTableData.push(
           [{ content: 'Consultoria Especializada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.empresaConsultoria || '-' }]
         );
       }
@@ -255,8 +386,17 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         margin: { left: 14, right: 14 },
       });
       currentY = (doc as any).lastAutoTable.finalY + 8;
+      // Página exclusiva para Seção 4 (Responsável Técnico)
+      doc.addPage();
+      currentY = 20;
+      continue;
 
     } else if (section.type === 'text') {
+      if (section.id === 'sec-17' && currentY > 25) {
+        doc.addPage();
+        currentY = 20;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -273,14 +413,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           const paras = block.content.split('\n\n');
           for (const para of paras) {
             if (!para.trim()) continue;
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(8);
-            doc.setTextColor(51, 65, 85);
-            const cleanText = para.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-            const lines = doc.splitTextToSize(cleanText, 182);
-            checkPageBreak(lines.length * 3.6 + 4);
-            doc.text(lines, 14, currentY);
-            currentY += lines.length * 3.6 + 3.5;
+            currentY = renderMarkdownParagraphToPdf(doc, para, 14, currentY, 182, 3.8, checkPageBreak);
           }
         } else if (block.type === 'table') {
           checkPageBreak(25);
@@ -300,6 +433,37 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             didParseCell: (data) => {
               if (data.section === 'body') {
                 const text = String(data.cell.raw || '').trim();
+
+                // 1. Cores das Categorias de Risco (Item 10.2 do Desenvolvimento do PGR)
+                if (data.column.index === 0) {
+                  if (/Agentes Físicos/i.test(text)) {
+                    data.cell.styles.fillColor = [22, 163, 74]; // Verde
+                    data.cell.styles.textColor = [255, 255, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (/Agentes Químicos/i.test(text)) {
+                    data.cell.styles.fillColor = [220, 38, 38]; // Vermelho
+                    data.cell.styles.textColor = [255, 255, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (/Agentes Biológicos/i.test(text)) {
+                    data.cell.styles.fillColor = [120, 53, 15]; // Marrom
+                    data.cell.styles.textColor = [255, 255, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (/Riscos Ergonômicos/i.test(text)) {
+                    data.cell.styles.fillColor = [234, 179, 8]; // Amarelo
+                    data.cell.styles.textColor = [30, 41, 59];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (/Riscos Psicossociais/i.test(text)) {
+                    data.cell.styles.fillColor = [234, 179, 8]; // Amarelo
+                    data.cell.styles.textColor = [30, 41, 59];
+                    data.cell.styles.fontStyle = 'bold';
+                  } else if (/Riscos de Acidentes/i.test(text)) {
+                    data.cell.styles.fillColor = [37, 99, 235]; // Azul
+                    data.cell.styles.textColor = [255, 255, 255];
+                    data.cell.styles.fontStyle = 'bold';
+                  }
+                }
+
+                // 2. Cores da Matriz 5x5 e Prioridades
                 if (/\(TRI\)/i.test(text) || /\(TOL\)/i.test(text)) {
                   data.cell.styles.fillColor = [16, 185, 129]; // Emerald 500
                   data.cell.styles.textColor = [255, 255, 255];
@@ -364,7 +528,19 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       }
       currentY += 3;
 
+      // Páginas exclusivas para Seção 2 (Controle de Revisões) e Seção 5 (Introdução)
+      if (section.id === 'sec-2' || section.id === 'sec-5') {
+        doc.addPage();
+        currentY = 20;
+        continue;
+      }
+
     } else if (section.type === 'risk_inventory_table') {
+      if (currentY > 25) {
+        doc.addPage();
+        currentY = 20;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -384,8 +560,11 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         doc.text('Nenhum setor ou risco registrado no inventário.', 14, currentY);
         currentY += 8;
       } else {
-        for (const group of gheGroups) {
-          checkPageBreak(35);
+        gheGroups.forEach((group, gIdx) => {
+          if (gIdx > 0) {
+            doc.addPage();
+            currentY = 20;
+          }
 
           const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
           const gheHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
@@ -424,6 +603,9 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             doc.text('Nenhum risco ocupacional identificado para este setor/GHE.', 14, currentY);
             currentY += 6;
           } else {
+            doc.addPage();
+            currentY = 20;
+
             for (const item of group.risks) {
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catRgb = hexToRgb(catConfig?.color || '#16a34a');
@@ -489,83 +671,82 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               const sectionGray: [number, number, number] = [226, 232, 240];
               const labelGray: [number, number, number] = [248, 250, 252];
 
-              const tableBody = [
+              checkPageBreak(50);
+
+              const cardRows: any[] = [
                 [
-                  { content: headerTitle, colSpan: 4, styles: { fillColor: headerGray, fontStyle: 'bold', halign: 'center', textColor: [255, 255, 255] } }
+                  { content: headerTitle, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left' } },
+                  { content: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', colSpan: 3, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
+                  { content: `GRUPO: ${item.hazardCategory.toUpperCase()}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
                 ],
                 [
-                  { content: `Risco ${catConfig?.label || 'Físico'}`, colSpan: 1, styles: { fillColor: catRgb, fontStyle: 'bold', halign: 'center', textColor: [255, 255, 255] } },
-                  { content: `Agente: ${item.hazardName}`, colSpan: 3, styles: { fontStyle: 'bold' } }
+                  { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
                 ],
                 [
-                  { content: 'Tipo de Exposição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: expPart1, colSpan: 1, styles: { halign: 'center' } },
-                  { content: expPart2, colSpan: 2, styles: { halign: 'center' } }
+                  { content: 'Tipo do Agente / Perigo:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: item.hazardName || 'Não informado', colSpan: 4 }
                 ],
                 [
-                  { content: 'Fontes ou circunstância', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: item.sourceDescription || 'Setor de Produção', colSpan: 3 }
+                  { content: 'Fonte ou Circunstância:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: item.sourceDescription || 'Não informada', colSpan: 2 },
+                  { content: 'Possíveis Lesões / Danos à Saúde:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 42 } },
+                  { content: item.healthDamage || 'Não informado', cellWidth: 36 }
                 ],
                 [
-                  { content: 'Trajetória', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: item.trajectory || 'Ar', colSpan: 3 }
+                  { content: '2. PERFIL DE EXPOSIÇÃO E MEDIDAS DE CONTROLE EXISTENTES', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
                 ],
                 [
-                  { content: 'Via de penetração', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: item.penetrationRoute || 'Auditiva (Ouvido / Som)', colSpan: 3 }
+                  { content: 'Meio de Propagação / Trajetória:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: item.trajectory || 'Não informado', colSpan: 2 },
+                  { content: 'Tipo e Regime de Exposição:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 42 } },
+                  { content: `${expPart1} / ${expPart2}`, cellWidth: 36 }
                 ],
                 [
-                  { content: 'Efeitos a saúde', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: item.healthDamage || 'Perda Auditiva Induzida por Ruído (PAIR)', colSpan: 3 }
+                  { content: 'Medidas de Controle Existentes:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: epcEpiFinal, colSpan: 4 }
                 ],
                 [
-                  { content: 'EPC/EPI', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: epcEpiFinal, colSpan: 3 }
+                  { content: '3. AVALIAÇÃO QUANTITATIVA / QUALITATIVA DO AGENTE', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
                 ],
                 [
-                  { content: 'Medição', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+                  { content: 'Tipo de Avaliação / Critério:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: criterio, cellWidth: 32 },
+                  { content: 'Técnica / Norma:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 34 } },
+                  { content: tecnica, cellWidth: 38 },
+                  { content: `Data: ${dataMedicao}`, styles: { fontStyle: 'bold', cellWidth: 40, halign: 'center' } }
                 ],
                 [
-                  { content: `Critério: ${criterio}`, colSpan: 2, styles: { fontStyle: 'bold' } },
-                  { content: `Técnica utilizada: ${tecnica}`, colSpan: 2, styles: { fontStyle: 'bold' } }
+                  { content: 'Nível / Concentração Obtida:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: resultado, cellWidth: 32 },
+                  { content: 'Limite de Tolerância (NR-15):', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 34 } },
+                  { content: lt, cellWidth: 38 },
+                  { content: `Status: ${statusAgente}`, styles: { fontStyle: 'bold', cellWidth: 40, halign: 'center', textColor: [2, 132, 199] } }
                 ],
                 [
-                  { content: 'Data da medição', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-                  { content: 'Resultado', colSpan: 2, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-                  { content: 'LT', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
+                  { content: '4. CLASSIFICAÇÃO DO RISCO OCUPACIONAL (MATRIZ 5x5 - GRO)', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
                 ],
                 [
-                  { content: dataMedicao, colSpan: 1, styles: { halign: 'center' } },
-                  { content: resultado, colSpan: 2, styles: { halign: 'center', fontStyle: 'bold' } },
-                  { content: lt, colSpan: 1, styles: { halign: 'center' } }
+                  { content: 'Probabilidade:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: `${item.probability || '1'} (Nível ${item.probability || '1'})`, cellWidth: 32 },
+                  { content: 'Severidade:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 34 } },
+                  { content: `${item.severity || '1'} (Nível ${item.severity || '1'})`, cellWidth: 38 },
+                  { content: `Risco: ${item.riskLevel || 'BAIXO'}`, styles: { fontStyle: 'bold', cellWidth: 40, halign: 'center', fillColor: [241, 245, 249] } }
                 ],
                 [
-                  { content: 'Categorização do risco/perigo', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
+                  { content: 'Prioridade de Ação:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: prioridade, colSpan: 2, styles: { fontStyle: 'bold' } },
+                  { content: 'Enquadramento eSocial:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 42 } },
+                  { content: item.esocialCode || '09.01.001 (Ausência/NAP)', cellWidth: 36 }
                 ],
                 [
-                  { content: 'Severidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-                  { content: 'Probabilidade', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-                  { content: 'Status do agente', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } },
-                  { content: 'Prioridade de ação', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold', halign: 'center' } }
-                ],
-                [
-                  { content: item.severity, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-                  { content: item.probability, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-                  { content: statusAgente, colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-                  { content: item.actionPriority || prioridade, colSpan: 1, styles: { halign: 'center' } }
-                ],
-                [
-                  { content: 'Recomendações', colSpan: 4, styles: { fillColor: sectionGray, fontStyle: 'bold', halign: 'center', textColor: [15, 23, 42] } }
-                ],
-                [
-                  { content: 'Recomendações', colSpan: 1, styles: { fillColor: labelGray, fontStyle: 'bold' } },
-                  { content: item.recommendations || 'NAP', colSpan: 3 }
+                  { content: 'Medidas de Controle Propostas:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: item.recommendations || 'Manter o monitoramento contínuo das condições ambientais e o cumprimento dos procedimentos operacionais padrão.', colSpan: 4 }
                 ]
               ];
 
               autoTable(doc, {
                 startY: currentY,
-                body: tableBody as any,
+                body: cardRows,
                 theme: 'grid',
                 styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
                 margin: { left: 14, right: 14 },
@@ -575,10 +756,15 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             }
           }
           currentY += 2;
-        }
+        });
       }
 
     } else if (section.type === 'action_plan_table') {
+      if (currentY > 25) {
+        doc.addPage();
+        currentY = 20;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -639,9 +825,17 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       });
 
       currentY = (doc as any).lastAutoTable.finalY + 8;
+      // Página exclusiva para o Plano de Ação
+      doc.addPage();
+      currentY = 20;
+      continue;
 
     } else if (section.type === 'closing_signatures') {
-      checkPageBreak(45);
+      if (currentY > 25) {
+        doc.addPage();
+        currentY = 20;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(10.5);
       doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -673,21 +867,47 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       doc.line(115, currentY, 190, currentY);
       doc.text(ctx.company.legalRepresentative, 152.5, currentY + 4, { align: 'center' });
       currentY += 20;
+
+      // Página exclusiva para o encerramento
+      doc.addPage();
+      currentY = 20;
+      continue;
     }
   }
 
   const totalPages = doc.getNumberOfPages();
   for (let p = 2; p <= totalPages; p++) {
     doc.setPage(p);
+
+    if (emissoraPng && emissoraPng.startsWith('data:image/')) {
+      try {
+        const hProps = doc.getImageProperties(emissoraPng);
+        const maxH = 6;
+        const maxW = 32;
+        const ratio = Math.min(maxW / hProps.width, maxH / hProps.height);
+        const w = hProps.width * ratio;
+        const h = hProps.height * ratio;
+        doc.addImage(emissoraPng, 'PNG', 14, 5.5 + (maxH - h) / 2, w, h, undefined, 'FAST');
+      } catch (e) {}
+    }
+
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(100, 116, 139);
-    doc.text(`PGR — Programa de Gerenciamento de Riscos (NR-01) | ${docData.header.companyName}`, 14, 9);
+    doc.text(`PGR — Programa de Gerenciamento de Riscos (NR-01) | ${docData.header.companyName}`, 50, 9.5);
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.3);
-    doc.line(14, 11, 196, 11);
+    doc.line(14, 13, 196, 13);
     doc.line(14, 283, 196, 283);
-    doc.text(`${docData.header.code} (v${docData.header.version}) | Vigência: ${docData.header.validityPeriod}`, 14, 287);
+
+    const addr = issuerConfig.address;
+    const issuerAddr = `${addr.street}, ${addr.number}${addr.complement ? ` - ${addr.complement}` : ''} - ${addr.city}/${addr.state}`;
+    const footerCompanyInfo = `${issuerConfig.name} | CNPJ: ${issuerConfig.cnpj} | ${issuerAddr}`;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(footerCompanyInfo, 14, 287);
     doc.text(`Página ${p} de ${totalPages}`, 196, 287, { align: 'right' });
   }
 
