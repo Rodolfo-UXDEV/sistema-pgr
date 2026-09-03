@@ -658,11 +658,13 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         companyId: newItem.companyId,
         establishmentId: newItem.establishmentId,
         riskInventoryId: newItem.id,
-        what: `Mitigação de ${newItem.hazardName}: implementar melhorias técnicas e controle de exposição`,
+        what: newItem.recommendations?.trim() || `Mitigação de ${newItem.hazardName}: implementar melhorias técnicas e controle de exposição`,
         why: `Risco classificado como ${newItem.riskLevel}. Necessidade de atendimento à NR-01.`,
         whereLoc: 'Setor operacional',
-        who: 'Engenharia de Segurança e Manutenção',
-        whenDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        who: newItem.actionResponsible || activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção',
+        startDate: newItem.actionStartDate || new Date().toISOString().split('T')[0],
+        whenDate: newItem.actionEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        priority: newItem.actionPriority || (newItem.riskLevel === 'INTOLERAVEL' ? 'Urgente' : newItem.riskLevel === 'SUBSTANCIAL' ? 'Alta' : newItem.riskLevel === 'MODERADO' ? 'Média' : 'Baixa'),
         how: 'Desenvolver projeto de enclausuramento / exaustão ou substituição de processo, complementando com EPI com CA.',
         howMuch: 0,
         status: 'NAO_INICIADA',
@@ -682,6 +684,22 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const target = riskInventory.find(r => r.id === id);
     if (target) {
       await saveToFirestore(COLLECTIONS.RISK_INVENTORY, { ...target, ...updated, id });
+    }
+
+    // Se houver ação vinculada a esse risco, manter os campos sincronizados
+    const relatedAction = actionPlans.find(a => a.riskInventoryId === id);
+    if (relatedAction) {
+      const actionUpdates: Partial<ActionPlanItem> = {};
+      if (data.recommendations) actionUpdates.what = data.recommendations;
+      if (data.actionPriority) actionUpdates.priority = data.actionPriority;
+      if (data.actionStartDate) actionUpdates.startDate = data.actionStartDate;
+      if (data.actionEndDate) actionUpdates.whenDate = data.actionEndDate;
+      if (data.actionResponsible) actionUpdates.who = data.actionResponsible;
+
+      if (Object.keys(actionUpdates).length > 0) {
+        setActionPlans(prev => prev.map(a => a.id === relatedAction.id ? { ...a, ...actionUpdates, updatedAt: new Date().toISOString() } : a));
+        await saveToFirestore(COLLECTIONS.ACTION_PLANS, { ...relatedAction, ...actionUpdates, id: relatedAction.id, updatedAt: new Date().toISOString() });
+      }
     }
   };
 

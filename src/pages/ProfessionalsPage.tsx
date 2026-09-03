@@ -14,7 +14,7 @@ import {
   DialogFooter, 
   DialogDescription 
 } from '@/components/ui/dialog';
-import { Award, Plus, Edit, Trash2, Mail, Phone, ShieldCheck } from 'lucide-react';
+import { Award, Plus, Edit, Trash2, Mail, Phone, ShieldCheck, X } from 'lucide-react';
 
 export const ProfessionalsPage: React.FC = () => {
   const { professionals, addProfessional, updateProfessional, deleteProfessional } = usePgr();
@@ -23,7 +23,9 @@ export const ProfessionalsPage: React.FC = () => {
   const [editingProf, setEditingProf] = useState<Professional | null>(null);
 
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'ENGENHEIRO_SEGURANCA' | 'TECNICO_SEGURANCA' | 'MEDICO_TRABALHO' | 'HIGIENISTA_OCUPACIONAL'>('ENGENHEIRO_SEGURANCA');
+  const [role, setRole] = useState<'ENGENHEIRO_SEGURANCA' | 'TECNICO_SEGURANCA' | 'MEDICO_TRABALHO' | 'HIGIENISTA_OCUPACIONAL' | string>('ENGENHEIRO_SEGURANCA');
+  const [qualifications, setQualifications] = useState<string[]>(['Engenheiro de Seg. do Trabalho']);
+  const [customQualifInput, setCustomQualifInput] = useState('');
   const [registrationCouncil, setRegistrationCouncil] = useState('CREA/SC');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [registrationState, setRegistrationState] = useState('SC');
@@ -31,10 +33,41 @@ export const ProfessionalsPage: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const STANDARD_QUALIFICATIONS = [
+    'Engenheiro de Seg. do Trabalho',
+    'Técnico de Seg. do Trabalho',
+    'Médico do Trabalho',
+    'Higienista Ocupacional',
+    'Perito Judicial',
+    'Ergonomista',
+  ];
+
+  const toggleQualification = (qualif: string) => {
+    setQualifications(prev => {
+      if (prev.includes(qualif)) {
+        const next = prev.filter(q => q !== qualif);
+        return next.length > 0 ? next : prev; // manter pelo menos 1
+      } else {
+        return [...prev, qualif];
+      }
+    });
+  };
+
+  const handleAddCustomQualification = () => {
+    if (!customQualifInput.trim()) return;
+    const trimmed = customQualifInput.trim();
+    if (!qualifications.includes(trimmed)) {
+      setQualifications(prev => [...prev, trimmed]);
+    }
+    setCustomQualifInput('');
+  };
+
   const openNewModal = () => {
     setEditingProf(null);
     setName('');
     setRole('ENGENHEIRO_SEGURANCA');
+    setQualifications(['Engenheiro de Seg. do Trabalho']);
+    setCustomQualifInput('');
     setRegistrationCouncil('CREA/SC');
     setRegistrationNumber('');
     setRegistrationState('SC');
@@ -47,6 +80,19 @@ export const ProfessionalsPage: React.FC = () => {
     setEditingProf(p);
     setName(p.name);
     setRole(p.role);
+    if (p.qualifications && p.qualifications.length > 0) {
+      setQualifications(p.qualifications);
+    } else {
+      const defaultQ = p.role === 'ENGENHEIRO_SEGURANCA'
+        ? 'Engenheiro de Seg. do Trabalho'
+        : p.role === 'MEDICO_TRABALHO'
+        ? 'Médico do Trabalho'
+        : p.role === 'TECNICO_SEGURANCA'
+        ? 'Técnico de Seg. do Trabalho'
+        : 'Higienista Ocupacional';
+      setQualifications([defaultQ]);
+    }
+    setCustomQualifInput('');
     setRegistrationCouncil(p.registrationCouncil);
     setRegistrationNumber(p.registrationNumber);
     setRegistrationState(p.registrationState);
@@ -62,11 +108,17 @@ export const ProfessionalsPage: React.FC = () => {
       return;
     }
 
+    if (qualifications.length === 0) {
+      alert('Selecione ao menos uma qualificação técnica.');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const profData: Omit<Professional, 'id' | 'createdAt' | 'updatedAt'> = {
         name: name.trim(),
-        role,
+        role: role as any,
+        qualifications,
         registrationCouncil: registrationCouncil.trim(),
         registrationNumber: registrationNumber.trim(),
         registrationState: registrationState.trim(),
@@ -157,7 +209,17 @@ export const ProfessionalsPage: React.FC = () => {
                 </TableCell>
 
                 <TableCell>
-                  {getRoleBadge(prof.role)}
+                  {prof.qualifications && prof.qualifications.length > 0 ? (
+                    <div className="flex flex-wrap gap-1 max-w-xs">
+                      {prof.qualifications.map((q, idx) => (
+                        <Badge key={idx} variant="outline" className="text-[10px] bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-foreground font-medium">
+                          {q}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    getRoleBadge(prof.role)
+                  )}
                 </TableCell>
 
                 <TableCell className="text-xs font-mono font-semibold">
@@ -225,24 +287,91 @@ export const ProfessionalsPage: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <Label className="text-xs">Qualificação / Função</Label>
-                  <select
-                    value={role}
-                    onChange={(e) => {
-                      const newRole = e.target.value as any;
-                      setRole(newRole);
-                      if (newRole === 'ENGENHEIRO_SEGURANCA') setRegistrationCouncil('CREA');
-                      if (newRole === 'MEDICO_TRABALHO') setRegistrationCouncil('CRM');
-                      if (newRole === 'TECNICO_SEGURANCA') setRegistrationCouncil('MTE');
-                    }}
-                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring"
-                  >
-                    <option value="ENGENHEIRO_SEGURANCA">Engenheiro de Seg. do Trabalho</option>
-                    <option value="TECNICO_SEGURANCA">Técnico de Seg. do Trabalho</option>
-                    <option value="MEDICO_TRABALHO">Médico do Trabalho</option>
-                    <option value="HIGIENISTA_OCUPACIONAL">Higienista Ocupacional</option>
-                  </select>
+                <div className="md:col-span-2 space-y-2 p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-foreground">Qualificações / Cargos Habilitados *</Label>
+                    <span className="text-[11px] text-muted-foreground">Pode selecionar múltiplas</span>
+                  </div>
+                  
+                  {/* Tags de seleção rápida */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {STANDARD_QUALIFICATIONS.map((qualif) => {
+                      const isSelected = qualifications.includes(qualif);
+                      return (
+                        <button
+                          key={qualif}
+                          type="button"
+                          onClick={() => {
+                            toggleQualification(qualif);
+                            if (qualif.includes('Engenheiro')) {
+                              setRole('ENGENHEIRO_SEGURANCA');
+                              setRegistrationCouncil('CREA');
+                            } else if (qualif.includes('Médico')) {
+                              setRole('MEDICO_TRABALHO');
+                              setRegistrationCouncil('CRM');
+                            } else if (qualif.includes('Técnico')) {
+                              setRole('TECNICO_SEGURANCA');
+                              setRegistrationCouncil('MTE');
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-emerald-100 dark:bg-emerald-950/70 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-2xs font-semibold'
+                              : 'bg-background border-border text-muted-foreground hover:bg-muted'
+                          }`}
+                        >
+                          {isSelected ? '✓ ' : '+ '}
+                          {qualif}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Campo para adicionar qualificação personalizada */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Input
+                      value={customQualifInput}
+                      onChange={(e) => setCustomQualifInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomQualification();
+                        }
+                      }}
+                      placeholder="Outra qualificação personalizada (ex: Especialista em Ruído)..."
+                      className="h-8 text-xs flex-1 bg-background"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddCustomQualification}
+                      className="h-8 text-xs shrink-0"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      Adicionar
+                    </Button>
+                  </div>
+
+                  {/* Lista de selecionadas com botão de remoção */}
+                  {qualifications.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-border/60">
+                      <span className="text-[11px] font-medium text-muted-foreground mr-1">Selecionadas:</span>
+                      {qualifications.map((q) => (
+                        <Badge key={q} variant="secondary" className="text-[11px] gap-1 pl-2 pr-1 py-0.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                          <span>{q}</span>
+                          <button
+                            type="button"
+                            onClick={() => toggleQualification(q)}
+                            className="hover:text-destructive cursor-pointer ml-0.5 p-0.5 rounded-full hover:bg-emerald-200/50"
+                            title="Remover qualificação"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div>

@@ -937,22 +937,28 @@ export const PgrViewerPage: React.FC = () => {
                     </TableRow>
                   </>
                 ) : (
-                  pgrContext.actionPlans.map((act: ActionPlanItem) => (
-                    <TableRow key={act.id} className="text-xs hover:bg-muted/30">
-                      <TableCell className="font-medium text-foreground leading-relaxed">{act.what}</TableCell>
-                      <TableCell className="text-center font-mono font-bold">2</TableCell>
-                      <TableCell className="text-center text-muted-foreground">Contínuo</TableCell>
-                      <TableCell className="text-center font-mono text-muted-foreground">
-                        {act.whenDate ? formatDate(act.whenDate) : 'Contínuo'}
-                      </TableCell>
-                      <TableCell className="text-center text-muted-foreground">{act.who || 'SESMT'}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                          {act.status.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  pgrContext.actionPlans.map((act: ActionPlanItem) => {
+                    const matchedRisk = pgrContext.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+                    const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
+                    return (
+                      <TableRow key={act.id} className="text-xs hover:bg-muted/30">
+                        <TableCell className="font-medium text-foreground leading-relaxed">{act.what}</TableCell>
+                        <TableCell className="text-center font-mono font-bold">{priorityText}</TableCell>
+                        <TableCell className="text-center text-muted-foreground">
+                          {act.startDate ? formatDate(act.startDate) : 'Contínuo'}
+                        </TableCell>
+                        <TableCell className="text-center font-mono text-muted-foreground">
+                          {act.whenDate ? formatDate(act.whenDate) : 'Contínuo'}
+                        </TableCell>
+                        <TableCell className="text-center text-muted-foreground">{act.who || 'SESMT'}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+                            {act.status.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

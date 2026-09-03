@@ -163,6 +163,14 @@ export const ActionPlanTable: React.FC = () => {
                   <TableCell className="font-semibold text-xs text-foreground">
                     <div>
                       <span>{action.what}</span>
+                      {action.priority && (
+                        <Badge 
+                          variant={action.priority === 'Urgente' ? 'destructive' : action.priority === 'Alta' ? 'warning' : 'outline'} 
+                          className="ml-1.5 text-[9px] px-1 py-0"
+                        >
+                          {action.priority}
+                        </Badge>
+                      )}
                       {action.efficacyVerified && (
                         <Badge variant="success" className="ml-1.5 text-[9px] px-1 py-0">
                           Eficácia OK
@@ -184,7 +192,9 @@ export const ActionPlanTable: React.FC = () => {
                   </TableCell>
 
                   <TableCell className="text-xs">
-                    <span className="font-mono text-muted-foreground">{formatDate(action.whenDate)}</span>
+                    <span className="font-mono text-muted-foreground text-[11px]">
+                      {action.startDate ? `${formatDate(action.startDate)} - ${formatDate(action.whenDate)}` : formatDate(action.whenDate)}
+                    </span>
                   </TableCell>
 
                   <TableCell className="text-right text-xs font-mono font-medium">

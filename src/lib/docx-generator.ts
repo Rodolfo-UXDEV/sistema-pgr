@@ -870,14 +870,14 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
       const gesLabel = ctx.ghes.length > 0 ? `GES ${ctx.ghes[0].code || '1.0'}` : 'GES 1.0';
 
       const defaultMetas = [
-        ['Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.', '2', 'Contínuo', 'Contínuo', 'SESMT / RH', 'EM ANDAMENTO'],
-        ['Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.', '2', 'Contínuo', 'Contínuo', 'SESMT / Manutenção', 'EM ANDAMENTO'],
-        ['Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.', '2', 'Contínuo', 'Contínuo', 'RH / Treinamento', 'PROGRAMADO'],
-        ['Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO'],
-        ['Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.', '2', 'Contínuo', 'Contínuo', 'Consultoria SST', 'A INICIAR'],
-        ['Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.', '2', 'Contínuo', 'Contínuo', 'SESMT', 'A INICIAR'],
-        ['Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.', '2', 'Contínuo', 'Contínuo', 'RH / Gestão', 'A INICIAR'],
-        ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
+        ['Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / RH', 'EM ANDAMENTO'],
+        ['Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Manutenção', 'EM ANDAMENTO'],
+        ['Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.', 'Média', 'Contínuo', 'Contínuo', 'RH / Treinamento', 'PROGRAMADO'],
+        ['Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO'],
+        ['Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.', 'Média', 'Contínuo', 'Contínuo', 'Consultoria SST', 'A INICIAR'],
+        ['Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.', 'Média', 'Contínuo', 'Contínuo', 'SESMT', 'A INICIAR'],
+        ['Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.', 'Média', 'Contínuo', 'Contínuo', 'RH / Gestão', 'A INICIAR'],
+        ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
       ];
 
       const dataRows = (!actions || actions.length === 0)
@@ -893,18 +893,23 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               ]
             })
           )
-        : actions.map((act: ActionPlanItem) =>
-            new TableRow({
+        : actions.map((act: ActionPlanItem) => {
+            const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+            const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
+            const startDateText = act.startDate || 'Contínuo';
+            const endDateText = act.whenDate || 'Contínuo';
+            const responsibleText = act.who || ctx.establishment?.managerName || 'SESMT';
+            return new TableRow({
               children: [
                 new TableCell({ children: [new Paragraph({ text: act.what })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: '2', alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: 'Contínuo', alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: act.whenDate || 'Contínuo', alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: act.who || 'SESMT', alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: priorityText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: startDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: endDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: responsibleText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: act.status.replace('_', ' ').toUpperCase(), alignment: AlignmentType.CENTER })], borders: cellBorder }),
               ],
-            })
-          );
+            });
+          });
 
       const rows = [
         new TableRow({

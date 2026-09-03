@@ -365,7 +365,20 @@ Com base na solicitação e demonstração visual gravada pela cliente em vídeo
 
 
 
+---
 
+### [03/09/2026] Marco: Múltiplas Qualificações Técnicas & Sincronização Completa do Plano de Ação (5W2H)
 
+1. **Múltiplas Qualificações Técnicas para Profissionais Habilitados:**
+   - Atualização do cadastro de Responsáveis Técnicos (`ProfessionalsPage.tsx` e `pgr.ts`) com suporte a múltiplas qualificações/cargos (ex.: *Engenheiro de Seg. do Trabalho*, *Higienista Ocupacional*, *Perito Judicial*, etc.).
+   - Tags de seleção rápida e campo para inclusão de qualificações personalizadas com badges visuais.
+   - Sincronização no Modelo Oficial (`pgr-official-template.ts`) e Seção 4 do PGR (exibição de todas as qualificações do elaborador técnico).
 
-
+2. **Aprimoramentos Estruturais no Plano de Ação & Inventário de Riscos (NR-01.5.5):**
+   - Inclusão e integração de novos campos no Inventário e Plano de Ação:
+     - **Prazo Inicial** (`startDate` / `actionStartDate`);
+     - **Prazo Final / Limite** (`whenDate` / `actionEndDate`);
+     - **Grau de Prioridade Normativa** (`priority`: Baixa, Média, Alta, Urgente) calculado e sugerido automaticamente conforme o nível do risco (Intolerável -> Urgente, Substancial -> Alta, Moderado -> Média, etc.);
+     - **Responsável pela Ação** (`actionResponsible` / `who`), com atalho para puxar o responsável da unidade.
+   - Sincronização automática em tempo real entre o Inventário de Riscos e o Plano de Ação (5W2H) no Firestore.
+   - Atualização das tabelas do Plano de Ação no **PDF Oficial** (`pdf-generator.ts`), no **Documento Word** (`docx-generator.ts`) e na **Tela de Visualização** (`PgrViewerPage.tsx` e `ActionPlanTable.tsx`), substituindo números estáticos pela prioridade textual e exibindo o intervalo de datas completo.

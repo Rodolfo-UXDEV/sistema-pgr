@@ -115,7 +115,8 @@ export type GHE = GES;
 export interface Professional {
   id: string;
   name: string;
-  role: 'ENGENHEIRO_SEGURANCA' | 'TECNICO_SEGURANCA' | 'MEDICO_TRABALHO' | 'HIGIENISTA_OCUPACIONAL';
+  role: 'ENGENHEIRO_SEGURANCA' | 'TECNICO_SEGURANCA' | 'MEDICO_TRABALHO' | 'HIGIENISTA_OCUPACIONAL' | string;
+  qualifications?: string[]; // Múltiplas qualificações (ex: Engenheiro de Segurança, Higienista Ocupacional, Perito Judicial, Ergonomista)
   registrationCouncil: string; // CREA, MTE, CRM, etc.
   registrationNumber: string;
   registrationState: string;
@@ -190,7 +191,10 @@ export interface RiskInventoryItem {
   severity: number; // 1 (Leve) a 5 (Catastrófico/Morte)
   riskScore: number; // 1 a 25
   riskLevel: RiskLevel;
-  actionPriority?: 'Baixa' | 'Média' | 'Alta' | string;
+  actionPriority?: 'Baixa' | 'Média' | 'Alta' | 'Urgente' | string;
+  actionStartDate?: string; // Prazo Inicial do Plano de Ação
+  actionEndDate?: string; // Prazo Final do Plano de Ação
+  actionResponsible?: string; // Responsável pelo Plano de Ação
   
   // Medidas de Prevenção e Controle
   epcExisting: string[];
@@ -221,11 +225,13 @@ export interface ActionPlanItem {
   riskInventoryId?: string;
   
   // Metodologia 5W2H
-  what: string; // O que fazer
+  what: string; // O que fazer / Metas
   why: string; // Por que fazer
   whereLoc: string; // Onde será feito (Setor/Ambiente)
   who: string; // Quem é o responsável
-  whenDate: string; // Quando (Prazo limite)
+  startDate?: string; // Prazo Inicial
+  whenDate: string; // Prazo Final (Prazo limite)
+  priority?: 'Baixa' | 'Média' | 'Alta' | 'Urgente' | string; // Grau de Prioridade
   how: string; // Como será executado
   howMuch?: number; // Custo estimado (R$)
   

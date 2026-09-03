@@ -671,24 +671,26 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
               const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
 
-              let statusAgente = 'Risco Baixo';
-              let prioridade = 'Baixa';
-              if (item.riskLevel === 'TRIVIAL') {
-                statusAgente = 'Risco Muito Baixo';
-                prioridade = 'Nenhuma';
-              } else if (item.riskLevel === 'TOLERAVEL') {
-                statusAgente = 'Risco Baixo';
-                prioridade = 'Baixa';
-              } else if (item.riskLevel === 'MODERADO') {
-                statusAgente = 'Risco Médio';
-                prioridade = 'Média';
-              } else if (item.riskLevel === 'SUBSTANCIAL') {
-                statusAgente = 'Risco Alto';
-                prioridade = 'Alta';
-              } else if (item.riskLevel === 'INTOLERAVEL') {
-                statusAgente = 'Risco Crítico';
-                prioridade = 'Crítica / Imediata';
+              // Cálculo de nível de risco conforme Tabela 6 do PGR (Baixo, Médio, Alto, Extremo)
+              const score = item.riskScore || (Number(item.severity || 1) * Number(item.probability || 1));
+              let displayRiskLevel = 'BAIXO';
+              let prioridadeCalculada = 'Baixa';
+
+              if (score >= 16 || item.riskLevel === 'INTOLERAVEL') {
+                displayRiskLevel = 'EXTREMO';
+                prioridadeCalculada = 'Urgente';
+              } else if (score >= 10 || item.riskLevel === 'SUBSTANCIAL') {
+                displayRiskLevel = 'ALTO';
+                prioridadeCalculada = 'Alta';
+              } else if (score >= 5 || item.riskLevel === 'MODERADO') {
+                displayRiskLevel = 'MÉDIO';
+                prioridadeCalculada = 'Média';
+              } else {
+                displayRiskLevel = 'BAIXO';
+                prioridadeCalculada = 'Baixa';
               }
+
+              const prioridadeFinal = item.actionPriority || prioridadeCalculada;
 
               const headerGray: [number, number, number] = [82, 82, 91];
               const sectionGray: [number, number, number] = [226, 232, 240];
@@ -700,7 +702,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                 [
                   { content: headerTitle, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left' } },
                   { content: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', colSpan: 3, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
-                  { content: `GRUPO: ${item.hazardCategory.toUpperCase()}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
+                  { content: `RISCO ${item.hazardCategory.toUpperCase()}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
                 ],
                 [
                   { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
@@ -733,33 +735,30 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                 ],
                 [
                   { content: 'Tipo de Avaliação / Critério:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
-                  { content: criterio, cellWidth: 32 },
+                  { content: criterio, cellWidth: 30 },
                   { content: 'Técnica / Norma:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 34 } },
-                  { content: tecnica, cellWidth: 38 },
-                  { content: `Data: ${dataMedicao}`, styles: { fontStyle: 'bold', cellWidth: 40, halign: 'center' } }
+                  { content: tecnica, cellWidth: 36 },
+                  { content: `Data da Avaliação: ${dataMedicao}`, styles: { fontStyle: 'bold', cellWidth: 44, halign: 'center' } }
                 ],
                 [
                   { content: 'Nível / Concentração Obtida:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
-                  { content: resultado, cellWidth: 32 },
+                  { content: resultado, cellWidth: 30 },
                   { content: 'Limite de Tolerância (NR-15):', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 34 } },
-                  { content: lt, cellWidth: 38 },
-                  { content: `Status: ${statusAgente}`, styles: { fontStyle: 'bold', cellWidth: 40, halign: 'center', textColor: [2, 132, 199] } }
+                  { content: lt, colSpan: 2, cellWidth: 80 }
                 ],
                 [
                   { content: '4. CLASSIFICAÇÃO DO RISCO OCUPACIONAL (MATRIZ 5x5 - GRO)', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
                 ],
                 [
                   { content: 'Probabilidade:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
-                  { content: `${item.probability || '1'} (Nível ${item.probability || '1'})`, cellWidth: 32 },
+                  { content: `${item.probability || '1'} (Nível ${item.probability || '1'})`, cellWidth: 30 },
                   { content: 'Severidade:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 34 } },
-                  { content: `${item.severity || '1'} (Nível ${item.severity || '1'})`, cellWidth: 38 },
-                  { content: `Risco: ${item.riskLevel || 'BAIXO'}`, styles: { fontStyle: 'bold', cellWidth: 40, halign: 'center', fillColor: [241, 245, 249] } }
+                  { content: `${item.severity || '1'} (Nível ${item.severity || '1'})`, cellWidth: 36 },
+                  { content: `Risco: ${displayRiskLevel}`, styles: { fontStyle: 'bold', cellWidth: 44, halign: 'center', fillColor: [241, 245, 249] } }
                 ],
                 [
                   { content: 'Prioridade de Ação:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
-                  { content: prioridade, colSpan: 2, styles: { fontStyle: 'bold' } },
-                  { content: 'Enquadramento eSocial:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 42 } },
-                  { content: (item as any).esocialCode || '09.01.001 (Ausência/NAP)', cellWidth: 36 }
+                  { content: prioridadeFinal, colSpan: 4, styles: { fontStyle: 'bold' } }
                 ],
                 [
                   { content: 'Medidas de Controle Propostas:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
@@ -797,14 +796,14 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       const gesLabel = ctx.ghes.length > 0 ? `GES ${ctx.ghes[0].code || '1.0'}` : 'GES 1.0';
 
       const defaultMetas = [
-        ['Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.', '2', 'Contínuo', 'Contínuo', 'SESMT / RH', 'EM ANDAMENTO'],
-        ['Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.', '2', 'Contínuo', 'Contínuo', 'SESMT / Manutenção', 'EM ANDAMENTO'],
-        ['Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.', '2', 'Contínuo', 'Contínuo', 'RH / Treinamento', 'PROGRAMADO'],
-        ['Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO'],
-        ['Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.', '2', 'Contínuo', 'Contínuo', 'Consultoria SST', 'A INICIAR'],
-        ['Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.', '2', 'Contínuo', 'Contínuo', 'SESMT', 'A INICIAR'],
-        ['Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.', '2', 'Contínuo', 'Contínuo', 'RH / Gestão', 'A INICIAR'],
-        ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', '2', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
+        ['Manter o fornecimento e a obrigatoriedade do uso dos EPIs especificados, com substituição conforme condições de uso, desgaste e orientação do fabricante.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / RH', 'EM ANDAMENTO'],
+        ['Realizar inspeções periódicas das condições de segurança dos ambientes, equipamentos e instalações.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Manutenção', 'EM ANDAMENTO'],
+        ['Manter os treinamentos e orientações de segurança conforme os riscos e as atividades desenvolvidas.', 'Média', 'Contínuo', 'Contínuo', 'RH / Treinamento', 'PROGRAMADO'],
+        ['Manter as medidas de controle existentes para os agentes ocupacionais identificados e acompanhar sua eficácia.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO'],
+        ['Realizar avaliações quantitativas dos agentes físicos e químicos, quando aplicável, conforme os critérios técnicos e legais pertinentes.', 'Média', 'Contínuo', 'Contínuo', 'Consultoria SST', 'A INICIAR'],
+        ['Elaborar e implementar o PPR – Programa de Proteção Respiratória, quando aplicável.', 'Média', 'Contínuo', 'Contínuo', 'SESMT', 'A INICIAR'],
+        ['Avaliar e acompanhar os fatores de riscos psicossociais relacionados ao trabalho, implementando medidas de prevenção quando necessárias.', 'Média', 'Contínuo', 'Contínuo', 'RH / Gestão', 'A INICIAR'],
+        ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
       ];
 
       const actionRows = (!actions || actions.length === 0)
@@ -814,14 +813,26 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           ]
         : [
             [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
-            ...actions.map((act: ActionPlanItem) => [
-              act.what,
-              '2',
-              'Contínuo',
-              act.whenDate ? (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate) : 'Contínuo',
-              act.who || 'SESMT',
-              act.status.replace('_', ' ').toUpperCase(),
-            ])
+            ...actions.map((act: ActionPlanItem) => {
+              const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+              const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
+              const startDateText = act.startDate 
+                ? (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate)
+                : 'Contínuo';
+              const endDateText = act.whenDate 
+                ? (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate)
+                : 'Contínuo';
+              const responsibleText = act.who || ctx.establishment?.managerName || 'SESMT';
+              const statusText = act.status ? act.status.replace(/_/g, ' ').toUpperCase() : 'NÃO INICIADA';
+              return [
+                act.what,
+                priorityText,
+                startDateText,
+                endDateText,
+                responsibleText,
+                statusText,
+              ];
+            })
           ];
 
       autoTable(doc, {
@@ -833,8 +844,8 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         styles: { fontSize: 7, cellPadding: 2, textColor: [30, 41, 59] },
         margin: { left: 14, right: 14 },
         columnStyles: {
-          0: { cellWidth: 72 },
-          1: { cellWidth: 20, halign: 'center' },
+          0: { cellWidth: 70 },
+          1: { cellWidth: 22, halign: 'center' },
           2: { cellWidth: 22, halign: 'center' },
           3: { cellWidth: 22, halign: 'center' },
           4: { cellWidth: 26, halign: 'center' },

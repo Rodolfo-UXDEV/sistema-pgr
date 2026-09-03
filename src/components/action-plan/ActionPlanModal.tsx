@@ -41,7 +41,9 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
   const [why, setWhy] = useState('');
   const [whereLoc, setWhereLoc] = useState('');
   const [who, setWho] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [whenDate, setWhenDate] = useState('');
+  const [priority, setPriority] = useState<string>('Média');
   const [how, setHow] = useState('');
   const [howMuch, setHowMuch] = useState<number>(0);
   const [status, setStatus] = useState<ActionStatus>('NAO_INICIADA');
@@ -62,7 +64,9 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
       setWhy(initialItem.why);
       setWhereLoc(initialItem.whereLoc);
       setWho(initialItem.who);
+      setStartDate(initialItem.startDate || '');
       setWhenDate(initialItem.whenDate);
+      setPriority(initialItem.priority || 'Média');
       setHow(initialItem.how);
       setHowMuch(initialItem.howMuch || 0);
       setStatus(initialItem.status);
@@ -75,8 +79,10 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
       setWhat('');
       setWhy('');
       setWhereLoc(activeEstablishment?.name || '');
-      setWho('');
+      setWho(activeEstablishment?.managerName || '');
+      setStartDate(new Date().toISOString().split('T')[0]);
       setWhenDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      setPriority('Média');
       setHow('');
       setHowMuch(0);
       setStatus('NAO_INICIADA');
@@ -109,7 +115,9 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
         why: why.trim(),
         whereLoc: whereLoc.trim(),
         who: who.trim(),
+        startDate: startDate || undefined,
         whenDate,
+        priority: priority || 'Média',
         how: how.trim() || 'Conforme especificação técnica',
         howMuch: Number(howMuch) || 0,
         status,
@@ -231,10 +239,22 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
               />
             </div>
 
-            {/* When */}
+            {/* Prazo Inicial e Prazo Final */}
             <div>
               <Label className="text-xs font-bold text-foreground">
-                WHEN? - Prazo limite de conclusão *
+                Prazo Inicial (Data de Início)
+              </Label>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="h-9 mt-1 text-xs"
+              />
+            </div>
+
+            <div>
+              <Label className="text-xs font-bold text-foreground">
+                WHEN? - Prazo Final / Término *
               </Label>
               <Input
                 type="date"
@@ -243,6 +263,23 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
                 required
                 className="h-9 mt-1 text-xs"
               />
+            </div>
+
+            {/* Priority */}
+            <div>
+              <Label className="text-xs font-bold text-foreground">
+                Grau de Prioridade (NR-01)
+              </Label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs focus:ring-1 focus:ring-ring font-medium"
+              >
+                <option value="Baixa">Baixa</option>
+                <option value="Média">Média</option>
+                <option value="Alta">Alta</option>
+                <option value="Urgente">Urgente</option>
+              </select>
             </div>
 
             {/* How Much */}

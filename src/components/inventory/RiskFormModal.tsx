@@ -94,6 +94,8 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
     hazards,
     addRiskItem,
     updateRiskItem,
+    actionPlans,
+    updateActionPlan,
   } = usePgr();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,11 +114,11 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   const [hazardCode, setHazardCode] = useState('');
   const [exposureType, setExposureType] = useState<ExposureType>('HABITUAL_PERMANENTE');
   const [trajectory, setTrajectory] = useState('Ar');
-  const [penetrationRoute, setPenetrationRoute] = useState('Respiratória (Inalação)');
+  const [penetrationRoute, setPenetrationRoute] = useState('Auditiva (Ouvido / Som)');
   const [healthDamage, setHealthDamage] = useState('');
   const [sourceDescription, setSourceDescription] = useState('');
 
-  // Prevenção e Controles (EPC / EPI)
+  // 2.1 EPC / EPI
   const [epcInput, setEpcInput] = useState('');
   const [epcList, setEpcList] = useState<string[]>([]);
   const [newEpiName, setNewEpiName] = useState('');
@@ -124,7 +126,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   const [newEpiVal, setNewEpiVal] = useState('');
   const [epiList, setEpiList] = useState<EpiControl[]>([]);
 
-  // 3. Medição
+  // 3. Medição Ambiental
   const [hasMeasurement, setHasMeasurement] = useState(false);
   const [measurementCriteria, setMeasurementCriteria] = useState('Quantitativo (NR-15 / NHO)');
   const [measurementTechnique, setMeasurementTechnique] = useState('');
@@ -140,6 +142,9 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   // 5. Recomendações & Plano de Ação
   const [recommendations, setRecommendations] = useState('');
   const [actionRequired, setActionRequired] = useState(true);
+  const [actionStartDate, setActionStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [actionEndDate, setActionEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  const [actionResponsible, setActionResponsible] = useState('');
 
   // 6. Avaliações e Resultados (Imagens)
   const [evaluationImages, setEvaluationImages] = useState<string[]>([]);
@@ -194,7 +199,11 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
 
       setSeverity(initialItem.severity || 3);
       setProbability(initialItem.probability || 3);
-      setActionPriority(initialItem.actionPriority || (initialItem.riskLevel === 'INTOLERAVEL' || initialItem.riskLevel === 'SUBSTANCIAL' ? 'Alta' : initialItem.riskLevel === 'MODERADO' ? 'Média' : 'Baixa'));
+      const linkedAction = actionPlans.find(a => a.riskInventoryId === initialItem.id);
+      setActionPriority(initialItem.actionPriority || linkedAction?.priority || (initialItem.riskLevel === 'INTOLERAVEL' ? 'Urgente' : initialItem.riskLevel === 'SUBSTANCIAL' ? 'Alta' : initialItem.riskLevel === 'MODERADO' ? 'Média' : 'Baixa'));
+      setActionStartDate(initialItem.actionStartDate || linkedAction?.startDate || new Date().toISOString().split('T')[0]);
+      setActionEndDate(initialItem.actionEndDate || linkedAction?.whenDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      setActionResponsible(initialItem.actionResponsible || linkedAction?.who || activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção');
 
       setRecommendations(initialItem.recommendations || '');
       setActionRequired(initialItem.actionRequired ?? true);
@@ -232,6 +241,9 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setSeverity(3);
       setProbability(3);
       setActionPriority('Média');
+      setActionStartDate(new Date().toISOString().split('T')[0]);
+      setActionEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      setActionResponsible(activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção');
 
       setRecommendations('');
       setActionRequired(true);
@@ -382,7 +394,10 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
         severity,
         riskScore: score,
         riskLevel: level,
-        actionPriority: actionPriority || (level === 'INTOLERAVEL' || level === 'SUBSTANCIAL' ? 'Alta' : level === 'MODERADO' ? 'Média' : 'Baixa'),
+        actionPriority: actionPriority || (level === 'INTOLERAVEL' ? 'Urgente' : level === 'SUBSTANCIAL' ? 'Alta' : level === 'MODERADO' ? 'Média' : 'Baixa'),
+        actionStartDate: actionStartDate || undefined,
+        actionEndDate: actionEndDate || undefined,
+        actionResponsible: actionResponsible.trim() || undefined,
         epcExisting: epcList,
         adminMeasuresExisting: [],
         epiExisting: epiList,
@@ -394,6 +409,17 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
 
       if (initialItem) {
         await updateRiskItem(initialItem.id, riskData);
+        // Sincroniza com o Plano de Ação correspondente se existir
+        const linkedAction = actionPlans.find(a => a.riskInventoryId === initialItem.id);
+        if (linkedAction) {
+          await updateActionPlan(linkedAction.id, {
+            what: recommendations.trim() || linkedAction.what,
+            priority: actionPriority,
+            startDate: actionStartDate,
+            whenDate: actionEndDate || linkedAction.whenDate,
+            who: actionResponsible.trim() || linkedAction.who,
+          });
+        }
       } else {
         await addRiskItem(riskData);
       }
@@ -826,8 +852,10 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
               onChange={(s, p, level) => {
                 setSeverity(s);
                 setProbability(p);
-                // Se o usuário ainda não personalizou, atualiza a prioridade sugerida com base no nível
-                if (level === 'INTOLERAVEL' || level === 'SUBSTANCIAL') {
+                // Atualiza a prioridade sugerida com base no nível (Tabela 6 e 7 do PGR)
+                if (level === 'INTOLERAVEL') {
+                  setActionPriority('Urgente');
+                } else if (level === 'SUBSTANCIAL') {
                   setActionPriority('Alta');
                 } else if (level === 'MODERADO') {
                   setActionPriority('Média');
@@ -864,11 +892,63 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   Enviar esta Recomendação para o Plano de Ação (5W2H)?
                 </span>
                 <span className="text-[11px] text-emerald-700 dark:text-emerald-300">
-                  Ao marcar, o sistema vinculará e gerará automaticamente o plano de melhoria com prazos e responsáveis.
+                  Ao marcar, o sistema vinculará e gerará automaticamente o plano de melhoria com metas, prazos e responsáveis.
                 </span>
               </div>
               <Switch checked={actionRequired} onCheckedChange={setActionRequired} />
             </div>
+
+            {actionRequired && (
+              <div className="p-3.5 rounded-lg bg-card border border-border space-y-3 mt-3 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>Prazos & Responsável do Plano de Ação (NR-01.5.5)</span>
+                  </span>
+                  {activeEstablishment?.managerName && (
+                    <button
+                      type="button"
+                      onClick={() => setActionResponsible(activeEstablishment.managerName || '')}
+                      className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer"
+                    >
+                      Puxar Resp. Local ({activeEstablishment.managerName})
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label className="text-[11px] font-semibold">Prazo Inicial (Início)</Label>
+                    <Input
+                      type="date"
+                      value={actionStartDate}
+                      onChange={(e) => setActionStartDate(e.target.value)}
+                      className="h-8 mt-1 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[11px] font-semibold">Prazo Final (Término / Limite)</Label>
+                    <Input
+                      type="date"
+                      value={actionEndDate}
+                      onChange={(e) => setActionEndDate(e.target.value)}
+                      className="h-8 mt-1 text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[11px] font-semibold">Responsável pela Ação</Label>
+                    <Input
+                      value={actionResponsible}
+                      onChange={(e) => setActionResponsible(e.target.value)}
+                      placeholder="Ex: César Roque da Silva ou SESMT"
+                      className="h-8 mt-1 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* =========================================================
