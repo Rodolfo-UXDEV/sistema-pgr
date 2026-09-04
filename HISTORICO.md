@@ -563,6 +563,18 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
      - `Agente: Não há exposição / Não se Aplica   |   Condição: NAP (Processos operacionais do setor)`.
    - **Consistência Total:** Implementado de forma homogênea no Laudo PDF Oficial (`pdf-generator.ts`), no Documento Word (`docx-generator.ts`) e no Visualizador Web (`PgrViewerPage.tsx`).
 
-9. **Build & Deploy:**
-   - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
-   - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.
+9. **Padronização das Fontes e Textos da Geração de Documentos em Preto Sólido (100% Black):**
+   - **Solicitação do Usuário:** *"ajuste todo o texto da geração do documento em preto"*.
+   - **Gerador PDF Oficial (`src/lib/pdf-generator.ts`):**
+     - Todas as chamadas `doc.setTextColor(...)` e definições de cor de texto das tabelas (`textColor: [r, g, b]`) que utilizavam tons de cinza/slate (`[15, 23, 42]`, `[30, 41, 59]`, `[51, 65, 85]`, `[71, 85, 105]`, `[100, 116, 139]`) foram atualizadas para preto sólido puro `[0, 0, 0]`.
+     - Capa institucional, cabeçalhos de capítulos, índice analítico, dados cadastrais, informações dos responsáveis técnicos, textos de fundamentação técnica, inventário de riscos APR-HO, descrições de atividades, plano de ação e rodapés foram convertidos para preto 100%.
+     - Cabeçalhos de tabelas passam a usar fundo cinza claro (`[226, 232, 240]`) com texto em preto sólido (`textColor: [0, 0, 0]`).
+     - Badges de categorias com fundo escuro/colorido (ex: Vermelho, Verde, Azul, Amarelo) mantêm alto contraste e legibilidade.
+   - **Gerador Word (.docx) Oficial (`src/lib/docx-generator.ts`):**
+     - Estilo padrão do documento Word configurado com `run: { color: '000000' }`.
+     - O utilitário de conversão de texto e markdown `parseTextToTextRuns` atualizado para emitir `color: '000000'`.
+     - Todos os textos de seções, cabeçalhos, cargos, descrições de atividades, notas de inventário e plano de ação convertidos para `'000000'`.
+
+10. **Build & Deploy:**
+    - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
+    - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.

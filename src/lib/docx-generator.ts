@@ -25,16 +25,16 @@ import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos
 import { formatCNPJ } from '@/lib/utils';
 
 function parseTextToTextRuns(text: string): TextRun[] {
-  if (!text) return [new TextRun({ text: '' })];
+  if (!text) return [new TextRun({ text: '', color: '000000' })];
   const tokens = text.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
   return tokens.map((token) => {
     if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
-      return new TextRun({ text: token.slice(2, -2), bold: true });
+      return new TextRun({ text: token.slice(2, -2), bold: true, color: '000000' });
     }
     if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
-      return new TextRun({ text: token.slice(1, -1), italics: true });
+      return new TextRun({ text: token.slice(1, -1), italics: true, color: '000000' });
     }
-    return new TextRun({ text: token });
+    return new TextRun({ text: token, color: '000000' });
   });
 }
 
@@ -171,7 +171,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
           new TextRun({
             text: sectionHeading,
             bold: true,
-            color: '334155',
+            color: '000000',
             size: 24,
           }),
         ],
@@ -186,7 +186,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
             new TextRun({
               text: 'SEQUÊNCIA DO PROGRAMA DE GERENCIAMENTO DE RISCOS (PGR):',
               bold: true,
-              color: '0F172A',
+              color: '000000',
               size: 20,
             }),
           ],
@@ -205,14 +205,14 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         if (isSubItem) {
           children.push(
             new Paragraph({
-              children: [new TextRun({ text: `    •  ${cleanText}`, color: '475569', size: 18 })],
+              children: [new TextRun({ text: `    •  ${cleanText}`, color: '000000', size: 18 })],
               spacing: { after: 40 },
             })
           );
         } else {
           children.push(
             new Paragraph({
-              children: [new TextRun({ text: `•  ${cleanText}`, bold: true, color: '1E293B', size: 20 })],
+              children: [new TextRun({ text: `•  ${cleanText}`, bold: true, color: '000000', size: 20 })],
               spacing: { before: 80, after: 40 },
             })
           );
@@ -422,7 +422,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
             const actLine = `Descrição da Atividade: ${pos.activityDescription}`;
             children.push(
               new Paragraph({
-                children: [new TextRun({ text: posLine, bold: true, size: 18, color: '1E293B' })],
+                children: [new TextRun({ text: posLine, bold: true, size: 18, color: '000000' })],
                 spacing: { after: 30 },
               }),
               new Paragraph({
@@ -436,7 +436,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
           if (group.risks.length === 0) {
             children.push(
               new Paragraph({
-                children: [new TextRun({ text: 'Nenhum risco ocupacional identificado para este setor/GHE.', italics: true, size: 18, color: '64748B' })],
+                children: [new TextRun({ text: 'Nenhum risco ocupacional identificado para este setor/GHE.', italics: true, size: 18, color: '000000' })],
                 spacing: { after: 140 },
               })
             );
@@ -513,10 +513,10 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                       children: [
                         new Paragraph({
                           children: [
-                            new TextRun({ text: 'Agente: ', bold: true, size: 16, color: '1E293B' }),
-                            new TextRun({ text: `${agentText}   |   `, size: 16, color: '334155' }),
-                            new TextRun({ text: 'Condição: ', bold: true, size: 16, color: '1E293B' }),
-                            new TextRun({ text: condText, size: 16, color: '334155' }),
+                            new TextRun({ text: 'Agente: ', bold: true, size: 16, color: '000000' }),
+                            new TextRun({ text: `${agentText}   |   `, size: 16, color: '000000' }),
+                            new TextRun({ text: 'Condição: ', bold: true, size: 16, color: '000000' }),
+                            new TextRun({ text: condText, size: 16, color: '000000' }),
                           ],
                           alignment: AlignmentType.LEFT,
                         }),
@@ -1096,6 +1096,15 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
   // Gera o documento .docx
   const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            color: '000000',
+          },
+        },
+      },
+    },
     sections: [
       {
         properties: {},

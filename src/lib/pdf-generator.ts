@@ -74,7 +74,7 @@ function renderMarkdownParagraphToPdf(
       cursor.y += 1.5;
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.setTextColor(15, 23, 42);
+      doc.setTextColor(0, 0, 0);
       doc.text(fullText, startX, cursor.y);
       cursor.y += lineHeight + 1;
       return;
@@ -85,7 +85,7 @@ function renderMarkdownParagraphToPdf(
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.setTextColor(51, 65, 85);
+    doc.setTextColor(0, 0, 0);
 
     const wrapped: string[] = doc.splitTextToSize(fullText, availWidth);
     for (let i = 0; i < wrapped.length; i++) {
@@ -198,8 +198,8 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   const emissoraPng = await ensurePngDataUrl(emissoraLogoUrl, 600, 150);
   const clientePng = await ensurePngDataUrl(clienteLogoUrl, 600, 150);
 
-  const primaryColor: [number, number, number] = [51, 65, 85]; // Hex #334155 (Cinza Chumbo)
-  const secondaryColor: [number, number, number] = [71, 85, 105];
+  const primaryColor: [number, number, number] = [0, 0, 0]; // Preto sólido
+  const secondaryColor: [number, number, number] = [0, 0, 0];
   const headerGray: [number, number, number] = [82, 82, 91];
   const sectionGray: [number, number, number] = [226, 232, 240];
   const labelGray: [number, number, number] = [248, 250, 252];
@@ -222,7 +222,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
     }
   };
 
-  doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.setFillColor(0, 0, 0);
   doc.rect(0, 0, 210, 12, 'F');
   doc.rect(0, 285, 210, 12, 'F');
 
@@ -244,25 +244,25 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.setTextColor(0, 0, 0);
   doc.text(docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 41, { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(0, 0, 0);
   doc.text(docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 46, { align: 'center' });
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.setTextColor(0, 0, 0);
   doc.text('PROGRAMA DE GERENCIAMENTO', 105, 66, { align: 'center' });
   doc.text('DE RISCOS - PGR', 105, 74, { align: 'center' });
 
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+  doc.setTextColor(0, 0, 0);
   doc.text('GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) — NR-01', 105, 83, { align: 'center' });
 
-  doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.8);
   doc.line(40, 89, 170, 89);
 
@@ -283,12 +283,12 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
-  doc.setTextColor(15, 23, 42);
+  doc.setTextColor(0, 0, 0);
   doc.text(docData.header.companyName.toUpperCase(), 105, 122, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
-  doc.setTextColor(71, 85, 105);
+  doc.setTextColor(0, 0, 0);
   doc.text(`CNPJ: ${docData.header.cnpj}`, 105, 129, { align: 'center' });
   doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 135, { align: 'center' });
 
@@ -298,18 +298,18 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+  doc.setTextColor(0, 0, 0);
   doc.text(`DOCUMENTO TÉCNICO: ${docData.header.code} (REV: ${docData.header.version})`, 35, 164);
 
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(51, 65, 85);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Responsável Técnico: ${docData.header.techRespName}`, 35, 172);
   doc.text(`Registro de Classe: ${docData.header.techRespCouncil}`, 35, 180);
   doc.text(`Data de Elaboração: ${docData.header.elaborationDate}`, 35, 188);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.setTextColor(100, 116, 139);
+  doc.setTextColor(0, 0, 0);
   doc.text(`${ctx.company.address.city}/${ctx.company.address.state} — ${docData.header.year}`, 105, 265, { align: 'center' });
 
   cursor.y = 265;
@@ -330,7 +330,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8.5);
-      doc.setTextColor(15, 23, 42);
+      doc.setTextColor(0, 0, 0);
       doc.text('SEQUÊNCIA DO PROGRAMA DE GERENCIAMENTO DE RISCOS (PGR):', 14, cursor.y);
       cursor.y += 5;
 
@@ -347,13 +347,13 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         if (isSubItem) {
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(7.5);
-          doc.setTextColor(71, 85, 105);
+          doc.setTextColor(0, 0, 0);
           doc.text(`   •  ${cleanText}`, 18, cursor.y);
           cursor.y += 4.2;
         } else {
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8);
-          doc.setTextColor(30, 41, 59);
+          doc.setTextColor(0, 0, 0);
           doc.text(`•  ${cleanText}`, 14, cursor.y);
           cursor.y += 4.6;
         }
@@ -401,7 +401,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         startY: cursor.y,
         body: companyTableData as any,
         theme: 'grid',
-        styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 41, 59] },
+        styles: { fontSize: 7.5, cellPadding: 2, textColor: [0, 0, 0] },
         margin: { left: 14, right: 14 },
       });
       cursor.y = (doc as any).lastAutoTable.finalY + 8;
@@ -430,7 +430,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           : el.cargo || '-';
 
         respTableData.push(
-          [{ content: 'Responsável Técnico pela Elaboração do PGR', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }],
+          [{ content: 'Responsável Técnico pela Elaboração do PGR', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [0, 0, 0] } }],
           [{ content: 'Nome do Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.nome || '-' }],
           [{ content: 'Qualificações / Cargos Habilitados', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: qualifText }],
           [{ content: 'Registro Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.conselho || '-' }]
@@ -452,7 +452,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
       if (med) {
         respTableData.push(
-          [{ content: 'Médico Coordenador do PCMSO (NR-07)', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }],
+          [{ content: 'Médico Coordenador do PCMSO (NR-07)', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [0, 0, 0] } }],
           [{ content: 'Nome do Médico', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: med.nome || '-' }],
           [{ content: 'Registro CRM', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: med.conselho || '-' }]
         );
@@ -462,7 +462,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         startY: cursor.y,
         body: respTableData as any,
         theme: 'grid',
-        styles: { fontSize: 7.5, cellPadding: 2, textColor: [30, 41, 59] },
+        styles: { fontSize: 7.5, cellPadding: 2, textColor: [0, 0, 0] },
         margin: { left: 14, right: 14 },
       });
       cursor.y = (doc as any).lastAutoTable.finalY + 8;
@@ -501,8 +501,8 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             head: [cleanHeaders],
             body: cleanRows,
             theme: 'grid',
-            headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
-            styles: { fontSize: 7, cellPadding: 2 },
+            headStyles: { fillColor: [226, 232, 240], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
+            styles: { fontSize: 7, cellPadding: 2, textColor: [0, 0, 0] },
             margin: { left: 14, right: 14 },
             columnStyles: isMatrixTable ? {
               0: { halign: 'left', cellWidth: 42, fontStyle: 'bold' },
@@ -536,11 +536,11 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                     data.cell.styles.fontStyle = 'bold';
                   } else if (/Riscos Ergonômicos/i.test(text)) {
                     data.cell.styles.fillColor = [234, 179, 8]; // Amarelo
-                    data.cell.styles.textColor = [30, 41, 59];
+                    data.cell.styles.textColor = [0, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                   } else if (/Riscos Psicossociais/i.test(text)) {
                     data.cell.styles.fillColor = [234, 179, 8]; // Amarelo
-                    data.cell.styles.textColor = [30, 41, 59];
+                    data.cell.styles.textColor = [0, 0, 0];
                     data.cell.styles.fontStyle = 'bold';
                   } else if (/Riscos de Acidentes/i.test(text)) {
                     data.cell.styles.fillColor = [37, 99, 235]; // Azul
@@ -648,7 +648,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       if (!gheGroups || gheGroups.length === 0) {
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.setTextColor(100, 116, 139);
+        doc.setTextColor(0, 0, 0);
         doc.text('Nenhum setor ou risco registrado no inventário.', 14, cursor.y);
         cursor.y += 8;
       } else {
@@ -662,7 +662,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
           doc.setFont('helvetica', 'bold');
           doc.setFontSize(8.5);
-          doc.setTextColor(15, 23, 42);
+          doc.setTextColor(0, 0, 0);
           doc.text(gheHeader, 14, cursor.y);
           cursor.y += 4.5;
 
@@ -670,14 +670,14 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             checkPageBreak(25);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(7.5);
-            doc.setTextColor(30, 41, 59);
+            doc.setTextColor(0, 0, 0);
             const posLine = `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
             doc.text(posLine, 14, cursor.y);
             cursor.y += 3.5;
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(7.2);
-            doc.setTextColor(71, 85, 105);
+            doc.setTextColor(0, 0, 0);
             const rawAct = pos.activityDescription || 'Atividades operacionais e rotinas da função.';
             const cleanAct = rawAct.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/\s+/g, ' ').trim();
             const actLines: string[] = doc.splitTextToSize(`Descrição da Atividade: ${cleanAct}`, 182);
@@ -700,7 +700,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           if (group.risks.length === 0) {
             doc.setFont('helvetica', 'italic');
             doc.setFontSize(7.5);
-            doc.setTextColor(100, 116, 139);
+            doc.setTextColor(0, 0, 0);
             doc.text('Nenhum risco ocupacional identificado para este setor/GHE.', 14, cursor.y);
             cursor.y += 6;
           } else {
@@ -752,7 +752,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                       colSpan: 5,
                       styles: {
                         fillColor: [248, 250, 252],
-                        textColor: [30, 41, 59],
+                        textColor: [0, 0, 0],
                         valign: 'middle',
                         cellPadding: 2,
                         fontSize: 7.5,
@@ -832,7 +832,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   { content: `RISCO ${catConfig?.label?.toUpperCase() || item.hazardCategory.toUpperCase()}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
                 ],
                 [
-                  { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
+                  { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [0, 0, 0], fontStyle: 'bold' } }
                 ],
                 [
                   { content: 'Tipo do Agente / Perigo:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
@@ -845,7 +845,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   { content: item.healthDamage || 'Não informado', cellWidth: 36 }
                 ],
                 [
-                  { content: '2. PERFIL DE EXPOSIÇÃO E MEDIDAS DE CONTROLE EXISTENTES', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
+                  { content: '2. PERFIL DE EXPOSIÇÃO E MEDIDAS DE CONTROLE EXISTENTES', colSpan: 5, styles: { fillColor: sectionGray, textColor: [0, 0, 0], fontStyle: 'bold' } }
                 ],
                 [
                   { content: 'Meio de Propagação / Trajetória:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
@@ -858,7 +858,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   { content: epcEpiFinal, colSpan: 4 }
                 ],
                 [
-                  { content: '3. AVALIAÇÃO QUANTITATIVA / QUALITATIVA DO AGENTE', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
+                  { content: '3. AVALIAÇÃO QUANTITATIVA / QUALITATIVA DO AGENTE', colSpan: 5, styles: { fillColor: sectionGray, textColor: [0, 0, 0], fontStyle: 'bold' } }
                 ],
                 [
                   { content: 'Tipo de Avaliação / Critério:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
@@ -874,7 +874,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   { content: lt, colSpan: 2, cellWidth: 80 }
                 ],
                 [
-                  { content: '4. CLASSIFICAÇÃO DO RISCO OCUPACIONAL (MATRIZ 5x5 - GRO)', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
+                  { content: '4. CLASSIFICAÇÃO DO RISCO OCUPACIONAL (MATRIZ 5x5 - GRO)', colSpan: 5, styles: { fillColor: sectionGray, textColor: [0, 0, 0], fontStyle: 'bold' } }
                 ],
                 [
                   { content: 'Probabilidade:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
@@ -897,7 +897,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                 startY: cursor.y,
                 body: cardRows,
                 theme: 'grid',
-                styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
+                styles: { fontSize: 7, cellPadding: 1.8, textColor: [0, 0, 0] },
                 margin: { left: 14, right: 14 },
               });
 
@@ -945,11 +945,11 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
       const actionRows = (validActions.length === 0)
         ? [
-            [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
+            [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' } }],
             ...defaultMetas
           ]
         : [
-            [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
+            [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' } }],
             ...validActions.map((act: ActionPlanItem) => {
               const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
               let metaText = act.what;
@@ -989,8 +989,8 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         head: [['Metas', 'Grau de Prioridade', 'Prazo Inicial', 'Prazo Final', 'Responsável', 'Status']],
         body: actionRows as any,
         theme: 'grid',
-        headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
-        styles: { fontSize: 7, cellPadding: 2, textColor: [30, 41, 59] },
+        headStyles: { fillColor: [226, 232, 240], textColor: [0, 0, 0], fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
+        styles: { fontSize: 7, cellPadding: 2, textColor: [0, 0, 0] },
         margin: { left: 14, right: 14 },
         columnStyles: {
           0: { cellWidth: 70 },
@@ -1017,13 +1017,13 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      doc.setTextColor(51, 65, 85);
+      doc.setTextColor(0, 0, 0);
       renderMarkdownParagraphToPdf(doc, section.text, cursor, checkPageBreak, 14, 182, 3.8);
       cursor.y += 4;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
-      doc.setTextColor(100, 116, 139);
+      doc.setTextColor(0, 0, 0);
       doc.text(`${section.city}/${section.state}, ${section.date}.`, 196, cursor.y, { align: 'right' });
       cursor.y += 18;
 
@@ -1046,7 +1046,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         : 'CREA Habilitado';
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
+      doc.setTextColor(0, 0, 0);
       doc.text(creaText, 57.5, cursor.y + 8, { align: 'center' });
 
       // Linha Empresa (direita: Razão Social e CNPJ)
@@ -1062,7 +1062,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       });
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
+      doc.setTextColor(0, 0, 0);
       doc.text(`CNPJ: ${formatCNPJ(ctx.company.cnpj)}`, 152.5, compY, { align: 'center' });
 
       cursor.y = Math.max(cursor.y + 22, compY + 12);
@@ -1092,7 +1092,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
-    doc.setTextColor(100, 116, 139);
+    doc.setTextColor(0, 0, 0);
     doc.text(`PGR — Programa de Gerenciamento de Riscos (NR-01) | ${docData.header.companyName}`, 50, 9.5);
     doc.setDrawColor(226, 232, 240);
     doc.setLineWidth(0.3);
@@ -1105,7 +1105,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(6.5);
-    doc.setTextColor(100, 116, 139);
+    doc.setTextColor(0, 0, 0);
     doc.text(footerCompanyInfo, 14, 287);
     doc.text(`Página ${p} de ${totalPages}`, 196, 287, { align: 'right' });
   }
