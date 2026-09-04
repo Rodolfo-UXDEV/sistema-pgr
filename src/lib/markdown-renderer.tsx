@@ -8,8 +8,9 @@ import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@
 export function renderMarkdownInline(text: string): React.ReactNode {
   if (!text) return '';
 
+  const normalized = text.replace(/<\/?(b|strong)>/gi, '**');
   // Separa por tags de negrito (**...**) e itálico (*...*)
-  const tokens = text.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
+  const tokens = normalized.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
 
   return tokens.map((token, i) => {
     if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
@@ -42,21 +43,59 @@ export function renderFormattedBlockContent(content: string): React.ReactNode {
         if (!trimmed) {
           return <div key={lineIdx} className="h-2" />;
         }
-        if (trimmed.startsWith('### ')) {
+
+        const cleanTrimmed = trimmed
+          .replace(/^(\*{2}|_{2})/, '')
+          .replace(/(\*{2}|_{2})$/, '')
+          .trim();
+
+        const isMarkdownHeader = /^#{1,6}\s+/.test(trimmed);
+        const isSpecialHeader = /^CABE AO (EMPREGADOR|TRABALHADOR):?$/i.test(cleanTrimmed) ||
+                               /^Principais referências normativas:?$/i.test(cleanTrimmed) ||
+                               /^Tabela\s+\d+/i.test(cleanTrimmed);
+        const isSectionNumberHeader = /^(\d+\.)+\s+[A-Z]/.test(cleanTrimmed) && cleanTrimmed.length < 90 && !/[;]$/.test(cleanTrimmed);
+        const isAllCapsHeader = /^[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\.\-]{5,60}:$/.test(cleanTrimmed);
+        const isPureBoldHeader = /^\*\*[^\*]{3,80}\*\*$/.test(trimmed) && !/[.,;]$/.test(cleanTrimmed);
+
+        if (isMarkdownHeader || isSpecialHeader || isSectionNumberHeader || isAllCapsHeader || isPureBoldHeader) {
+          const cleanHeading = cleanTrimmed.replace(/^#{1,6}\s+/, '').replace(/\*\*/g, '').trim();
           return (
             <h4 key={lineIdx} className="text-sm font-bold text-foreground mt-3 mb-1 text-left">
-              {trimmed.replace(/^###\s*/, '')}
+              {cleanHeading}
             </h4>
           );
         }
-        if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+
+        const bulletMatch = trimmed.match(/^([•\-\*])\s+(.*)$/);
+        if (bulletMatch) {
           return (
             <div key={lineIdx} className="flex items-start gap-1.5 pl-2 text-justify">
               <span className="text-emerald-600 font-bold">•</span>
-              <span className="flex-1">{renderMarkdownInline(trimmed.replace(/^[•\-\*]\s*/, ''))}</span>
+              <span className="flex-1">{renderMarkdownInline(bulletMatch[2])}</span>
             </div>
           );
         }
+
+        const alineaMatch = trimmed.match(/^([a-z]\))\s+(.*)$/i);
+        if (alineaMatch) {
+          return (
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-4 text-justify">
+              <span className="font-bold">{alineaMatch[1]}</span>
+              <span className="flex-1">{renderMarkdownInline(alineaMatch[2])}</span>
+            </div>
+          );
+        }
+
+        const romanMatch = trimmed.match(/^([IVXLCDM]+\.)\s+(.*)$/);
+        if (romanMatch) {
+          return (
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-8 text-justify">
+              <span className="font-bold">{romanMatch[1]}</span>
+              <span className="flex-1">{renderMarkdownInline(romanMatch[2])}</span>
+            </div>
+          );
+        }
+
         return (
           <p key={lineIdx} className="leading-relaxed text-justify">
             {renderMarkdownInline(line)}

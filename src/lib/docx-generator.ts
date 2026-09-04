@@ -26,7 +26,8 @@ import { formatCNPJ } from '@/lib/utils';
 
 function parseTextToTextRuns(text: string): TextRun[] {
   if (!text) return [new TextRun({ text: '', color: '000000' })];
-  const tokens = text.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
+  const normalized = text.replace(/<\/?(b|strong)>/gi, '**');
+  const tokens = normalized.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
   return tokens.map((token) => {
     if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
       return new TextRun({ text: token.slice(2, -2), bold: true, color: '000000' });
@@ -382,10 +383,100 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
           children.push(new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
           children.push(new Paragraph({ text: '', spacing: { after: 150 } }));
         } else {
-          const paras = block.content.split('\n\n');
-          for (const p of paras) {
-            children.push(new Paragraph({ children: parseTextToTextRuns(p), spacing: { after: 150 }, alignment: AlignmentType.JUSTIFIED }));
+          const rawLines = block.content.replace(/\r\n/g, '\n').split('\n');
+          let currentParagraph: string[] = [];
+
+          const flushDocxPara = () => {
+            if (currentParagraph.length === 0) return;
+            const fullText = currentParagraph.join(' ').trim();
+            currentParagraph = [];
+            if (!fullText) return;
+
+            children.push(
+              new Paragraph({
+                children: parseTextToTextRuns(fullText),
+                spacing: { after: 120 },
+                alignment: AlignmentType.JUSTIFIED,
+              })
+            );
+          };
+
+          for (const rawLine of rawLines) {
+            const trimmed = rawLine.trim();
+            if (!trimmed) {
+              flushDocxPara();
+              continue;
+            }
+
+            const cleanTrimmed = trimmed.replace(/^(\*{2}|_{2})/, '').replace(/(\*{2}|_{2})$/, '').trim();
+            const isMarkdownHeader = /^#{1,6}\s+/.test(trimmed);
+            const isSpecialHeader = /^CABE AO (EMPREGADOR|TRABALHADOR):?$/i.test(cleanTrimmed) ||
+                                   /^Principais referências normativas:?$/i.test(cleanTrimmed) ||
+                                   /^Tabela\s+\d+/i.test(cleanTrimmed);
+            const isSectionNumberHeader = /^(\d+\.)+\s+[A-Z]/.test(cleanTrimmed) && cleanTrimmed.length < 90 && !/[;]$/.test(cleanTrimmed);
+            const isAllCapsHeader = /^[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\.\-]{5,60}:$/.test(cleanTrimmed);
+            const isPureBoldHeader = /^\*\*[^\*]{3,80}\*\*$/.test(trimmed) && !/[.,;]$/.test(cleanTrimmed);
+
+            const isHeading = isMarkdownHeader || isSpecialHeader || isSectionNumberHeader || isAllCapsHeader || isPureBoldHeader;
+
+            const bulletMatch = trimmed.match(/^([•\-\*])\s+(.*)$/);
+            const alineaMatch = trimmed.match(/^([a-z]\))\s+(.*)$/i);
+            const romanMatch = trimmed.match(/^([IVXLCDM]+\.)\s+(.*)$/);
+
+            if (isHeading) {
+              flushDocxPara();
+              const cleanHeading = cleanTrimmed.replace(/^#{1,6}\s+/, '').replace(/\*\*/g, '').trim();
+              children.push(
+                new Paragraph({
+                  children: [new TextRun({ text: cleanHeading, bold: true, color: '000000', size: 19 })],
+                  spacing: { before: 160, after: 60 },
+                  alignment: AlignmentType.LEFT,
+                })
+              );
+            } else if (romanMatch) {
+              flushDocxPara();
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `${romanMatch[1]} `, bold: true, color: '000000' }),
+                    ...parseTextToTextRuns(romanMatch[2]),
+                  ],
+                  spacing: { after: 60 },
+                  alignment: AlignmentType.JUSTIFIED,
+                  indent: { left: 540 },
+                })
+              );
+            } else if (alineaMatch) {
+              flushDocxPara();
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: `${alineaMatch[1]} `, bold: true, color: '000000' }),
+                    ...parseTextToTextRuns(alineaMatch[2]),
+                  ],
+                  spacing: { after: 60 },
+                  alignment: AlignmentType.JUSTIFIED,
+                  indent: { left: 360 },
+                })
+              );
+            } else if (bulletMatch) {
+              flushDocxPara();
+              children.push(
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: '•  ', color: '000000' }),
+                    ...parseTextToTextRuns(bulletMatch[2]),
+                  ],
+                  spacing: { after: 60 },
+                  alignment: AlignmentType.JUSTIFIED,
+                  indent: { left: 360 },
+                })
+              );
+            } else {
+              currentParagraph.push(trimmed);
+            }
           }
+          flushDocxPara();
         }
       }
     } else if (section.type === 'risk_inventory_table') {
@@ -415,7 +506,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
           // 2. Cargos e Descrições de Atividades deste GHE/Setor
           for (const pos of group.positions) {
             const posLine = `Cargo / Função: ${pos.title}${pos.cbo ? ` (CBO: ${pos.cbo})` : ''}`;
-            const actLine = `Descrição da Atividade: ${pos.activityDescription}`;
+            const actLine = `**Descrição da Atividade:** ${pos.activityDescription || 'Atividades operacionais e rotinas da função.'}`;
             children.push(
               new Paragraph({
                 children: [new TextRun({ text: posLine, bold: true, size: 18, color: '000000' })],

@@ -594,6 +594,25 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
     - **Visualizador Web (`src/pages/PgrViewerPage.tsx`):**
       - Removida a exibição de `• Número da ART / RRT` no card da Seção 4.
 
-12. **Build & Deploy:**
+12. **Suporte Completo e Correção da Renderização de Negrito (**bold**) na Geração de Documentos (PDF, DOCX e Web):**
+    - **Solicitação do Usuário:** *"por algum motivo os texto ainda não estão ficando em negrito na geração, preciso que ajuste isso"*.
+    - **Causa Raiz Identificada:**
+      - No gerador PDF (`pdf-generator.ts`), a função de renderização `renderMarkdownParagraphToPdf` tratava o texto como string única com `doc.setFont('helvetica', 'normal')`, sem suporte a palavras ou spans inline em negrito (`**texto**`).
+      - Expressões regulares de detecção de títulos e subtítulos (`10.1. CONCEITOS GERAIS`, `CABE AO EMPREGADOR:`, `Tabela 1 – ...`, etc.) falhavam quando o usuário ou o template incluía asteriscos `**` no início/fim da linha.
+      - Células de tabelas markdown com `**` tinham os asteriscos removidos sem aplicar `fontStyle = 'bold'` no motor do PDF (`jspdf-autotable`).
+      - Na Seção 14 (APR-HO), a linha *"Descrição da Atividade:"* era renderizada em fonte normal e sem formatação inline.
+    - **Solução Implementada no Gerador PDF Oficial (`src/lib/pdf-generator.ts`):**
+      - Desenvolvimento de motor de quebra e medição tipográfica precisa (`parseParagraphToWords` e `PdfWord`): quebra o parágrafo em palavras preservando spans de negrito (`**`, `<b>`, `<strong>`), calcula as larguras exatas em milímetros para fontes normal e negrito no jsPDF e faz o alinhamento **JUSTIFICADO** nativo palavra a palavra com espaçamento harmônico e margem direita cravada em 196mm.
+      - Detecção aprimorada de títulos, subtítulos e alíneas: suporte a numeração de seções (`(\d+\.)+`), cabeçalhos especiais (`CABE AO EMPREGADOR:`, `Tabela X`), títulos em maiúsculas e linhas destacadas em negrito (`**Título**`), renderizados em `helvetica bold` tamanho 8.5pt.
+      - Suporte a negrito em células de tabelas markdown: verificação de `**` no conteúdo original da célula no hook `didParseCell` do `autoTable`, aplicando `fontStyle = 'bold'`.
+      - Na Seção 14: aplicação de `**Descrição da Atividade:**` em negrito com suporte inline a termos destacados da descrição de funções.
+    - **Solução Implementada no Gerador Word (.docx) Oficial (`src/lib/docx-generator.ts`):**
+      - Normalização de tags HTML (`<b>`, `<strong>`) para markdown em `parseTextToTextRuns`.
+      - Renderização estruturada de blocos de texto, identificando subtítulos, listas (`•`) e alíneas (`a)`, `b)`) com títulos em negrito tamanho 19pt.
+      - Na Seção 14: definição explícita de `**Descrição da Atividade:**` em negrito.
+    - **Solução no Visualizador Web (`src/lib/markdown-renderer.tsx`):**
+      - Sincronização da detecção de subtítulos e alíneas para exibir títulos em negrito (`font-bold`) e suporte a tags `<b>` e `<strong>` inline.
+
+13. **Build & Deploy:**
     - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
     - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.

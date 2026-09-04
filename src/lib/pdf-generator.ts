@@ -19,32 +19,88 @@ function hexToRgb(hex: string): [number, number, number] {
   return [r, g, b];
 }
 
-/**
- * Tokeniza parágrafo preservando trechos em negrito (**texto**)
- */
-function parseMarkdownTokens(text: string): { text: string; bold: boolean }[] {
-  const rawTokens: { text: string; bold: boolean }[] = [];
-  const regex = /\*\*(.*?)\*\*/g;
-  let lastIndex = 0;
-  let match;
+interface TextSpan {
+  text: string;
+  bold: boolean;
+}
 
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      rawTokens.push({ text: text.slice(lastIndex, match.index), bold: false });
-    }
-    rawTokens.push({ text: match[1], bold: true });
-    lastIndex = regex.lastIndex;
-  }
-  if (lastIndex < text.length) {
-    rawTokens.push({ text: text.slice(lastIndex), bold: false });
-  }
-  return rawTokens;
+interface PdfWord {
+  spans: TextSpan[];
+  width: number;
 }
 
 /**
- * Renderiza blocos de texto/markdown com suporte a subtítulos, listas, alíneas e
- * alinhamento JUSTIFICADO nativo (preenchendo exatamente a largura com word spacing do PDF).
- * A última linha de cada bloco mantém alinhamento natural à esquerda.
+ * Converte texto com marcação Markdown (**negrito**, <b>, <strong>)
+ * em unidades de palavras com medição precisa para o jsPDF.
+ */
+function parseParagraphToWords(
+  doc: jsPDF,
+  text: string,
+  fontSize: number
+): PdfWord[] {
+  // Normaliza tags HTML de negrito para formato markdown **
+  const normalized = text
+    .replace(/<\/?(b|strong)>/gi, '**')
+    .replace(/\r\n/g, '\n');
+
+  // Tokeniza trechos normais e negritos
+  const tokens: TextSpan[] = [];
+  const regex = /\*\*(.*?)\*\*/gs;
+  let lastIdx = 0;
+  let match;
+  while ((match = regex.exec(normalized)) !== null) {
+    if (match.index > lastIdx) {
+      tokens.push({ text: normalized.slice(lastIdx, match.index), bold: false });
+    }
+    if (match[1]) {
+      tokens.push({ text: match[1], bold: true });
+    }
+    lastIdx = regex.lastIndex;
+  }
+  if (lastIdx < normalized.length) {
+    tokens.push({ text: normalized.slice(lastIdx), bold: false });
+  }
+
+  // Agrupa em palavras com seus respectivos spans de formatação
+  const words: PdfWord[] = [];
+  let currentSpans: TextSpan[] = [];
+
+  const pushCurrentWord = () => {
+    if (currentSpans.length === 0) return;
+    doc.setFontSize(fontSize);
+    let wordW = 0;
+    for (const span of currentSpans) {
+      doc.setFont('helvetica', span.bold ? 'bold' : 'normal');
+      wordW += doc.getTextWidth(span.text);
+    }
+    words.push({ spans: currentSpans, width: wordW });
+    currentSpans = [];
+  };
+
+  for (const token of tokens) {
+    const parts = token.text.split(/(\s+)/);
+    for (const part of parts) {
+      if (!part) continue;
+      if (/^\s+$/.test(part)) {
+        pushCurrentWord();
+      } else {
+        const last = currentSpans[currentSpans.length - 1];
+        if (last && last.bold === token.bold) {
+          last.text += part;
+        } else {
+          currentSpans.push({ text: part, bold: token.bold });
+        }
+      }
+    }
+  }
+  pushCurrentWord();
+
+  return words;
+}
+
+/**
+ * Renderiza blocos de texto/markdown com suporte a subtítulos, listas, alíneas,
+ * formatação inline em negrito (**texto**) e alinhamento JUSTIFICADO nativo.
  */
 function renderMarkdownParagraphToPdf(
   doc: jsPDF,
@@ -53,7 +109,8 @@ function renderMarkdownParagraphToPdf(
   checkPageBreak: (needed: number) => boolean,
   startX: number = 14,
   maxWidth: number = 182,
-  lineHeight: number = 3.8
+  lineHeight: number = 3.8,
+  fontSize: number = 8
 ): void {
   const rawLines = text.replace(/\r\n/g, '\n').split('\n');
 
@@ -70,48 +127,95 @@ function renderMarkdownParagraphToPdf(
     if (!fullText) return;
 
     if (currentType === 'heading') {
-      checkPageBreak(lineHeight + 4);
+      checkPageBreak(lineHeight + 5);
       cursor.y += 1.5;
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(8.5);
       doc.setTextColor(0, 0, 0);
-      doc.text(fullText, startX, cursor.y);
-      cursor.y += lineHeight + 1;
+      const headingLines: string[] = doc.splitTextToSize(fullText, maxWidth);
+      for (const hLine of headingLines) {
+        checkPageBreak(lineHeight + 2);
+        doc.text(hLine, startX, cursor.y);
+        cursor.y += lineHeight;
+      }
+      cursor.y += 1;
       return;
     }
 
     const itemStartX = startX + textIndent;
     const availWidth = maxWidth - textIndent;
 
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(0, 0, 0);
+    const words = parseParagraphToWords(doc, fullText, fontSize);
+    if (words.length === 0) return;
 
-    const wrapped: string[] = doc.splitTextToSize(fullText, availWidth);
-    for (let i = 0; i < wrapped.length; i++) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(fontSize);
+    const spaceW = doc.getTextWidth(' ');
+
+    // Quebra de palavras em linhas
+    const lines: PdfWord[][] = [];
+    let curLine: PdfWord[] = [];
+    let curLineW = 0;
+
+    for (const word of words) {
+      if (curLine.length === 0) {
+        curLine.push(word);
+        curLineW = word.width;
+      } else {
+        if (curLineW + spaceW + word.width <= availWidth) {
+          curLine.push(word);
+          curLineW += spaceW + word.width;
+        } else {
+          lines.push(curLine);
+          curLine = [word];
+          curLineW = word.width;
+        }
+      }
+    }
+    if (curLine.length > 0) {
+      lines.push(curLine);
+    }
+
+    // Renderiza cada linha com suporte a negrito e justificação precisa
+    for (let i = 0; i < lines.length; i++) {
       checkPageBreak(lineHeight + 2);
 
       if (i === 0 && prefix) {
+        doc.setFontSize(fontSize);
+        doc.setTextColor(0, 0, 0);
         if (currentType === 'subalinea') {
           doc.setFont('helvetica', 'bold');
           doc.text(prefix, itemStartX - 1.8, cursor.y, { align: 'right' });
-          doc.setFont('helvetica', 'normal');
         } else if (currentType === 'alinea') {
           doc.setFont('helvetica', 'bold');
           doc.text(prefix, startX + baseIndent, cursor.y);
-          doc.setFont('helvetica', 'normal');
         } else if (currentType === 'bullet') {
           doc.setFont('helvetica', 'normal');
           doc.text(prefix, startX + baseIndent, cursor.y);
         }
       }
 
-      const isLastLine = (i === wrapped.length - 1);
-      const lineText = wrapped[i];
-      if (!isLastLine && lineText.includes(' ')) {
-        doc.text([lineText, ''], itemStartX, cursor.y, { align: 'justify', maxWidth: availWidth });
-      } else {
-        doc.text(lineText, itemStartX, cursor.y);
+      const lineWords = lines[i];
+      const isLastLine = (i === lines.length - 1);
+
+      let gapW = spaceW;
+      if (!isLastLine && lineWords.length > 1) {
+        const totalWordsW = lineWords.reduce((acc, w) => acc + w.width, 0);
+        const remaining = availWidth - totalWordsW;
+        const computedGap = remaining / (lineWords.length - 1);
+        gapW = Math.min(computedGap, spaceW * 3.5);
+      }
+
+      let curX = itemStartX;
+      for (const word of lineWords) {
+        for (const span of word.spans) {
+          doc.setFont('helvetica', span.bold ? 'bold' : 'normal');
+          doc.setFontSize(fontSize);
+          doc.setTextColor(0, 0, 0);
+          doc.text(span.text, curX, cursor.y);
+          curX += doc.getTextWidth(span.text);
+        }
+        curX += gapW;
       }
       cursor.y += lineHeight;
     }
@@ -125,15 +229,21 @@ function renderMarkdownParagraphToPdf(
       continue;
     }
 
+    const cleanTrimmed = trimmed
+      .replace(/^(\*{2}|_{2})/, '')
+      .replace(/(\*{2}|_{2})$/, '')
+      .trim();
+
     // Identificação de títulos e subtítulos
     const isMarkdownHeader = /^#{1,6}\s+/.test(trimmed);
-    const isSpecialHeader = /^CABE AO (EMPREGADOR|TRABALHADOR):?$/i.test(trimmed) ||
-                           /^Principais referências normativas:?$/i.test(trimmed) ||
-                           /^Tabela\s+\d+/i.test(trimmed);
-    const isSectionNumberHeader = /^(\d+\.)+\s+[A-Z]/.test(trimmed) && trimmed.length < 80 && !/[;]$/.test(trimmed);
-    const isAllCapsHeader = /^[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\.\-]{5,60}:$/.test(trimmed);
+    const isSpecialHeader = /^CABE AO (EMPREGADOR|TRABALHADOR):?$/i.test(cleanTrimmed) ||
+                           /^Principais referências normativas:?$/i.test(cleanTrimmed) ||
+                           /^Tabela\s+\d+/i.test(cleanTrimmed);
+    const isSectionNumberHeader = /^(\d+\.)+\s+[A-Z]/.test(cleanTrimmed) && cleanTrimmed.length < 90 && !/[;]$/.test(cleanTrimmed);
+    const isAllCapsHeader = /^[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\.\-]{5,60}:$/.test(cleanTrimmed);
+    const isPureBoldHeader = /^\*\*[^\*]{3,80}\*\*$/.test(trimmed) && !/[.,;]$/.test(cleanTrimmed);
 
-    const isHeading = isMarkdownHeader || isSpecialHeader || isSectionNumberHeader || isAllCapsHeader;
+    const isHeading = isMarkdownHeader || isSpecialHeader || isSectionNumberHeader || isAllCapsHeader || isPureBoldHeader;
 
     // Marcadores de lista
     const bulletMatch = trimmed.match(/^([•\-\*])\s+(.*)$/);
@@ -150,7 +260,8 @@ function renderMarkdownParagraphToPdf(
       prefix = '';
       baseIndent = 0;
       textIndent = 0;
-      currentBlock.push(trimmed.replace(/^#{1,6}\s+/, '').replace(/\*\*/g, ''));
+      const cleanHeadingText = cleanTrimmed.replace(/^#{1,6}\s+/, '').replace(/\*\*/g, '').trim();
+      currentBlock.push(cleanHeadingText);
       flushBlock();
     } else if (romanMatch) {
       flushBlock();
@@ -510,6 +621,10 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             didParseCell: (data) => {
               if (data.section === 'body') {
                 const text = String(data.cell.raw || '').trim();
+                const rawCell = block.rows[data.row.index]?.[data.column.index] || '';
+                if (/\*\*.*?\*\*/.test(rawCell)) {
+                  data.cell.styles.fontStyle = 'bold';
+                }
 
                 // 1. Cores das Categorias de Risco (Item 10.2 do Desenvolvimento do PGR)
                 if (data.column.index === 0) {
@@ -670,24 +785,18 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             doc.text(posLine, 14, cursor.y);
             cursor.y += 3.5;
 
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(7.2);
-            doc.setTextColor(0, 0, 0);
             const rawAct = pos.activityDescription || 'Atividades operacionais e rotinas da função.';
-            const cleanAct = rawAct.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/\s+/g, ' ').trim();
-            const actLines: string[] = doc.splitTextToSize(`Descrição da Atividade: ${cleanAct}`, 182);
-            for (let i = 0; i < actLines.length; i++) {
-              checkPageBreak(3.5);
-              const isLast = (i === actLines.length - 1);
-              const lineStr = actLines[i];
-              if (!isLast && lineStr.includes(' ')) {
-                doc.text([lineStr, ''], 14, cursor.y, { align: 'justify', maxWidth: 182 });
-              } else {
-                doc.text(lineStr, 14, cursor.y);
-              }
-              cursor.y += 3.2;
-            }
-            cursor.y += 2;
+            renderMarkdownParagraphToPdf(
+              doc,
+              `**Descrição da Atividade:** ${rawAct}`,
+              cursor,
+              checkPageBreak,
+              14,
+              182,
+              3.4,
+              7.2
+            );
+            cursor.y += 1.5;
           }
 
           cursor.y += 1.5;
