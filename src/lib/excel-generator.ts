@@ -3,7 +3,7 @@ import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany } from '@/lib/pgr-official-template';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, RiskInventoryItem } from '@/types/pgr';
-import { formatDate } from '@/lib/utils';
+import { formatDate, getExposureParts } from '@/lib/utils';
 
 export async function generatePgrExcel(rawCtx: PgrDocumentContext): Promise<void> {
   const ctx = filterContextForCompany(rawCtx);
@@ -43,27 +43,7 @@ export async function generatePgrExcel(rawCtx: PgrDocumentContext): Promise<void
       const gesCode = ghe?.code ? `GES ${ghe.code}` : (sec?.name ? `GES - ${sec.name}` : 'GES 1.1');
       const headerTitle = `${gesCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
-      let expPart1 = 'Habitual';
-      let expPart2 = 'Permanente';
-      if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-        expPart1 = 'Habitual';
-        expPart2 = 'Intermitente';
-      } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-        expPart1 = 'Eventual';
-        expPart2 = 'Intermitente';
-      } else if (item.exposureType === 'EVENTUAL') {
-        expPart1 = 'Eventual';
-        expPart2 = 'NAP';
-      } else if (item.exposureType === 'HABITUAL') {
-        expPart1 = 'Habitual';
-        expPart2 = 'NAP';
-      } else if (item.exposureType === 'PERMANENTE') {
-        expPart1 = 'NAP';
-        expPart2 = 'Permanente';
-      } else if (item.exposureType === 'INTERMITENTE') {
-        expPart1 = 'NAP';
-        expPart2 = 'Intermitente';
-      }
+      const { expPart1, expPart2 } = getExposureParts(item.exposureType, item.exposureObservation);
 
       const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
       const epiStr = item.epiExisting && item.epiExisting.length > 0

@@ -22,7 +22,7 @@ import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
-import { formatCNPJ } from '@/lib/utils';
+import { formatCNPJ, getExposureParts } from '@/lib/utils';
 
 function parseTextToTextRuns(text: string): TextRun[] {
   if (!text) return [new TextRun({ text: '', color: '000000' })];
@@ -623,27 +623,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                 continue;
               }
 
-              let expPart1 = 'Habitual';
-              let expPart2 = 'Permanente';
-              if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-                expPart1 = 'Habitual';
-                expPart2 = 'Intermitente';
-              } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-                expPart1 = 'Eventual';
-                expPart2 = 'Intermitente';
-              } else if (item.exposureType === 'EVENTUAL') {
-                expPart1 = 'Eventual';
-                expPart2 = 'NAP';
-              } else if (item.exposureType === 'HABITUAL') {
-                expPart1 = 'Habitual';
-                expPart2 = 'NAP';
-              } else if (item.exposureType === 'PERMANENTE') {
-                expPart1 = 'NAP';
-                expPart2 = 'Permanente';
-              } else if (item.exposureType === 'INTERMITENTE') {
-                expPart1 = 'NAP';
-                expPart2 = 'Intermitente';
-              }
+              const { expPart1, expPart2 } = getExposureParts(item.exposureType, item.exposureObservation);
 
               const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
               const epiStr = item.epiExisting && item.epiExisting.length > 0

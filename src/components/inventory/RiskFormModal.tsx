@@ -115,6 +115,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   const [hazardName, setHazardName] = useState('');
   const [hazardCode, setHazardCode] = useState('');
   const [exposureType, setExposureType] = useState<ExposureType>('HABITUAL_PERMANENTE');
+  const [exposureObservation, setExposureObservation] = useState('');
   const [trajectory, setTrajectory] = useState('Ar');
   const [penetrationRoute, setPenetrationRoute] = useState('Auditiva (Ouvido / Som)');
   const [healthDamage, setHealthDamage] = useState('');
@@ -193,6 +194,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setHazardName(initialItem.hazardName);
       setHazardCode(initialItem.hazardCode || '');
       setExposureType(initialItem.exposureType || 'HABITUAL_PERMANENTE');
+      setExposureObservation(initialItem.exposureObservation || '');
       setTrajectory(initialItem.trajectory || 'Ar');
       setPenetrationRoute(initialItem.penetrationRoute || 'Respiratória (Inalação)');
       setHealthDamage(initialItem.healthDamage || '');
@@ -258,6 +260,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setHazardName('');
       setHazardCode('');
       setExposureType('HABITUAL_PERMANENTE');
+      setExposureObservation('');
       setTrajectory('Ar');
       setPenetrationRoute('Auditiva (Ouvido / Som)');
       setHealthDamage('');
@@ -425,6 +428,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
         penetrationRoute: penetrationRoute.trim(),
         exposedCount: Number(exposedCount) || 1,
         exposureType,
+        exposureObservation: exposureObservation.trim() || undefined,
         highestRiskExposed: highestRiskExposed.trim() || undefined,
         probability,
         severity,
@@ -657,53 +661,70 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
               </div>
             </div>
 
-            {/* TIPO DE EXPOSIÇÃO, TRAJETÓRIA & VIA DE PENETRAÇÃO */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label className="text-xs font-semibold">TIPO DE EXPOSIÇÃO *</Label>
-                <select
-                  value={exposureType}
-                  onChange={(e) => setExposureType(e.target.value as ExposureType)}
-                  className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs font-medium focus:ring-1 focus:ring-ring"
-                >
-                  {EXPOSURE_TYPE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+            {/* TIPO DE EXPOSIÇÃO, OBSERVAÇÃO/FREQUÊNCIA, TRAJETÓRIA & VIA DE PENETRAÇÃO */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold">TIPO DE EXPOSIÇÃO *</Label>
+                  <select
+                    value={exposureType}
+                    onChange={(e) => setExposureType(e.target.value as ExposureType)}
+                    className="w-full h-9 mt-1 rounded-md border border-input bg-background px-3 text-xs font-medium focus:ring-1 focus:ring-ring"
+                  >
+                    {EXPOSURE_TYPE_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">OBS. / FREQUÊNCIA DA EXPOSIÇÃO</Label>
+                    <span className="text-[10px] text-muted-foreground">Opcional</span>
+                  </div>
+                  <Input
+                    value={exposureObservation}
+                    onChange={(e) => setExposureObservation(e.target.value)}
+                    placeholder="Ex: 2 vezes ao mês, 30 min por turno..."
+                    className="h-9 mt-1 text-xs"
+                  />
+                </div>
               </div>
 
-              <div>
-                <Label className="text-xs font-semibold">TRAJETÓRIA</Label>
-                <Input
-                  value={trajectory}
-                  onChange={(e) => setTrajectory(e.target.value)}
-                  placeholder="Ex: Ar, Contato direto, Propagação..."
-                  className="h-9 mt-1 text-xs"
-                  list="trajectory-suggestions"
-                />
-                <datalist id="trajectory-suggestions">
-                  {TRAJECTORY_SUGGESTIONS.map((s, idx) => (
-                    <option key={idx} value={s} />
-                  ))}
-                </datalist>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold">TRAJETÓRIA</Label>
+                  <Input
+                    value={trajectory}
+                    onChange={(e) => setTrajectory(e.target.value)}
+                    placeholder="Ex: Ar, Contato direto, Propagação..."
+                    className="h-9 mt-1 text-xs"
+                    list="trajectory-suggestions"
+                  />
+                  <datalist id="trajectory-suggestions">
+                    {TRAJECTORY_SUGGESTIONS.map((s, idx) => (
+                      <option key={idx} value={s} />
+                    ))}
+                  </datalist>
+                </div>
 
-              <div>
-                <Label className="text-xs font-semibold">VIA DE PENETRAÇÃO</Label>
-                <Input
-                  value={penetrationRoute}
-                  onChange={(e) => setPenetrationRoute(e.target.value)}
-                  placeholder="Ex: Aparelho auditivo, Respiratória..."
-                  className="h-9 mt-1 text-xs"
-                  list="penetration-suggestions"
-                />
-                <datalist id="penetration-suggestions">
-                  {PENETRATION_ROUTE_SUGGESTIONS.map((s, idx) => (
-                    <option key={idx} value={s} />
-                  ))}
-                </datalist>
+                <div>
+                  <Label className="text-xs font-semibold">VIA DE PENETRAÇÃO</Label>
+                  <Input
+                    value={penetrationRoute}
+                    onChange={(e) => setPenetrationRoute(e.target.value)}
+                    placeholder="Ex: Aparelho auditivo, Respiratória..."
+                    className="h-9 mt-1 text-xs"
+                    list="penetration-suggestions"
+                  />
+                  <datalist id="penetration-suggestions">
+                    {PENETRATION_ROUTE_SUGGESTIONS.map((s, idx) => (
+                      <option key={idx} value={s} />
+                    ))}
+                  </datalist>
+                </div>
               </div>
             </div>
 

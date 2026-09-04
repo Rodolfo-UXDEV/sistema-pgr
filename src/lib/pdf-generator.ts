@@ -8,7 +8,7 @@ import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
-import { formatCNPJ } from '@/lib/utils';
+import { formatCNPJ, getExposureParts } from '@/lib/utils';
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
@@ -884,27 +884,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                 continue;
               }
 
-              let expPart1 = 'Habitual';
-              let expPart2 = 'Permanente';
-              if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-                expPart1 = 'Habitual';
-                expPart2 = 'Intermitente';
-              } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-                expPart1 = 'Eventual';
-                expPart2 = 'Intermitente';
-              } else if (item.exposureType === 'EVENTUAL') {
-                expPart1 = 'Eventual';
-                expPart2 = 'NAP';
-              } else if (item.exposureType === 'HABITUAL') {
-                expPart1 = 'Habitual';
-                expPart2 = 'NAP';
-              } else if (item.exposureType === 'PERMANENTE') {
-                expPart1 = 'NAP';
-                expPart2 = 'Permanente';
-              } else if (item.exposureType === 'INTERMITENTE') {
-                expPart1 = 'NAP';
-                expPart2 = 'Intermitente';
-              }
+              const { expPart1, expPart2 } = getExposureParts(item.exposureType, item.exposureObservation);
 
               const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';
               const epiStr = item.epiExisting && item.epiExisting.length > 0

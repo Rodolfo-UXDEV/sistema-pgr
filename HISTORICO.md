@@ -632,7 +632,23 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
       - Na tabela do Plano de Ação, o intervalo de datas é exibido de forma limpa como `"Contínuo"` (ao invés de duplicar `"Contínuo - Contínuo"`).
     - **Exportações e Visualizadores (PDF, DOCX, Excel e Web):**
       - No Laudo PDF Oficial (`pdf-generator.ts`): colunas de Prazo Inicial e Prazo Final renderizam `"Contínuo"`.
-      - No Documento Word (`docx-generator.ts`): tabela do Plano de Ação 5W2H renderiza `"Contínuo"`.
-      - Na Planilha Excel (`excel-generator.ts`): exportação padronizada via `formatDate`.
-      - No Editor do PGR (`PgrBuilderPage.tsx`) e Visualizador (`PgrViewerPage.tsx`): renderização limpa do prazo contínuo.
+15. **Campo de Detalhamento e Frequência para "Tipo de Exposição" (Ex: "Intermitente - 2 vezes ao mês"):**
+    - **Solicitação do Usuário:** Possibilidade de escrever detalhes de frequência ao lado do tipo de exposição (ex: *"Intermitente - 2 vezes ao mês."*), conforme demonstrado no exemplo em anexo no Word / APR-HO.
+    - **Modal de Inventário de Riscos (`RiskFormModal.tsx`):**
+      - Adicionado o campo livre **"OBS. / FREQUÊNCIA DA EXPOSIÇÃO"** (`exposureObservation`) posicionado lado a lado com o seletor **"TIPO DE EXPOSIÇÃO"**.
+      - Placeholder contextual: `"Ex: 2 vezes ao mês, 30 min por turno..."`.
+      - Reorganização em grid 2x2 elegante: Linha 1 com Tipo de Exposição e Obs/Frequência; Linha 2 com Trajetória e Via de Penetração com 50% de largura para excelente digitação e legibilidade.
+    - **Banco de Dados & Tipagem (`types/pgr.ts`):**
+      - Propriedade `exposureObservation?: string` adicionada à interface `RiskInventoryItem`.
+      - Persistência automática em tempo real no Google Cloud Firestore.
+    - **Motor de Formatação Unificado (`src/lib/utils.ts`):**
+      - Criação das funções `formatExposureRegime(expPart, obs)` e `getExposureParts(exposureType, exposureObservation)`.
+      - Previne duplicações caso o usuário digite o prefixo (ex: "Intermitente - 2 vezes ao mês" não se torna "Intermitente - Intermitente...").
+    - **Geração e Visualização de Documentos:**
+      - **Documento Word (.docx) (`docx-generator.ts`):** A tabela do APR-HO renderiza a linha `Tipo de Exposição` com a 3ª coluna preenchida como `Intermitente - 2 vezes ao mês.` (idêntico ao modelo de referência da imagem).
+      - **Laudo PDF Oficial (`pdf-generator.ts`):** Renderiza `Tipo e Regime de Exposição: Habitual / Intermitente - 2 vezes ao mês.`.
+      - **Visualizador Web (`PgrViewerPage.tsx`):** Exibe a 3ª coluna do card APR-HO formatada com a frequência informada.
+      - **Planilha Excel (`excel-generator.ts`):** Exporta a célula com o regime complementado.
+      - **Listagem do Inventário (`RiskInventoryTable.tsx`):** Tooltip informativa e exibição da observação na linha expandida de detalhes da NR-01.
+
 

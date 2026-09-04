@@ -185,6 +185,7 @@ export interface RiskInventoryItem {
   trajectory?: string; // Trajetória (ex: Ar, Contato direto, Propagação aérea)
   exposedCount: number;
   exposureType: ExposureType;
+  exposureObservation?: string; // Observação / Frequência de Exposição (ex: "2 vezes ao mês", "30 min por turno")
   highestRiskExposed?: string; // Exposto de Maior Risco (EMR)
   
   // Gradação de Risco (Matriz 5x5)

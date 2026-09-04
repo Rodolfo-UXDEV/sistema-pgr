@@ -21,7 +21,7 @@ import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT, fetchIssuerCompanyFromFirestore } from '@/lib/issuer-company-service';
 import { fetchDocumentSectionsFromFirestore, fetchGlobalTemplateFromFirestore } from '@/lib/firebase-service';
-import { formatDate, formatCNPJ } from '@/lib/utils';
+import { formatDate, formatCNPJ, getExposureParts } from '@/lib/utils';
 import { 
   ArrowLeft, 
   Download, 
@@ -629,27 +629,7 @@ export const PgrViewerPage: React.FC = () => {
                             }
 
                             // Separação do Tipo de Exposição
-                            let expPart1 = 'Habitual';
-                            let expPart2 = 'Permanente';
-                            if (item.exposureType === 'HABITUAL_INTERMITENTE') {
-                              expPart1 = 'Habitual';
-                              expPart2 = 'Intermitente';
-                            } else if (item.exposureType === 'EVENTUAL_INTERMITENTE') {
-                              expPart1 = 'Eventual';
-                              expPart2 = 'Intermitente';
-                            } else if (item.exposureType === 'EVENTUAL') {
-                              expPart1 = 'Eventual';
-                              expPart2 = 'NAP';
-                            } else if (item.exposureType === 'HABITUAL') {
-                              expPart1 = 'Habitual';
-                              expPart2 = 'NAP';
-                            } else if (item.exposureType === 'PERMANENTE') {
-                              expPart1 = 'NAP';
-                              expPart2 = 'Permanente';
-                            } else if (item.exposureType === 'INTERMITENTE') {
-                              expPart1 = 'NAP';
-                              expPart2 = 'Intermitente';
-                            }
+                            const { expPart1, expPart2 } = getExposureParts(item.exposureType, item.exposureObservation);
 
                             // EPC / EPI formatado
                             const epcStr = item.epcExisting && item.epcExisting.length > 0 ? item.epcExisting.join(', ') : '';

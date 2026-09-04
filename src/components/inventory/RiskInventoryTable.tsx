@@ -230,8 +230,12 @@ export const RiskInventoryTable: React.FC = () => {
 
                       <TableCell className="text-center text-xs">
                         <span className="font-semibold text-foreground">{item.exposedCount}</span>
-                        <span className="block text-[9px] text-muted-foreground">
+                        <span 
+                          className="block text-[9px] text-muted-foreground truncate max-w-[90px] mx-auto cursor-help"
+                          title={item.exposureObservation ? `${item.exposureType.replace(/_/g, ' ')} (${item.exposureObservation})` : item.exposureType.replace(/_/g, ' ')}
+                        >
                           {item.exposureType.slice(0, 4)}
+                          {item.exposureObservation ? ` (${item.exposureObservation})` : ''}
                         </span>
                       </TableCell>
 
@@ -301,6 +305,13 @@ export const RiskInventoryTable: React.FC = () => {
                                 {item.healthDamage}
                               </p>
                               <div className="pt-1 text-[11px] text-foreground font-medium space-y-0.5">
+                                <div>
+                                  <span className="text-muted-foreground">Regime de Exposição:</span>{' '}
+                                  <span className="font-semibold">{item.exposureType.replace(/_/g, ' ')}</span>
+                                  {item.exposureObservation && (
+                                    <span className="text-emerald-700 dark:text-emerald-300 font-medium"> ({item.exposureObservation})</span>
+                                  )}
+                                </div>
                                 {item.trajectory && (
                                   <div><span className="text-muted-foreground">Trajetória:</span> {item.trajectory}</div>
                                 )}
