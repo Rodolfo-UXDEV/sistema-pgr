@@ -585,6 +585,8 @@ export const PgrViewerPage: React.FC = () => {
                             const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
                             const catLabel = (catConfig?.label || item.hazardCategory || 'FÍSICO').toUpperCase();
 
+                            const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+
                             if (isNoExposureRisk(item)) {
                               const agentText = item.hazardName && item.hazardName.toLowerCase() !== 'nap'
                                 ? item.hazardName
@@ -599,29 +601,35 @@ export const PgrViewerPage: React.FC = () => {
                               return (
                                 <div
                                   key={item.id}
-                                  className="border border-slate-300 dark:border-slate-700 rounded-md overflow-hidden text-xs bg-slate-50/60 dark:bg-slate-900/40 flex items-stretch shadow-2xs print:break-inside-avoid my-1.5"
+                                  className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid my-2"
                                 >
-                                  {/* Badge da Categoria com cor normativa */}
-                                  <div
-                                    className="text-white font-bold px-3 py-1.5 flex items-center justify-center text-xs tracking-wide shrink-0 min-w-[130px]"
-                                    style={{ backgroundColor: catConfig?.color || '#16a34a' }}
-                                  >
-                                    Risco {catLabel}
+                                  {/* Cabeçalho igual aos demais */}
+                                  <div className="grid grid-cols-12 text-white font-bold text-xs items-stretch">
+                                    <div className="col-span-3 bg-[#475569] py-1.5 px-3 flex items-center text-left uppercase tracking-wider text-[11px]">
+                                      {headerTitle}
+                                    </div>
+                                    <div className="col-span-6 bg-[#475569] py-1.5 px-3 flex items-center justify-center text-center uppercase tracking-wider text-[11px] border-x border-slate-500">
+                                      IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO
+                                    </div>
+                                    <div 
+                                      className="col-span-3 py-1.5 px-3 flex items-center justify-center text-center uppercase tracking-wider text-[11px]"
+                                      style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                                    >
+                                      RISCO {catLabel}
+                                    </div>
                                   </div>
 
-                                  {/* Texto Compacto Linear */}
-                                  <div className="px-3 py-1.5 flex items-center text-xs text-foreground gap-2 flex-wrap bg-white dark:bg-slate-950/60 flex-1">
-                                    <span className="font-semibold text-foreground/80">Agente:</span>
-                                    <span className="text-foreground">{agentText}</span>
-                                    <span className="text-muted-foreground mx-1">|</span>
-                                    <span className="font-semibold text-foreground/80">Condição:</span>
-                                    <span className="text-foreground">{condText}</span>
+                                  {/* Linha de baixo com as informações de Não se Aplica */}
+                                  <div className="px-3 py-2 flex items-center text-xs text-slate-800 gap-2 flex-wrap bg-slate-50/80 border-t border-slate-300">
+                                    <span className="font-bold text-slate-900">Agente:</span>
+                                    <span className="text-slate-800 font-normal">{agentText}</span>
+                                    <span className="text-slate-400 mx-1.5">|</span>
+                                    <span className="font-bold text-slate-900">Condição:</span>
+                                    <span className="text-slate-800 font-normal">{condText}</span>
                                   </div>
                                 </div>
                               );
                             }
-
-                            const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
                             // Separação do Tipo de Exposição
                             let expPart1 = 'Habitual';
@@ -676,21 +684,28 @@ export const PgrViewerPage: React.FC = () => {
 
                             return (
                               <div key={item.id} className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
-                                {/* Header Dark Gray */}
-                                <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
-                                  {headerTitle}
-                                </div>
-
-                                {/* Row 2: Risco Categoria & Agente */}
-                                <div className="grid grid-cols-12 border-t border-slate-400">
+                                {/* Header 3 Colunas idêntico ao laudo */}
+                                <div className="grid grid-cols-12 text-white font-bold text-xs items-stretch">
+                                  <div className="col-span-3 bg-[#475569] py-1.5 px-3 flex items-center text-left uppercase tracking-wider text-[11px]">
+                                    {headerTitle}
+                                  </div>
+                                  <div className="col-span-6 bg-[#475569] py-1.5 px-3 flex items-center justify-center text-center uppercase tracking-wider text-[11px] border-x border-slate-500">
+                                    IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO
+                                  </div>
                                   <div 
-                                    className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide uppercase"
+                                    className="col-span-3 py-1.5 px-3 flex items-center justify-center text-center uppercase tracking-wider text-[11px]"
                                     style={{ backgroundColor: catConfig?.color || '#16a34a' }}
                                   >
                                     RISCO {catLabel}
                                   </div>
-                                  <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
-                                    <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
+                                </div>
+
+                                {/* Row 2: Tipo do Agente / Perigo */}
+                                <div className="grid grid-cols-12 border-t border-slate-400">
+                                  <div className="col-span-3 font-bold py-1.5 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                    Tipo do Agente / Perigo:
+                                  </div>
+                                  <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white">
                                     <span className="text-slate-800 font-normal">{item.hazardName}</span>
                                   </div>
                                 </div>

@@ -714,10 +714,12 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catRgb = hexToRgb(catConfig?.color || '#16a34a');
 
-              if (isNoExposureRisk(item)) {
-                checkPageBreak(8);
+              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+              const catLabel = catConfig?.label ? catConfig.label.toUpperCase() : (item.hazardCategory || 'FÍSICO').toUpperCase();
 
-                const catLabel = catConfig?.label ? `Risco ${catConfig.label}` : `Risco ${item.hazardCategory}`;
+              if (isNoExposureRisk(item)) {
+                checkPageBreak(16);
+
                 const agentText = item.hazardName && item.hazardName.toLowerCase() !== 'nap'
                   ? item.hazardName
                   : 'Não há exposição / Não se Aplica';
@@ -728,29 +730,33 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   ? 'NAP'
                   : `NAP (${rawCondition})`;
 
-                const noExpRow: any[] = [
+                const noExpRows: any[] = [
+                  [
+                    { 
+                      content: headerTitle, 
+                      styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left', cellWidth: 38 } 
+                    },
+                    { 
+                      content: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', 
+                      colSpan: 3, 
+                      styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } 
+                    },
+                    { 
+                      content: `RISCO ${catLabel}`, 
+                      styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', cellWidth: 42 } 
+                    }
+                  ],
                   [
                     {
-                      content: catLabel,
-                      styles: {
-                        fillColor: catRgb,
-                        textColor: [255, 255, 255],
-                        fontStyle: 'bold',
-                        halign: 'center',
-                        valign: 'middle',
-                        cellWidth: 34,
-                        fontSize: 7
-                      }
-                    },
-                    {
                       content: `Agente: ${agentText}   |   Condição: ${condText}`,
+                      colSpan: 5,
                       styles: {
                         fillColor: [248, 250, 252],
                         textColor: [30, 41, 59],
                         valign: 'middle',
-                        cellPadding: 1.6,
-                        fontSize: 7,
-                        cellWidth: 148
+                        cellPadding: 2,
+                        fontSize: 7.5,
+                        halign: 'left'
                       }
                     }
                   ]
@@ -758,19 +764,21 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
                 autoTable(doc, {
                   startY: cursor.y,
-                  body: noExpRow,
+                  body: noExpRows,
                   theme: 'grid',
                   tableLineWidth: 0.15,
                   tableLineColor: [203, 213, 225],
-                  styles: { cellPadding: 1.6 },
+                  styles: { cellPadding: 1.8, fontSize: 7 },
+                  columnStyles: {
+                    0: { cellWidth: 38 },
+                    4: { cellWidth: 42 }
+                  },
                   margin: { left: 14, right: 14 },
                 });
 
-                cursor.y = (doc as any).lastAutoTable.finalY + 2.5;
+                cursor.y = (doc as any).lastAutoTable.finalY + 4;
                 continue;
               }
-
-              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
               let expPart1 = 'Habitual';
               let expPart2 = 'Permanente';

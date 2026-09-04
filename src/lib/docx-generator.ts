@@ -454,8 +454,9 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               const catHex = (catConfig?.color || '#16a34a').replace('#', '');
               const catLabel = (catConfig?.label || item.hazardCategory || 'FÍSICO').toUpperCase();
 
+              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+
               if (isNoExposureRisk(item)) {
-                const stripLabel = catConfig?.label ? `Risco ${catConfig.label}` : `Risco ${item.hazardCategory}`;
                 const agentText = item.hazardName && item.hazardName.toLowerCase() !== 'nap'
                   ? item.hazardName
                   : 'Não há exposição / Não se Aplica';
@@ -466,21 +467,48 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   ? 'NAP'
                   : `NAP (${rawCondition})`;
 
-                const compactRow = new TableRow({
+                const headerRow = new TableRow({
                   children: [
                     new TableCell({
-                      width: { size: 2400, type: WidthType.DXA },
-                      shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
+                      width: { size: 2800, type: WidthType.DXA },
+                      shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
                       children: [
                         new Paragraph({
-                          children: [new TextRun({ text: stripLabel, bold: true, color: 'FFFFFF', size: 16 })],
+                          children: [new TextRun({ text: headerTitle, bold: true, color: 'FFFFFF' })],
+                          alignment: AlignmentType.LEFT,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      width: { size: 4160, type: WidthType.DXA },
+                      shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', bold: true, color: 'FFFFFF' })],
                           alignment: AlignmentType.CENTER,
                         }),
                       ],
                       borders: cellBorder,
                     }),
                     new TableCell({
-                      width: { size: 6960, type: WidthType.DXA },
+                      width: { size: 2400, type: WidthType.DXA },
+                      shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: `RISCO ${catLabel}`, bold: true, color: 'FFFFFF' })],
+                          alignment: AlignmentType.CENTER,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                  ],
+                });
+
+                const infoRow = new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 3,
                       shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
                       children: [
                         new Paragraph({
@@ -500,15 +528,13 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
                 children.push(
                   new Table({
-                    rows: [compactRow],
+                    rows: [headerRow, infoRow],
                     width: { size: 100, type: WidthType.PERCENTAGE },
                   }),
-                  new Paragraph({ text: '', spacing: { after: 80 } })
+                  new Paragraph({ text: '', spacing: { after: 120 } })
                 );
                 continue;
               }
-
-              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
 
               let expPart1 = 'Habitual';
               let expPart2 = 'Permanente';
@@ -558,27 +584,35 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               else if (norm.level === 'Extremo') statusHex = 'DC2626';
 
               const rows = [
-                // Row 1: Header Gray
+                // Row 1: Header 3 Colunas (Identificação, Perigo e Risco)
                 new TableRow({
                   children: [
                     new TableCell({
-                      columnSpan: 4,
+                      width: { size: 2800, type: WidthType.DXA },
+                      columnSpan: 1,
                       shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
                       children: [
                         new Paragraph({
                           children: [new TextRun({ text: headerTitle, bold: true, color: 'FFFFFF' })],
+                          alignment: AlignmentType.LEFT,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      width: { size: 4160, type: WidthType.DXA },
+                      columnSpan: 2,
+                      shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', bold: true, color: 'FFFFFF' })],
                           alignment: AlignmentType.CENTER,
                         }),
                       ],
                       borders: cellBorder,
                     }),
-                  ],
-                }),
-
-                // Row 2: Risco Categoria & Agente
-                new TableRow({
-                  children: [
                     new TableCell({
+                      width: { size: 2400, type: WidthType.DXA },
                       columnSpan: 1,
                       shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
                       children: [
@@ -589,13 +623,28 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                       ],
                       borders: cellBorder,
                     }),
+                  ],
+                }),
+
+                // Row 2: Tipo do Agente / Perigo
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      columnSpan: 1,
+                      shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: 'Tipo do Agente / Perigo:', bold: true })],
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
                     new TableCell({
                       columnSpan: 3,
                       children: [
                         new Paragraph({
                           children: [
-                            new TextRun({ text: 'Agente: ', bold: true }),
-                            new TextRun({ text: item.hazardName }),
+                            new TextRun({ text: item.hazardName || 'Não informado' }),
                           ],
                         }),
                       ],

@@ -554,6 +554,15 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
    - **Criação Automática no Contexto (`PgrContext.tsx`):** Prevenção automática de criação de tarefas 5W2H para riscos sem exposição, e geração da meta com a recomendação técnica direta.
    - Aplicado de forma homogênea no template unificado (`pgr-official-template.ts`), no visualizador Web (`PgrViewerPage.tsx`), no gerador PDF (`pdf-generator.ts`) e no Word DOCX (`docx-generator.ts`).
 
-8. **Build & Deploy:**
+8. **Padronização das Tabelas Sem Exposição / Não se Aplica (Inventário APR-HO):**
+   - **Cabeçalho Unificado:** Quando um perigo/categoria for marcado como "Não há exposição / Não se Aplica", a tabela passa a manter o cabeçalho idêntico às demais tabelas normais de risco, com as 3 colunas padrão:
+     - Coluna 1: Código do GHE e Data (`GES-01 APR-HO - DD/MM/AAAA`);
+     - Coluna 2: `IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO`;
+     - Coluna 3: `RISCO [CATEGORIA]` com o badge e a cor normativa oficial (Químico, Físico, Biológico, Ergonômico, Acidentes).
+   - **Linha de Baixo com Informações de Não se Aplica:** As informações de ausência de exposição são renderizadas logo abaixo do cabeçalho de forma limpa e estruturada:
+     - `Agente: Não há exposição / Não se Aplica   |   Condição: NAP (Processos operacionais do setor)`.
+   - **Consistência Total:** Implementado de forma homogênea no Laudo PDF Oficial (`pdf-generator.ts`), no Documento Word (`docx-generator.ts`) e no Visualizador Web (`PgrViewerPage.tsx`).
+
+9. **Build & Deploy:**
    - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
    - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.
