@@ -38,8 +38,8 @@ export function App() {
             <Route path="estabelecimentos" element={<EstablishmentsPage />} />
             <Route path="setores" element={<SectorsPage />} />
             <Route path="cargos" element={<PositionsPage />} />
-            <Route path="ges" element={<GhesPage />} />
-            <Route path="ghes" element={<GhesPage />} />
+            <Route path="ges" element={<Navigate to="/inventario" replace />} />
+            <Route path="ghes" element={<Navigate to="/inventario" replace />} />
             <Route path="profissionais" element={<ProfessionalsPage />} />
             
             {/* Apoio e Configurações */}

@@ -106,6 +106,7 @@ export interface GES {
   description?: string;
   positionIds?: string[];
   workerCount: number;
+  order?: number; // Ordem sequencial definida pelo usuário
   createdAt: string;
   updatedAt: string;
 }

@@ -30,7 +30,11 @@ import {
 } from 'lucide-react';
 import { RiskFormModal } from '@/components/inventory/RiskFormModal';
 
-export const RiskInventoryTable: React.FC = () => {
+interface RiskInventoryTableProps {
+  selectedGheId?: string;
+}
+
+export const RiskInventoryTable: React.FC<RiskInventoryTableProps> = ({ selectedGheId }) => {
   const { 
     riskInventory, 
     activeCompany, 
@@ -55,6 +59,7 @@ export const RiskInventoryTable: React.FC = () => {
     riskInventory.filter((r) => {
       if (activeCompany && r.companyId !== activeCompany.id) return false;
       if (activeEstablishment && r.establishmentId !== activeEstablishment.id) return false;
+      if (selectedGheId && r.gheId !== selectedGheId) return false;
 
       if (selectedCategory !== 'ALL' && r.hazardCategory !== selectedCategory) return false;
       if (selectedLevel !== 'ALL' && r.riskLevel !== selectedLevel) return false;
@@ -441,6 +446,8 @@ export const RiskInventoryTable: React.FC = () => {
             setEditingItem(null);
           }}
           initialItem={editingItem}
+          defaultGheId={selectedGheId}
+          defaultSectorId={ghes.find(g => g.id === selectedGheId)?.sectorId}
         />
       )}
     </div>

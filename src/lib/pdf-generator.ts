@@ -426,54 +426,20 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   cursor.y = 265;
   ensureNewPage();
 
+  let indicePageNum = 2;
+  const sectionPageMap: Record<string, number> = {};
+  const ghePageMap: Record<string, number> = {};
+
   for (const section of docData.sections) {
     if (section.id === 'sec-1' || section.title.toLowerCase().includes('indice')) {
-      ensureNewPage();
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10.5);
-      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.text(section.title, 14, cursor.y);
-      cursor.y += 2;
-      doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.setLineWidth(0.3);
-      doc.line(14, cursor.y, 196, cursor.y);
-      cursor.y += 5;
-
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8.5);
-      doc.setTextColor(0, 0, 0);
-      doc.text('SEQUÊNCIA DO PROGRAMA DE GERENCIAMENTO DE RISCOS (PGR):', 14, cursor.y);
-      cursor.y += 5;
-
-      const rawLines = (section.content || '').split('\n');
-      for (const line of rawLines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed === 'SEQUÊNCIA DO PGR') continue;
-
-        const isSubItem = line.startsWith('  ') || line.startsWith('\t') || trimmed.startsWith('GES') || trimmed.startsWith('- GES');
-        const cleanText = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '');
-
-        checkPageBreak(6);
-
-        if (isSubItem) {
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          doc.setTextColor(0, 0, 0);
-          doc.text(`   •  ${cleanText}`, 18, cursor.y);
-          cursor.y += 4.2;
-        } else {
-          doc.setFont('helvetica', 'bold');
-          doc.setFontSize(8);
-          doc.setTextColor(0, 0, 0);
-          doc.text(`•  ${cleanText}`, 14, cursor.y);
-          cursor.y += 4.6;
-        }
-      }
-
-      cursor.y += 6;
-      ensureNewPage();
+      indicePageNum = doc.getNumberOfPages();
+      doc.addPage();
+      cursor.y = 20;
       continue;
     }
+
+    // Registra a página exata em que cada seção inicia
+    sectionPageMap[section.id] = doc.getNumberOfPages();
 
     // Controle estrito de quebras de página por seção
     if (section.id === 'sec-2' || section.id === 'sec-3' || section.id === 'sec-4' || section.id === 'sec-5' || section.id === 'sec-6') {
@@ -766,6 +732,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           if (gIdx > 0) {
             ensureNewPage();
           }
+          ghePageMap[group.gheCode] = doc.getNumberOfPages();
 
           const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
           const gheHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
@@ -1157,9 +1124,86 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
     }
   }
 
-  // Remove última página caso tenha ficado totalmente em branco
-  if (cursor.y === 20 && doc.getNumberOfPages() > 1) {
-    doc.deletePage(doc.getNumberOfPages());
+  // Renderiza o Índice Oficial com paginação e linhas pontilhadas na página reservada (Página 2)
+  if (indicePageNum > 0 && indicePageNum <= doc.getNumberOfPages()) {
+    doc.setPage(indicePageNum);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Índice', 14, 25);
+
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.8);
+    doc.line(14, 28, 196, 28);
+
+    let indY = 36;
+    const indexSections = docData.sections.filter(
+      s => s.id !== 'sec-0' && s.id !== 'sec-1' && !s.title.toLowerCase().includes('indice')
+    );
+    const gheGroupsForIndex = groupInventoryByGhe(ctx.sectors, ctx.positions, ctx.ghes, ctx.riskInventory);
+
+    for (const sec of indexSections) {
+      const pageNum = sectionPageMap[sec.id] || 3;
+      const title = sec.title;
+      const pageStr = String(pageNum);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(0, 0, 0);
+
+      const titleWidth = doc.getTextWidth(title);
+      const pageStrWidth = doc.getTextWidth(pageStr);
+
+      doc.text(title, 14, indY);
+      doc.text(pageStr, 196, indY, { align: 'right' });
+
+      const dotsStartX = 14 + titleWidth + 2;
+      const dotsEndX = 196 - pageStrWidth - 2;
+      if (dotsEndX > dotsStartX) {
+        const dotUnit = ' .';
+        const dotUnitWidth = doc.getTextWidth(dotUnit);
+        const count = Math.floor((dotsEndX - dotsStartX) / dotUnitWidth);
+        if (count > 0) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(90, 90, 90);
+          doc.text(dotUnit.repeat(count), dotsStartX, indY);
+        }
+      }
+      indY += 5.6;
+
+      // Se for a seção de inventário, detalha também os GESs
+      if (sec.type === 'risk_inventory_table' && gheGroupsForIndex && gheGroupsForIndex.length > 0) {
+        gheGroupsForIndex.forEach(g => {
+          const gTitle = `${g.gheCode} – Setor ${g.sectorName}`;
+          const gPage = String(ghePageMap[g.gheCode] || pageNum);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(0, 0, 0);
+
+          const gTitleWidth = doc.getTextWidth(gTitle);
+          const gPageStrWidth = doc.getTextWidth(gPage);
+
+          doc.text(gTitle, 18, indY);
+          doc.text(gPage, 196, indY, { align: 'right' });
+
+          const gDotsStartX = 18 + gTitleWidth + 2;
+          const gDotsEndX = 196 - gPageStrWidth - 2;
+          if (gDotsEndX > gDotsStartX) {
+            const dotUnit = ' .';
+            const dotUnitWidth = doc.getTextWidth(dotUnit);
+            const count = Math.floor((gDotsEndX - gDotsStartX) / dotUnitWidth);
+            if (count > 0) {
+              doc.setFont('helvetica', 'normal');
+              doc.setTextColor(120, 120, 120);
+              doc.text(dotUnit.repeat(count), gDotsStartX, indY);
+            }
+          }
+          indY += 4.8;
+        });
+      }
+    }
   }
 
   const totalPages = doc.getNumberOfPages();

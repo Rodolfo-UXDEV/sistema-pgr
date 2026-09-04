@@ -15,7 +15,9 @@ import {
   VerticalAlign,
   Header,
   Footer,
-  PageNumber
+  PageNumber,
+  TabStopType,
+  LeaderType
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
@@ -319,6 +321,105 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
   // SEÇÕES DO DOCUMENTO
   // ==========================================
   for (const section of docData.sections) {
+    if (section.id === 'sec-1' || section.title.toLowerCase().includes('indice')) {
+      children.push(
+        new Paragraph({
+          pageBreakBefore: true,
+          children: [
+            new TextRun({
+              text: 'Índice',
+              bold: true,
+              color: '000000',
+              size: 32,
+              font: 'Arial',
+            }),
+          ],
+          border: {
+            bottom: {
+              color: '000000',
+              size: 8,
+              style: BorderStyle.SINGLE,
+            },
+          },
+          spacing: { before: 100, after: 300 },
+        })
+      );
+
+      const indexSections = docData.sections.filter(
+        s => s.id !== 'sec-0' && s.id !== 'sec-1' && !s.title.toLowerCase().includes('indice')
+      );
+      const gheGroupsForIndex = groupInventoryByGhe(ctx.sectors, ctx.positions, ctx.ghes, ctx.riskInventory);
+
+      let estPage = 3;
+      for (const sec of indexSections) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: sec.title,
+                size: 20,
+                color: '000000',
+                font: 'Arial',
+              }),
+              new TextRun({
+                text: `\t${estPage}`,
+                size: 20,
+                color: '000000',
+                font: 'Arial',
+              }),
+            ],
+            tabStops: [
+              {
+                type: TabStopType.RIGHT,
+                position: 9026,
+                leader: LeaderType.DOT,
+              },
+            ],
+            spacing: { after: 100 },
+          })
+        );
+
+        if (sec.type === 'risk_inventory_table' && gheGroupsForIndex && gheGroupsForIndex.length > 0) {
+          let ghePage = estPage;
+          gheGroupsForIndex.forEach((g, gIdx) => {
+            if (gIdx > 0) ghePage += 1;
+            children.push(
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `   ${g.gheCode} – Setor ${g.sectorName}`,
+                    size: 18,
+                    color: '000000',
+                    font: 'Arial',
+                  }),
+                  new TextRun({
+                    text: `\t${ghePage}`,
+                    size: 18,
+                    color: '000000',
+                    font: 'Arial',
+                  }),
+                ],
+                tabStops: [
+                  {
+                    type: TabStopType.RIGHT,
+                    position: 9026,
+                    leader: LeaderType.DOT,
+                  },
+                ],
+                spacing: { after: 80 },
+              })
+            );
+          });
+          estPage += Math.max(1, Math.ceil((ctx.riskInventory?.length || 1) / 3));
+        } else if (sec.type === 'action_plan_table') {
+          estPage += Math.max(1, Math.ceil((ctx.actionPlans?.length || 1) / 8));
+        } else {
+          estPage += 1;
+        }
+      }
+      continue;
+    }
+
     // Título da Seção
     const sectionHeading = /^\d+\./.test(section.title) ? section.title : `${section.number}. ${section.title}`;
     const shouldPageBreak = section.id === 'sec-2' || section.id === 'sec-3' || section.id === 'sec-4' || section.id === 'sec-5' || section.id === 'sec-6' || section.type === 'risk_inventory_table' || section.type === 'action_plan_table' || section.type === 'closing_signatures' || section.id === 'sec-17';
@@ -337,48 +438,6 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         spacing: { before: 600, after: 200 },
       })
     );
-
-    if (section.id === 'sec-1' || section.title.toLowerCase().includes('indice')) {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: 'SEQUÊNCIA DO PROGRAMA DE GERENCIAMENTO DE RISCOS (PGR):',
-              bold: true,
-              color: '000000',
-              size: 20,
-            }),
-          ],
-          spacing: { before: 100, after: 120 },
-        })
-      );
-
-      const rawLines = (section.content || '').split('\n');
-      for (const line of rawLines) {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed === 'SEQUÊNCIA DO PGR') continue;
-
-        const isSubItem = line.startsWith('  ') || line.startsWith('\t') || trimmed.startsWith('GES') || trimmed.startsWith('- GES');
-        const cleanText = trimmed.replace(/^-\s*/, '').replace(/^\*\s*/, '');
-
-        if (isSubItem) {
-          children.push(
-            new Paragraph({
-              children: [new TextRun({ text: `    •  ${cleanText}`, color: '000000', size: 18 })],
-              spacing: { after: 40 },
-            })
-          );
-        } else {
-          children.push(
-            new Paragraph({
-              children: [new TextRun({ text: `•  ${cleanText}`, bold: true, color: '000000', size: 20 })],
-              spacing: { before: 80, after: 40 },
-            })
-          );
-        }
-      }
-      continue;
-    }
 
     if (section.type === 'company_info') {
       const d = section.data;

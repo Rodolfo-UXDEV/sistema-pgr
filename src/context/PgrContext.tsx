@@ -88,6 +88,8 @@ interface PgrContextType {
   addGhe: (ghe: Omit<GHE, 'id' | 'createdAt' | 'updatedAt'>) => Promise<GHE>;
   updateGhe: (id: string, data: Partial<GHE>) => Promise<void>;
   deleteGhe: (id: string) => Promise<void>;
+  duplicateGhe: (gheId: string) => Promise<GHE>;
+  reorderGhes: (orderedGhes: GHE[]) => Promise<void>;
 
   // CRUD Profissionais
   addProfessional: (prof: Omit<Professional, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Professional>;
@@ -560,6 +562,68 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     ]);
   };
 
+  const duplicateGhe = async (gheId: string) => {
+    const sourceGhe = ghes.find(g => g.id === gheId);
+    if (!sourceGhe) throw new Error('GES de origem não encontrado');
+
+    const estGhes = ghes.filter(g => g.establishmentId === sourceGhe.establishmentId);
+    let maxNum = 0;
+    estGhes.forEach(g => {
+      const match = (g.code || '').match(/(?:GES|GHE)-?0*(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxNum) maxNum = num;
+      }
+    });
+    const nextNum = maxNum + 1;
+    const newCode = `GES-${String(nextNum).padStart(2, '0')}`;
+
+    const newGhe: GHE = {
+      id: generateId(),
+      establishmentId: sourceGhe.establishmentId,
+      sectorId: sourceGhe.sectorId,
+      code: newCode,
+      name: newCode,
+      description: sourceGhe.description || '',
+      positionIds: sourceGhe.positionIds ? [...sourceGhe.positionIds] : [],
+      workerCount: sourceGhe.workerCount || 1,
+      order: (sourceGhe.order || estGhes.length) + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const sourceRisks = riskInventory.filter(r => r.gheId === gheId);
+    const newRisks: RiskInventoryItem[] = sourceRisks.map(r => ({
+      ...r,
+      id: generateId(),
+      gheId: newGhe.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
+
+    setGhes(prev => [newGhe, ...prev]);
+    if (newRisks.length > 0) {
+      setRiskInventory(prev => [...newRisks, ...prev]);
+    }
+
+    await Promise.all([
+      saveToFirestore(COLLECTIONS.GHES, newGhe),
+      ...newRisks.map(r => saveToFirestore(COLLECTIONS.RISK_INVENTORY, r)),
+    ]);
+
+    return newGhe;
+  };
+
+  const reorderGhes = async (orderedGhes: GHE[]) => {
+    const updated = orderedGhes.map((g, idx) => ({ ...g, order: idx + 1, updatedAt: new Date().toISOString() }));
+    setGhes(prev => {
+      const otherGhes = prev.filter(g => !orderedGhes.some(og => og.id === g.id));
+      return [...updated, ...otherGhes];
+    });
+
+    await Promise.all(updated.map(g => saveToFirestore(COLLECTIONS.GHES, g)));
+  };
+
   // CRUD PROFISSIONAIS
   const addProfessional = async (data: Omit<Professional, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newProf: Professional = {
@@ -840,6 +904,8 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addGhe,
         updateGhe,
         deleteGhe,
+        duplicateGhe,
+        reorderGhes,
         addProfessional,
         updateProfessional,
         deleteProfessional,

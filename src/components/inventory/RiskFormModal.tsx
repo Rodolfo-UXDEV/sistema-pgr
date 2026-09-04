@@ -44,6 +44,8 @@ interface RiskFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialItem?: RiskInventoryItem | null;
+  defaultGheId?: string;
+  defaultSectorId?: string;
 }
 
 const EXPOSURE_TYPE_OPTIONS: { value: ExposureType; label: string }[] = [
@@ -85,6 +87,8 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   isOpen,
   onClose,
   initialItem,
+  defaultGheId,
+  defaultSectorId,
 }) => {
   const {
     activeCompany,
@@ -248,10 +252,10 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setEvaluationImages(initialItem.evaluationImages || []);
     } else {
       // Padrão limpo para novo cadastro
-      const firstSector = companySectors[0]?.id || '';
+      const firstSector = defaultSectorId || companySectors[0]?.id || '';
       setSectorId(firstSector);
       setPositionId('');
-      setGheId('');
+      setGheId(defaultGheId || '');
       setExposedCount(1);
       setHighestRiskExposed('');
 

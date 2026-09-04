@@ -326,16 +326,26 @@ export const PgrViewerPage: React.FC = () => {
         </div>
 
         {/* 1. INDICE */}
-        <section className="space-y-3">
-          <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
-            <span className="text-[#334155] dark:text-slate-300 font-mono">1.</span> {getSectionTitle('sec-1', 'INDICE')}
-          </h2>
-          {renderFormattedSection(
-            getSectionContent(
-              'sec-1',
-              docData.sections.find(s => s.id === 'sec-1')?.content || DEFAULT_PGR_SECTIONS.find(s => s.id === 'sec-1')?.defaultContent || ''
-            )
-          )}
+        <section className="space-y-4">
+          <div className="border-b-2 border-foreground/80 pb-1.5">
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              Índice
+            </h2>
+          </div>
+          <div className="space-y-1.5 text-xs text-foreground font-sans">
+            {docData.sections
+              .filter(s => s.id !== 'sec-0' && s.id !== 'sec-1' && !s.title.toLowerCase().includes('indice'))
+              .map((s, idx) => {
+                const estPage = idx + 3;
+                return (
+                  <div key={s.id} className="flex items-baseline justify-between gap-2 group">
+                    <span className="font-medium text-foreground whitespace-nowrap">{s.title}</span>
+                    <span className="flex-1 border-b border-dotted border-muted-foreground/50 mx-1 mb-1" />
+                    <span className="font-mono text-muted-foreground font-bold">{estPage}</span>
+                  </div>
+                );
+              })}
+          </div>
         </section>
 
         {/* 2. CONTROLE DE REVISÕES */}
