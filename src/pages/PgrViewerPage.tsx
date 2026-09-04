@@ -15,7 +15,7 @@ import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
-import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix } from '@/lib/risk-matrix';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { ActionPlanItem } from '@/types/pgr';
@@ -378,17 +378,43 @@ export const PgrViewerPage: React.FC = () => {
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
             <span className="text-[#334155] dark:text-slate-300 font-mono">4.</span> {getSectionTitle('sec-4', 'RESPONSÁVEL TÉCNICO PELA ELABORAÇÃO DO PGR')}
           </h2>
-          <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-2 text-xs">
-            <div>
-              <strong>Responsável Técnico pela Elaboração:</strong> {docData.header.techRespName} ({docData.header.techRespCouncil})
-            </div>
-            <div>
-              {docData.header.techRespArt && docData.header.techRespArt !== 'ART Emitida' && docData.header.techRespArt !== '-' && (
-                <><strong>ART / RRT:</strong> {docData.header.techRespArt} | </>
-              )}
-              <strong>Consultoria SST:</strong> {issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany} ({issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea})
-            </div>
-          </div>
+          {(() => {
+            const sec4 = docData.sections.find(s => s.id === 'sec-4') as any;
+            const el = sec4?.elaborador;
+            const qualifText = el?.qualificacoes && el.qualificacoes.length > 0
+              ? el.qualificacoes.join(' | ')
+              : (el?.cargo || '-');
+            const cpfText = el?.cpf || issuerConfig.technicalManager?.cpf;
+            const med = sec4?.medicoPcmso;
+
+            return (
+              <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-3 text-xs">
+                <div className="space-y-1">
+                  <div className="font-semibold text-foreground text-sm">
+                    Responsável Técnico pela Elaboração e ART:
+                  </div>
+                  <div>• <strong>Nome:</strong> {el?.nome || docData.header.techRespName}</div>
+                  <div>• <strong>Qualificações / Cargos Habilitados:</strong> {qualifText}</div>
+                  <div>• <strong>Registro Profissional:</strong> {el?.conselho || docData.header.techRespCouncil}</div>
+                  {cpfText && <div>• <strong>CPF do Responsável Técnico:</strong> {cpfText}</div>}
+                  {docData.header.techRespArt && docData.header.techRespArt !== 'ART Emitida' && docData.header.techRespArt !== '-' && (
+                    <div>• <strong>Número da ART / RRT:</strong> {docData.header.techRespArt}</div>
+                  )}
+                  <div>• <strong>Consultoria Especializada:</strong> {el?.empresaConsultoria || `${issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany} (${issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea})`}</div>
+                </div>
+
+                {med && (
+                  <div className="space-y-1 pt-2 border-t border-border/50">
+                    <div className="font-semibold text-foreground text-sm">
+                      Médico Coordenador do PCMSO (NR-07):
+                    </div>
+                    <div>• <strong>Nome:</strong> {med.nome}</div>
+                    <div>• <strong>Conselho:</strong> {med.conselho}</div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </section>
 
         {/* 5. INTRODUÇÃO */}
@@ -502,7 +528,7 @@ export const PgrViewerPage: React.FC = () => {
                               <div className="text-foreground text-xs font-semibold">
                                 Cargo / Função: {pos.title}{pos.cbo ? ` (CBO: ${pos.cbo})` : ''}
                               </div>
-                              <div className="text-foreground/90 text-xs font-normal leading-relaxed">
+                              <div className="text-foreground/90 text-xs font-normal leading-relaxed text-justify">
                                 Descrição da Atividade: {pos.activityDescription}
                               </div>
                             </div>
@@ -519,18 +545,92 @@ export const PgrViewerPage: React.FC = () => {
                         <div className="space-y-4 pt-2">
                           {group.risks.map((item) => {
                             const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
+                            const catLabel = (catConfig?.label || item.hazardCategory || 'FÍSICO').toUpperCase();
 
                             if (isNoExposureRisk(item)) {
+                              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
                               return (
-                                <div key={item.id} className="flex items-center border border-border rounded-lg overflow-hidden bg-card text-xs shadow-sm">
-                                  <div 
-                                    className="px-4 py-2.5 text-white font-bold text-center text-xs min-w-[150px] shrink-0"
-                                    style={{ backgroundColor: catConfig?.color || '#16a34a' }}
-                                  >
-                                    Risco {catConfig?.label || item.hazardCategory}
+                                <div key={item.id} className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
+                                  {/* Header Dark Gray */}
+                                  <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
+                                    {headerTitle}
                                   </div>
-                                  <div className="px-4 py-2.5 font-semibold text-foreground text-xs">
-                                    Agente: <span className="font-normal text-muted-foreground">{item.hazardName || 'Não há exposição / Não se Aplica'}</span>
+
+                                  {/* Row 2: Risco Categoria & Agente */}
+                                  <div className="grid grid-cols-12 border-t border-slate-400">
+                                    <div 
+                                      className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide uppercase"
+                                      style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                                    >
+                                      RISCO {catLabel}
+                                    </div>
+                                    <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
+                                      <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
+                                      <span className="text-slate-800 font-normal">{item.hazardName || 'Não há exposição / Não se Aplica'}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Row 3: Tipo de Exposição */}
+                                  <div className="grid grid-cols-12 border-t border-slate-300">
+                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                      Tipo de Exposição
+                                    </div>
+                                    <div className="col-span-4 py-1 px-3 text-slate-800 border-r border-slate-300 flex items-center">
+                                      NAP
+                                    </div>
+                                    <div className="col-span-5 py-1 px-3 text-slate-800 flex items-center">
+                                      NAP
+                                    </div>
+                                  </div>
+
+                                  {/* Row 4: Fontes ou circunstância */}
+                                  <div className="grid grid-cols-12 border-t border-slate-300">
+                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                      Fontes ou circunstância
+                                    </div>
+                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                      {item.sourceDescription || 'Não há exposição / Não se Aplica (NAP)'}
+                                    </div>
+                                  </div>
+
+                                  {/* Row 5: Trajetória */}
+                                  <div className="grid grid-cols-12 border-t border-slate-300">
+                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                      Trajetória
+                                    </div>
+                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                      {item.trajectory || 'NAP'}
+                                    </div>
+                                  </div>
+
+                                  {/* Row 6: Via de penetração */}
+                                  <div className="grid grid-cols-12 border-t border-slate-300">
+                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                      Via de penetração
+                                    </div>
+                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                      {item.penetrationRoute || 'NAP'}
+                                    </div>
+                                  </div>
+
+                                  {/* Row 7: Efeitos a saúde */}
+                                  <div className="grid grid-cols-12 border-t border-slate-300">
+                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                      Efeitos a saúde
+                                    </div>
+                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                      {item.healthDamage || 'NAP'}
+                                    </div>
+                                  </div>
+
+                                  {/* Row 8: EPC/EPI */}
+                                  <div className="grid grid-cols-12 border-t border-slate-300">
+                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
+                                      EPC/EPI
+                                    </div>
+                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
+                                      NAP
+                                    </div>
                                   </div>
                                 </div>
                               );
@@ -578,32 +678,16 @@ export const PgrViewerPage: React.FC = () => {
                             const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
                             const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
 
-                            // Status do agente e Prioridade
-                            let statusAgente = 'Risco Baixo';
-                            let statusColor = '#16a34a';
-                            let prioridade = 'Baixa';
+                            // Cálculo de nível de risco conforme Tabela 5 e 7 da NR-01 / PGR (Matriz 5x5)
+                            const score = item.riskScore || (Number(item.severity || 1) * Number(item.probability || 1));
+                            const norm = getNormativeRiskMatrix(score);
+                            const displayRiskLevel = norm.displayLevel;
+                            const prioridadeFinal = item.actionPriority || norm.priority;
 
-                            if (item.riskLevel === 'TRIVIAL') {
-                              statusAgente = 'Risco Muito Baixo';
-                              statusColor = '#16a34a';
-                              prioridade = 'Nenhuma';
-                            } else if (item.riskLevel === 'TOLERAVEL') {
-                              statusAgente = 'Risco Baixo';
-                              statusColor = '#16a34a';
-                              prioridade = 'Baixa';
-                            } else if (item.riskLevel === 'MODERADO') {
-                              statusAgente = 'Risco Médio';
-                              statusColor = '#d97706';
-                              prioridade = 'Média';
-                            } else if (item.riskLevel === 'SUBSTANCIAL') {
-                              statusAgente = 'Risco Alto';
-                              statusColor = '#ea580c';
-                              prioridade = 'Alta';
-                            } else if (item.riskLevel === 'INTOLERAVEL') {
-                              statusAgente = 'Risco Crítico';
-                              statusColor = '#dc2626';
-                              prioridade = 'Crítica / Imediata';
-                            }
+                            let statusColor = '#16a34a';
+                            if (norm.level === 'Médio') statusColor = '#d97706';
+                            else if (norm.level === 'Alto') statusColor = '#ea580c';
+                            else if (norm.level === 'Extremo') statusColor = '#dc2626';
 
                             return (
                               <div key={item.id} className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
@@ -615,10 +699,10 @@ export const PgrViewerPage: React.FC = () => {
                                 {/* Row 2: Risco Categoria & Agente */}
                                 <div className="grid grid-cols-12 border-t border-slate-400">
                                   <div 
-                                    className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide"
+                                    className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide uppercase"
                                     style={{ backgroundColor: catConfig?.color || '#16a34a' }}
                                   >
-                                    Risco {catConfig?.label || 'Físico'}
+                                    RISCO {catLabel}
                                   </div>
                                   <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
                                     <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
@@ -704,14 +788,14 @@ export const PgrViewerPage: React.FC = () => {
                                   </div>
                                 </div>
 
-                                {/* Row 11: Data da medição | Resultado | LT Headers */}
+                                {/* Row 11: Data da Avaliação | Resultado | LT Headers */}
                                 <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
-                                  <div className="col-span-4 py-1 px-2 border-r border-slate-300">Data da medição</div>
+                                  <div className="col-span-4 py-1 px-2 border-r border-slate-300">Data da Avaliação</div>
                                   <div className="col-span-4 py-1 px-2 border-r border-slate-300">Resultado</div>
                                   <div className="col-span-4 py-1 px-2">LT</div>
                                 </div>
 
-                                {/* Row 12: Data da medição | Resultado | LT Values */}
+                                {/* Row 12: Data da Avaliação | Resultado | LT Values */}
                                 <div className="grid grid-cols-12 border-t border-slate-300 text-center">
                                   <div className="col-span-4 py-1 px-2 border-r border-slate-300 text-slate-800">{dataMedicao}</div>
                                   <div className="col-span-4 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">{resultado}</div>
@@ -723,30 +807,30 @@ export const PgrViewerPage: React.FC = () => {
                                   Categorização do risco/perigo
                                 </div>
 
-                                {/* Row 14: Headers Severidade, Probabilidade, Status, Prioridade */}
+                                {/* Row 14: Headers Severidade, Probabilidade, Nível de Risco, Prioridade */}
                                 <div className="grid grid-cols-12 border-t border-slate-300 text-center font-bold bg-slate-50/60">
                                   <div className="col-span-3 py-1 px-2 border-r border-slate-300">Severidade</div>
                                   <div className="col-span-3 py-1 px-2 border-r border-slate-300">Probabilidade</div>
-                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300">Status do agente</div>
+                                  <div className="col-span-3 py-1 px-2 border-r border-slate-300">Nível de Risco</div>
                                   <div className="col-span-3 py-1 px-2">Prioridade de ação</div>
                                 </div>
 
                                 {/* Row 15: Values */}
                                 <div className="grid grid-cols-12 border-t border-slate-300 text-center">
                                   <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
-                                    {item.severity}
+                                    {item.severity || '1'}
                                   </div>
                                   <div className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-slate-900">
-                                    {item.probability}
+                                    {item.probability || '1'}
                                   </div>
                                   <div 
                                     className="col-span-3 py-1 px-2 border-r border-slate-300 font-bold text-xs"
                                     style={{ color: statusColor }}
                                   >
-                                    {statusAgente}
+                                    {displayRiskLevel}
                                   </div>
                                   <div className="col-span-3 py-1 px-2 font-semibold text-slate-800">
-                                    {item.actionPriority || prioridade}
+                                    {prioridadeFinal}
                                   </div>
                                 </div>
 
@@ -940,6 +1024,24 @@ export const PgrViewerPage: React.FC = () => {
                   pgrContext.actionPlans.map((act: ActionPlanItem) => {
                     const matchedRisk = pgrContext.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
                     const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
+                    const responsibleText = act.who || establishment?.managerName || currentCompany?.legalRepresentative || 'SESMT';
+                    
+                    const upperStatus = (act.status || '').toUpperCase();
+                    let statusLabel = 'NÃO INICIADA';
+                    let statusClass = 'text-amber-700 bg-amber-50 border-amber-200';
+                    if (upperStatus === 'IN_PROGRESS' || upperStatus === 'EM_ANDAMENTO') {
+                      statusLabel = 'EM ANDAMENTO';
+                      statusClass = 'text-emerald-700 bg-emerald-50 border-emerald-200';
+                    } else if (upperStatus === 'COMPLETED' || upperStatus === 'CONCLUIDA' || upperStatus === 'CONCLUÍDA') {
+                      statusLabel = 'CONCLUÍDA';
+                      statusClass = 'text-blue-700 bg-blue-50 border-blue-200';
+                    } else if (upperStatus === 'CANCELLED' || upperStatus === 'CANCELADA') {
+                      statusLabel = 'CANCELADA';
+                      statusClass = 'text-slate-700 bg-slate-100 border-slate-300';
+                    } else if (upperStatus && upperStatus !== 'NOT_STARTED' && upperStatus !== 'NAO_INICIADA') {
+                      statusLabel = act.status.replace(/_/g, ' ').toUpperCase();
+                    }
+
                     return (
                       <TableRow key={act.id} className="text-xs hover:bg-muted/30">
                         <TableCell className="font-medium text-foreground leading-relaxed">{act.what}</TableCell>
@@ -950,10 +1052,10 @@ export const PgrViewerPage: React.FC = () => {
                         <TableCell className="text-center font-mono text-muted-foreground">
                           {act.whenDate ? formatDate(act.whenDate) : 'Contínuo'}
                         </TableCell>
-                        <TableCell className="text-center text-muted-foreground">{act.who || 'SESMT'}</TableCell>
+                        <TableCell className="text-center text-muted-foreground">{responsibleText}</TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="outline" className="text-[10px] uppercase font-semibold">
-                            {act.status.replace('_', ' ')}
+                          <Badge variant="outline" className={`text-[10px] uppercase font-semibold ${statusClass}`}>
+                            {statusLabel}
                           </Badge>
                         </TableCell>
                       </TableRow>

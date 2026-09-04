@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Matrix5x5Selector } from '@/components/risk-matrix/Matrix5x5Selector';
-import { calculateRiskLevel, HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { calculateRiskLevel, HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix } from '@/lib/risk-matrix';
 import { 
   Plus, 
   Trash2, 
@@ -146,6 +146,10 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   const [actionEndDate, setActionEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [actionResponsible, setActionResponsible] = useState('');
 
+  const defaultResp = activeCompany?.legalRepresentative 
+    ? `${activeCompany.legalRepresentative}${activeCompany.representativeRole ? ` / ${activeCompany.representativeRole}` : ''}`
+    : (activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção');
+
   // 6. Avaliações e Resultados (Imagens)
   const [evaluationImages, setEvaluationImages] = useState<string[]>([]);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -243,7 +247,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setActionPriority('Média');
       setActionStartDate(new Date().toISOString().split('T')[0]);
       setActionEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-      setActionResponsible(activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção');
+      setActionResponsible(defaultResp);
 
       setRecommendations('');
       setActionRequired(true);
@@ -849,19 +853,12 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
               severity={severity}
               probability={probability}
               actionPriority={actionPriority}
-              onChange={(s, p, level) => {
+              onChange={(s, p) => {
                 setSeverity(s);
                 setProbability(p);
-                // Atualiza a prioridade sugerida com base no nível (Tabela 6 e 7 do PGR)
-                if (level === 'INTOLERAVEL') {
-                  setActionPriority('Urgente');
-                } else if (level === 'SUBSTANCIAL') {
-                  setActionPriority('Alta');
-                } else if (level === 'MODERADO') {
-                  setActionPriority('Média');
-                } else {
-                  setActionPriority('Baixa');
-                }
+                // Vincula e calcula a prioridade automaticamente conforme Tabela 5 e 7 da NR-01
+                const norm = getNormativeRiskMatrix(s * p);
+                setActionPriority(norm.priority);
               }}
               onPriorityChange={setActionPriority}
             />
@@ -905,13 +902,13 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                     <Calendar className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Prazos & Responsável do Plano de Ação (NR-01.5.5)</span>
                   </span>
-                  {activeEstablishment?.managerName && (
+                  {defaultResp && (
                     <button
                       type="button"
-                      onClick={() => setActionResponsible(activeEstablishment.managerName || '')}
+                      onClick={() => setActionResponsible(defaultResp)}
                       className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer"
                     >
-                      Puxar Resp. Local ({activeEstablishment.managerName})
+                      Puxar Responsável ({defaultResp})
                     </button>
                   )}
                 </div>

@@ -155,3 +155,63 @@ export const HAZARD_CATEGORY_CONFIG: Record<
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
   },
 };
+
+export type NormativeRiskLevel = 'Baixo' | 'Médio' | 'Alto' | 'Extremo';
+export type NormativeActionPriority = 'Baixa' | 'Média' | 'Alta' | 'Urgente';
+
+/**
+ * Gradação Oficial da Matriz Corporativa 5x5 e Prioridade de Ação (NR-01)
+ * Conforme Tabelas 5 e 7 do Documento de Referência:
+ * - 16 a 25: Extremo / Urgente (Interrupção imediata / Medidas emergenciais)
+ * - 10 a 15: Alto / Alta (Controle prioritário)
+ * - 5 a 9: Médio / Média (Monitoramento e melhoria contínua)
+ * - 1 a 4: Baixo / Baixa (Manutenção dos controles existentes)
+ */
+export function getNormativeRiskMatrix(score: number): {
+  score: number;
+  level: NormativeRiskLevel;
+  displayLevel: string;
+  priority: NormativeActionPriority;
+  actionRequired: string;
+  deadlineDays: number;
+} {
+  if (score >= 16) {
+    return {
+      score,
+      level: 'Extremo',
+      displayLevel: 'EXTREMO',
+      priority: 'Urgente',
+      actionRequired: 'Interrupção imediata / Medidas emergenciais',
+      deadlineDays: 7,
+    };
+  }
+  if (score >= 10) {
+    return {
+      score,
+      level: 'Alto',
+      displayLevel: 'ALTO',
+      priority: 'Alta',
+      actionRequired: 'Controle prioritário',
+      deadlineDays: 30,
+    };
+  }
+  if (score >= 5) {
+    return {
+      score,
+      level: 'Médio',
+      displayLevel: 'MÉDIO',
+      priority: 'Média',
+      actionRequired: 'Monitoramento e melhoria contínua',
+      deadlineDays: 90,
+    };
+  }
+  return {
+    score,
+    level: 'Baixo',
+    displayLevel: 'BAIXO',
+    priority: 'Baixa',
+    actionRequired: 'Manutenção dos controles existentes',
+    deadlineDays: 180,
+  };
+}
+

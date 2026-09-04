@@ -369,16 +369,74 @@ Com base na solicitação e demonstração visual gravada pela cliente em vídeo
 
 ### [03/09/2026] Marco: Múltiplas Qualificações Técnicas & Sincronização Completa do Plano de Ação (5W2H)
 
-1. **Múltiplas Qualificações Técnicas para Profissionais Habilitados:**
-   - Atualização do cadastro de Responsáveis Técnicos (`ProfessionalsPage.tsx` e `pgr.ts`) com suporte a múltiplas qualificações/cargos (ex.: *Engenheiro de Seg. do Trabalho*, *Higienista Ocupacional*, *Perito Judicial*, etc.).
-   - Tags de seleção rápida e campo para inclusão de qualificações personalizadas com badges visuais.
-   - Sincronização no Modelo Oficial (`pgr-official-template.ts`) e Seção 4 do PGR (exibição de todas as qualificações do elaborador técnico).
+- **Múltiplas Qualificações Técnicas para Profissionais Habilitados:**
+  - Atualização do cadastro de Responsáveis Técnicos (`ProfessionalsPage.tsx` e `pgr.ts`) com suporte a múltiplas qualificações/cargos (ex.: *Engenheiro de Seg. do Trabalho*, *Higienista Ocupacional*, *Perito Judicial*, etc.).
+  - Tags de seleção rápida e campo para inclusão de qualificações personalizadas com badges visuais.
+  - Sincronização no Modelo Oficial (`pgr-official-template.ts`) e Seção 4 do PGR (exibição de todas as qualificações do elaborador técnico).
 
-2. **Aprimoramentos Estruturais no Plano de Ação & Inventário de Riscos (NR-01.5.5):**
-   - Inclusão e integração de novos campos no Inventário e Plano de Ação:
-     - **Prazo Inicial** (`startDate` / `actionStartDate`);
-     - **Prazo Final / Limite** (`whenDate` / `actionEndDate`);
-     - **Grau de Prioridade Normativa** (`priority`: Baixa, Média, Alta, Urgente) calculado e sugerido automaticamente conforme o nível do risco (Intolerável -> Urgente, Substancial -> Alta, Moderado -> Média, etc.);
-     - **Responsável pela Ação** (`actionResponsible` / `who`), com atalho para puxar o responsável da unidade.
-   - Sincronização automática em tempo real entre o Inventário de Riscos e o Plano de Ação (5W2H) no Firestore.
-   - Atualização das tabelas do Plano de Ação no **PDF Oficial** (`pdf-generator.ts`), no **Documento Word** (`docx-generator.ts`) e na **Tela de Visualização** (`PgrViewerPage.tsx` e `ActionPlanTable.tsx`), substituindo números estáticos pela prioridade textual e exibindo o intervalo de datas completo.
+- **Aprimoramentos Estruturais no Plano de Ação & Inventário de Riscos (NR-01.5.5):**
+  - Inclusão e integração de novos campos no Inventário e Plano de Ação:
+    - **Prazo Inicial** (`startDate` / `actionStartDate`);
+    - **Prazo Final / Limite** (`whenDate` / `actionEndDate`);
+    - **Grau de Prioridade Normativa** (`priority`: Baixa, Média, Alta, Urgente) calculado e sugerido automaticamente conforme o nível do risco (Intolerável -> Urgente, Substancial -> Alta, Moderado -> Média, etc.);
+    - **Responsável pela Ação** (`actionResponsible` / `who`), com atalho para puxar o responsável da unidade.
+  - Sincronização automática em tempo real entre o Inventário de Riscos e o Plano de Ação (5W2H) no Firestore.
+  - Atualização das tabelas do Plano de Ação no **PDF Oficial** (`pdf-generator.ts`), no **Documento Word** (`docx-generator.ts`) e na **Tela de Visualização** (`PgrViewerPage.tsx` e `ActionPlanTable.tsx`), substituindo números estáticos pela prioridade textual e exibindo o intervalo de datas completo.
+
+---
+
+### [03/09/2026] Marco: Adequações Normativas da Especificação Técnica (CHK-01 a CHK-08) & Justificação Universal de Textos
+
+Com base no documento formal de auditoria técnica (`especificacao_ajustes_pgr.pdf`), foram aplicados integralmente todos os requisitos técnicos normativos no Sistema PGR/GRO (NR-01) e nos exportadores oficiais:
+
+1. **CHK-01: Padronização dos Títulos dos Cartões de Riscos para `RISCO [NOME]`:**
+   - Alterados cabeçalhos e badges de grupos de riscos nos relatórios e visualizadores de `GRUPO [NOME]` ou `Risco [Nome]` para `RISCO FÍSICO`, `RISCO QUÍMICO`, `RISCO BIOLÓGICO`, `RISCO ERGONÔMICO`, `RISCO DE ACIDENTES`.
+   - Implementado em: `src/lib/pdf-generator.ts`, `src/lib/docx-generator.ts` e `src/pages/PgrViewerPage.tsx`.
+
+2. **CHK-02: Rótulo "Data da Avaliação" e Eliminação de Status Redundante:**
+   - Atualizado o rótulo de data no Bloco 3 para `Data da Avaliação`.
+   - Removido o campo duplicado `Status: Risco Muito Baixo` nos cartões APR-HO e unificada a identificação de nível de risco com a Matriz 5x5 do GRO.
+
+3. **CHK-03: Exclusão de Enquadramento eSocial no Inventário do PGR:**
+   - Assegurado que referências a enquadramento de eSocial fiquem reservadas estritamente ao LTCAT / Laudos Específicos, mantendo o PGR focado nos critérios da NR-01.
+
+4. **CHK-04: Matriz 5x5 Normativa (Tabelas 5 e 7 do PGR):**
+   - Criação da função `getNormativeRiskMatrix(score)` em `src/lib/risk-matrix.ts`:
+     - **16 a 25:** Nível `Extremo` / Prioridade `Urgente`
+     - **10 a 15:** Nível `Alto` / Prioridade `Alta`
+     - **5 a 9:** Nível `Médio` / Prioridade `Média`
+     - **1 a 4:** Nível `Baixo` / Prioridade `Baixa`
+   - Vinculação automática no seletor interativo (`Matrix5x5Selector.tsx`), no formulário de riscos (`RiskFormModal.tsx`), no PDF (`pdf-generator.ts`), no Word (`docx-generator.ts`) e no visualizador web (`PgrViewerPage.tsx`).
+
+5. **CHK-05: Cartão de "Não há exposição / Não se aplica (NAP)":**
+   - Adequação da estrutura do cartão conforme item 3.1 da especificação técnica:
+     - Preservada estritamente a barra superior de identificação do grupo (`RISCO BIOLÓGICO`, etc.) e o Bloco 1 (Identificação do Risco: Agente, Fontes = NAP, Trajetória = NAP, Danos = NAP, Medidas = NAP).
+     - Omitidos integralmente os Blocos 2 (Medição/Avaliação), Bloco 3 (Classificação do Risco) and Bloco 4 (Recomendações/Ação).
+   - Aplicado de forma idêntica no PDF jsPDF, no Word DOCX e na página do PGR Viewer.
+
+6. **CHK-06: Sequência Fixa Normativa dos Grupos Ocupacionais:**
+   - Ordenação estrita em todo o inventário e relatórios:
+     1º Físico, 2º Químico, 3º Biológico, 4º Ergonômico/Psicossocial, 5º Acidentes.
+   - Reforçado em `src/lib/pgr-groups.ts` com tolerância a maiúsculas/minúsculas e acentos.
+
+7. **CHK-07: Plano de Ação (5W2H) Conforme NR-01:**
+   - Preenchimento consistente dos campos:
+     - **Prazo Inicial** e **Prazo Final** exibidos em todas as tabelas (PDF, DOCX e Web);
+     - **Responsável pela Ação:** herança automática do representante legal da empresa ou gestor do estabelecimento (`establishment.managerName` / `company.legalRepresentative`);
+     - **Grau de Prioridade:** sugerido automaticamente pela Matriz 5x5;
+     - **Status da Ação:** padronizado por padrão como `NÃO INICIADA`, com badges e formatações visuais adequadas.
+
+8. **CHK-08: Múltiplas Qualificações do Responsável Técnico & Dados Oficiais do Eng. Fernando Guimarães Ferrari:**
+   - Adicionado suporte a múltiplas qualificações e seleção dinâmica (`ProfessionalsPage.tsx`).
+   - Adicionado campo CPF com máscara de formatação (`000.000.000-00`) nos cadastros de profissionais técnicos e na Seção 4 do PGR.
+   - Inserido botão de carga rápida de dados oficiais do Responsável Técnico:
+     - **Nome:** Fernando Guimarães Ferrari
+     - **Qualificações:** Engenheiro de Segurança do Trabalho, Engenheiro de Minas, Higienista Ocupacional, Perito Judicial e Assistente Técnico
+     - **Registro Profissional:** CREA-SP: 5060011940 / Visto 5060011940SP
+     - **CPF:** 132.188.318-81
+   - Renderização completa de todas as qualificações e CPF na Seção 4 no PDF, Word e Visualizador Web.
+
+9. **Justificação Universal de Textos Gerados:**
+   - **PDF:** Algoritmo de justificativa customizado no jsPDF (`renderMarkdownParagraphToPdf`) com distribuição balanceada de folga proporcional entre os espaços (`diff / spacesCount`) mantendo a última linha à esquerda.
+   - **Word DOCX:** Alinhamento `AlignmentType.JUSTIFIED` configurado em todos os parágrafos de texto corridos e descrições de atividades.
+   - **Visualizador Web:** Classe CSS `text-justify` aplicada universalmente nos blocos e parágrafos do `MarkdownSectionRenderer` e descrições de cargos.

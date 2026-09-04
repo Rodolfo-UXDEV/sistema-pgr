@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
-import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix } from '@/lib/risk-matrix';
 import { HazardCategory, ActionPlanItem } from '@/types/pgr';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
@@ -23,61 +23,52 @@ function hexToRgb(hex: string): [number, number, number] {
  */
 function parseMarkdownTokens(text: string): { text: string; bold: boolean }[] {
   const rawTokens: { text: string; bold: boolean }[] = [];
-  const parts = text.split(/(\*\*[\s\S]*?\*\*)/g);
-  for (const part of parts) {
-    if (!part) continue;
-    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
-      rawTokens.push({ text: part.slice(2, -2), bold: true });
-    } else {
-      rawTokens.push({ text: part, bold: false });
+  const regex = /\*\*(.*?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      rawTokens.push({ text: text.slice(lastIndex, match.index), bold: false });
     }
+    rawTokens.push({ text: match[1], bold: true });
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    rawTokens.push({ text: text.slice(lastIndex), bold: false });
   }
   return rawTokens;
 }
 
+interface WordPiece {
+  text: string;
+  bold: boolean;
+  width: number;
+  isSpace: boolean;
+}
+
 /**
- * Renderiza um parágrafo no jsPDF com suporte fiel a palavras em negrito e quebra de linha
+ * Renderiza parágrafo com quebra de linha inteligente, estilos negrito/normal e alinhamento JUSTIFICADO
  */
 function renderMarkdownParagraphToPdf(
   doc: jsPDF,
-  paragraph: string,
-  startX: number,
+  text: string,
   cursor: { y: number },
-  maxWidth: number,
-  lineHeight: number,
-  checkPageBreak: (neededHeight: number) => boolean
+  checkPageBreak: (needed: number) => boolean,
+  startX: number = 14,
+  maxWidth: number = 182,
+  lineHeight: number = 4.2
 ): void {
-  if (!paragraph.trim()) return;
-
-  // Se for título de subitem ou tabela (ex: 10.1. CONCEITOS ou Tabela 1 – ...)
-  if (/^(?:\d+\.|\d+\.\d+|\d+\.\d+\.\d+|Tabela\s+\d+)/i.test(paragraph.trim()) && paragraph.length < 130) {
-    checkPageBreak(lineHeight + 4);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(30, 41, 59);
-    const clean = paragraph.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-    const lines = doc.splitTextToSize(clean, maxWidth);
-    doc.text(lines, startX, cursor.y);
-    cursor.y += lines.length * lineHeight + 2;
-    return;
-  }
-
-  const tokens = parseMarkdownTokens(paragraph);
-
-  interface WordPiece {
-    text: string;
-    bold: boolean;
-    width: number;
-    isSpace: boolean;
-  }
-
+  const tokens = parseMarkdownTokens(text);
   const pieces: WordPiece[] = [];
+
   for (const token of tokens) {
-    const parts = token.text.split(/(\s+)/);
-    for (const item of parts) {
+    doc.setFont('helvetica', token.bold ? 'bold' : 'normal');
+    doc.setFontSize(8);
+
+    const splitWords = token.text.split(/(\s+)/);
+    for (const item of splitWords) {
       if (!item) continue;
-      doc.setFont('helvetica', token.bold ? 'bold' : 'normal');
-      doc.setFontSize(8);
       const isSpace = /^\s+$/.test(item);
       pieces.push({
         text: item,
@@ -91,35 +82,44 @@ function renderMarkdownParagraphToPdf(
   let linePieces: WordPiece[] = [];
   let currentLineWidth = 0;
 
-  const flushLine = () => {
+  const flushLine = (isLastLine: boolean = false) => {
     if (linePieces.length === 0) return;
     checkPageBreak(lineHeight + 2);
     let drawX = startX;
+
+    // Alinhamento justificado distribuindo a folga entre os espaços da linha
+    const spacesCount = linePieces.filter(p => p.isSpace).length;
+    const diff = maxWidth - currentLineWidth;
+    const extraPerSpace = (!isLastLine && spacesCount > 0 && diff > 0 && (currentLineWidth / maxWidth > 0.65))
+      ? diff / spacesCount
+      : 0;
+
     for (const piece of linePieces) {
       doc.setFont('helvetica', piece.bold ? 'bold' : 'normal');
       doc.setFontSize(8);
       doc.setTextColor(51, 65, 85);
       doc.text(piece.text, drawX, cursor.y);
-      drawX += piece.width;
+      drawX += piece.width + (piece.isSpace ? extraPerSpace : 0);
     }
     cursor.y += lineHeight;
     linePieces = [];
     currentLineWidth = 0;
   };
 
-  for (const piece of pieces) {
+  for (let i = 0; i < pieces.length; i++) {
+    const piece = pieces[i];
     if (piece.text.includes('\n')) {
-      flushLine();
+      flushLine(true);
       continue;
     }
     if (currentLineWidth + piece.width > maxWidth && linePieces.length > 0) {
-      flushLine();
+      flushLine(false);
       if (piece.isSpace) continue;
     }
     linePieces.push(piece);
     currentLineWidth += piece.width;
   }
-  flushLine();
+  flushLine(true);
   cursor.y += 2;
 }
 
@@ -362,12 +362,21 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
 
       const respTableData: any[] = [];
       if (el) {
+        const qualifText = el.qualificacoes && el.qualificacoes.length > 0
+          ? el.qualificacoes.join('\n• ') ? '• ' + el.qualificacoes.join('\n• ') : el.cargo || '-'
+          : el.cargo || '-';
+
         respTableData.push(
           [{ content: 'Responsável Técnico pela Elaboração do PGR', colSpan: 2, styles: { fontStyle: 'bold', fillColor: [241, 245, 249], textColor: [15, 23, 42] } }],
           [{ content: 'Nome do Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.nome || '-' }],
-          [{ content: 'Qualificação / Cargo', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.cargo || '-' }],
+          [{ content: 'Qualificações / Cargos Habilitados', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: qualifText }],
           [{ content: 'Registro Profissional', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.conselho || '-' }]
         );
+        if (el.cpf) {
+          respTableData.push(
+            [{ content: 'CPF do Responsável', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.cpf }]
+          );
+        }
         if (el.art && el.art !== 'ART Emitida' && el.art !== '-' && el.art.trim() !== '') {
           respTableData.push(
             [{ content: 'ART / RRT Vinculada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.art }]
@@ -415,7 +424,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           const paras = block.content.split('\n\n');
           for (const para of paras) {
             if (!para.trim()) continue;
-            renderMarkdownParagraphToPdf(doc, para, 14, cursor, 182, 3.8, checkPageBreak);
+            renderMarkdownParagraphToPdf(doc, para, cursor, checkPageBreak, 14, 182, 3.8);
           }
         } else if (block.type === 'table') {
           checkPageBreak(25);
@@ -600,23 +609,37 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
           } else {
             ensureNewPage();
 
+            const headerGray: [number, number, number] = [82, 82, 91];
+            const sectionGray: [number, number, number] = [226, 232, 240];
+            const labelGray: [number, number, number] = [248, 250, 252];
+
             for (const item of group.risks) {
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catRgb = hexToRgb(catConfig?.color || '#16a34a');
 
               if (isNoExposureRisk(item)) {
-                checkPageBreak(16);
+                checkPageBreak(32);
 
+                const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+                const catLabel = catConfig?.label?.toUpperCase() || item.hazardCategory.toUpperCase();
                 const noExpRows: any[] = [
                   [
-                    { 
-                      content: `Risco ${catConfig?.label || item.hazardCategory}`, 
-                      styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center', cellWidth: 46 } 
-                    },
-                    { 
-                      content: `Agente: ${item.hazardName || 'Não há exposição / Não se Aplica'}`, 
-                      styles: { fontStyle: 'bold', textColor: [51, 65, 85], halign: 'left' } 
-                    }
+                    { content: headerTitle, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left' } },
+                    { content: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', colSpan: 3, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
+                    { content: `RISCO ${catLabel}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
+                  ],
+                  [
+                    { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
+                  ],
+                  [
+                    { content: 'Tipo do Agente / Perigo:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                    { content: item.hazardName || 'Não há exposição / Não se Aplica', colSpan: 4 }
+                  ],
+                  [
+                    { content: 'Fonte ou Circunstância:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                    { content: item.sourceDescription || 'Não há exposição / Não se Aplica (NAP)', colSpan: 2 },
+                    { content: 'Possíveis Lesões / Danos à Saúde:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 42 } },
+                    { content: item.healthDamage || 'NAP', cellWidth: 36 }
                   ]
                 ];
 
@@ -624,11 +647,11 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   startY: cursor.y,
                   body: noExpRows,
                   theme: 'grid',
-                  styles: { fontSize: 7.5, cellPadding: 2 },
+                  styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
                   margin: { left: 14, right: 14 },
                 });
 
-                cursor.y = (doc as any).lastAutoTable.finalY + 3;
+                cursor.y = (doc as any).lastAutoTable.finalY + 4;
                 continue;
               }
 
@@ -671,30 +694,11 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
               const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
 
-              // Cálculo de nível de risco conforme Tabela 6 do PGR (Baixo, Médio, Alto, Extremo)
+              // Cálculo de nível de risco conforme Tabela 5 e 7 do PGR (Baixo, Médio, Alto, Extremo)
               const score = item.riskScore || (Number(item.severity || 1) * Number(item.probability || 1));
-              let displayRiskLevel = 'BAIXO';
-              let prioridadeCalculada = 'Baixa';
-
-              if (score >= 16 || item.riskLevel === 'INTOLERAVEL') {
-                displayRiskLevel = 'EXTREMO';
-                prioridadeCalculada = 'Urgente';
-              } else if (score >= 10 || item.riskLevel === 'SUBSTANCIAL') {
-                displayRiskLevel = 'ALTO';
-                prioridadeCalculada = 'Alta';
-              } else if (score >= 5 || item.riskLevel === 'MODERADO') {
-                displayRiskLevel = 'MÉDIO';
-                prioridadeCalculada = 'Média';
-              } else {
-                displayRiskLevel = 'BAIXO';
-                prioridadeCalculada = 'Baixa';
-              }
-
-              const prioridadeFinal = item.actionPriority || prioridadeCalculada;
-
-              const headerGray: [number, number, number] = [82, 82, 91];
-              const sectionGray: [number, number, number] = [226, 232, 240];
-              const labelGray: [number, number, number] = [248, 250, 252];
+              const norm = getNormativeRiskMatrix(score);
+              const displayRiskLevel = norm.displayLevel;
+              const prioridadeFinal = item.actionPriority || norm.priority;
 
               checkPageBreak(85);
 
@@ -702,7 +706,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                 [
                   { content: headerTitle, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left' } },
                   { content: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', colSpan: 3, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
-                  { content: `RISCO ${item.hazardCategory.toUpperCase()}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
+                  { content: `RISCO ${catConfig?.label?.toUpperCase() || item.hazardCategory.toUpperCase()}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
                 ],
                 [
                   { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }

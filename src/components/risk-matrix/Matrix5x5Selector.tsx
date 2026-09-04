@@ -4,7 +4,8 @@ import {
   SEVERITY_SCALE, 
   MATRIX_5X5, 
   RISK_LEVEL_CONFIG,
-  calculateRiskLevel 
+  calculateRiskLevel,
+  getNormativeRiskMatrix
 } from '@/lib/risk-matrix';
 import { RiskLevel } from '@/types/pgr';
 import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
@@ -28,10 +29,13 @@ export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
 }) => {
   const currentResult = calculateRiskLevel(severity, probability);
   const currentConfig = RISK_LEVEL_CONFIG[currentResult.level];
+  const normativeMatrix = getNormativeRiskMatrix(severity * probability);
 
   const handleCellClick = (s: number, p: number) => {
     const { score, level } = calculateRiskLevel(s, p);
+    const norm = getNormativeRiskMatrix(score);
     onChange(s, p, level, score);
+    onPriorityChange?.(norm.priority);
   };
 
   const getCellColor = (s: number, p: number, isSelected: boolean) => {
@@ -167,7 +171,9 @@ export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
               onChange={(e) => {
                 const newP = Number(e.target.value);
                 const { score, level } = calculateRiskLevel(severity, newP);
+                const norm = getNormativeRiskMatrix(score);
                 onChange(severity, newP, level, score);
+                onPriorityChange?.(norm.priority);
               }}
               className="w-full text-xs rounded-md border border-input bg-background p-2 focus:ring-1 focus:ring-ring"
             >
@@ -193,7 +199,9 @@ export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
               onChange={(e) => {
                 const newS = Number(e.target.value);
                 const { score, level } = calculateRiskLevel(newS, probability);
+                const norm = getNormativeRiskMatrix(score);
                 onChange(newS, probability, level, score);
+                onPriorityChange?.(norm.priority);
               }}
               className="w-full text-xs rounded-md border border-input bg-background p-2 focus:ring-1 focus:ring-ring"
             >

@@ -296,10 +296,14 @@ ${gesItems.map((g, idx) => `  - GES ${idx + 1}.0 – SETOR ${g.sectorName.toUppe
         type: 'responsibles_info' as const,
         elaborador: techResp ? {
           nome: techResp.name,
+          qualificacoes: techResp.qualifications && techResp.qualifications.length > 0
+            ? techResp.qualifications
+            : [techResp.role.replace(/_/g, ' ')],
           cargo: techResp.qualifications && techResp.qualifications.length > 0
-            ? techResp.qualifications.map(q => q.toUpperCase()).join(' / ')
-            : techResp.role.replace(/_/g, ' ').toUpperCase(),
+            ? techResp.qualifications.join(' / ')
+            : techResp.role.replace(/_/g, ' '),
           conselho: `${techResp.registrationCouncil}: ${techResp.registrationNumber}/${techResp.registrationState}`,
+          cpf: techResp.cpf || issuerConfig.technicalManager?.cpf || undefined,
           art: techResp.artRrt || 'ART/RRT Emitida',
           email: techResp.email || '-',
           empresaConsultoria: `${issuerConfig.name} (${issuerConfig.registrationCouncil})`

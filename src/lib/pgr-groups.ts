@@ -22,6 +22,14 @@ export const HAZARD_CATEGORY_ORDER: Record<string, number> = {
   ergonomico: 4,
   psicossocial: 4,
   acidente: 5,
+  acidentes: 5,
+  FISICO: 1,
+  QUIMICO: 2,
+  BIOLOGICO: 3,
+  ERGONOMICO: 4,
+  PSICOSSOCIAL: 4,
+  ACIDENTE: 5,
+  ACIDENTES: 5,
 };
 
 /**
@@ -55,8 +63,10 @@ export function isNoExposureRisk(item: RiskInventoryItem): boolean {
  */
 export function sortRisksByNormativeCategory(items: RiskInventoryItem[]): RiskInventoryItem[] {
   return [...items].sort((a, b) => {
-    const orderA = HAZARD_CATEGORY_ORDER[a.hazardCategory] || 99;
-    const orderB = HAZARD_CATEGORY_ORDER[b.hazardCategory] || 99;
+    const keyA = (a.hazardCategory || '').toLowerCase();
+    const keyB = (b.hazardCategory || '').toLowerCase();
+    const orderA = HAZARD_CATEGORY_ORDER[keyA] || 99;
+    const orderB = HAZARD_CATEGORY_ORDER[keyB] || 99;
     if (orderA !== orderB) return orderA - orderB;
     return (a.hazardName || '').localeCompare(b.hazardName || '');
   });

@@ -121,6 +121,7 @@ export interface Professional {
   registrationNumber: string;
   registrationState: string;
   artRrt?: string; // Número da ART/RRT
+  cpf?: string; // CPF do Responsável Técnico
   email?: string;
   phone?: string;
   signatureUrl?: string;

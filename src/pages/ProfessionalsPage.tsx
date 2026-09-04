@@ -29,18 +29,46 @@ export const ProfessionalsPage: React.FC = () => {
   const [registrationCouncil, setRegistrationCouncil] = useState('CREA/SC');
   const [registrationNumber, setRegistrationNumber] = useState('');
   const [registrationState, setRegistrationState] = useState('SC');
+  const [cpf, setCpf] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   const STANDARD_QUALIFICATIONS = [
-    'Engenheiro de Seg. do Trabalho',
-    'Técnico de Seg. do Trabalho',
-    'Médico do Trabalho',
+    'Engenheiro de Segurança do Trabalho',
+    'Engenheiro Eletricista / Eletrônico',
     'Higienista Ocupacional',
-    'Perito Judicial',
+    'Perito Judicial Trabalhista',
+    'Médico do Trabalho',
+    'Técnico de Seg. do Trabalho',
     'Ergonomista',
   ];
+
+  const maskCPF = (val: string) => {
+    return val
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+      .slice(0, 14);
+  };
+
+  const loadFerrariPreset = () => {
+    setName('Fernando Guimarães Ferrari');
+    setRole('ENGENHEIRO_SEGURANCA');
+    setQualifications([
+      'Engenheiro de Segurança do Trabalho',
+      'Engenheiro Eletricista / Eletrônico',
+      'Higienista Ocupacional',
+      'Perito Judicial Trabalhista'
+    ]);
+    setRegistrationCouncil('CREA');
+    setRegistrationNumber('5060011940 / Visto 5060011940SP');
+    setRegistrationState('SP');
+    setCpf('132.188.318-81');
+    setEmail('contato@esengenharia.com.br');
+    setPhone('(11) 4496-4320');
+  };
 
   const toggleQualification = (qualif: string) => {
     setQualifications(prev => {
@@ -66,11 +94,12 @@ export const ProfessionalsPage: React.FC = () => {
     setEditingProf(null);
     setName('');
     setRole('ENGENHEIRO_SEGURANCA');
-    setQualifications(['Engenheiro de Seg. do Trabalho']);
+    setQualifications(['Engenheiro de Segurança do Trabalho']);
     setCustomQualifInput('');
     setRegistrationCouncil('CREA/SC');
     setRegistrationNumber('');
     setRegistrationState('SC');
+    setCpf('');
     setEmail('');
     setPhone('');
     setIsModalOpen(true);
@@ -84,7 +113,7 @@ export const ProfessionalsPage: React.FC = () => {
       setQualifications(p.qualifications);
     } else {
       const defaultQ = p.role === 'ENGENHEIRO_SEGURANCA'
-        ? 'Engenheiro de Seg. do Trabalho'
+        ? 'Engenheiro de Segurança do Trabalho'
         : p.role === 'MEDICO_TRABALHO'
         ? 'Médico do Trabalho'
         : p.role === 'TECNICO_SEGURANCA'
@@ -96,6 +125,7 @@ export const ProfessionalsPage: React.FC = () => {
     setRegistrationCouncil(p.registrationCouncil);
     setRegistrationNumber(p.registrationNumber);
     setRegistrationState(p.registrationState);
+    setCpf(p.cpf || '');
     setEmail(p.email || '');
     setPhone(p.phone || '');
     setIsModalOpen(true);
@@ -123,6 +153,7 @@ export const ProfessionalsPage: React.FC = () => {
         registrationNumber: registrationNumber.trim(),
         registrationState: registrationState.trim(),
         artRrt: editingProf?.artRrt || undefined,
+        cpf: cpf.trim() || undefined,
         email: email.trim() || undefined,
         phone: phone.trim() || undefined,
       };
@@ -223,7 +254,8 @@ export const ProfessionalsPage: React.FC = () => {
                 </TableCell>
 
                 <TableCell className="text-xs font-mono font-semibold">
-                  {prof.registrationCouncil}: {prof.registrationNumber}/{prof.registrationState}
+                  <div>{prof.registrationCouncil}: {prof.registrationNumber}/{prof.registrationState}</div>
+                  {prof.cpf && <div className="text-[11px] text-muted-foreground font-normal">CPF: {prof.cpf}</div>}
                 </TableCell>
 
                 <TableCell className="text-xs text-muted-foreground">
@@ -265,10 +297,22 @@ export const ProfessionalsPage: React.FC = () => {
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-lg">
-                <Award className="h-5 w-5 text-emerald-600" />
-                <span>{editingProf ? 'Editar Profissional RT' : 'Cadastrar Responsável Técnico'}</span>
-              </DialogTitle>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-2 text-lg">
+                  <Award className="h-5 w-5 text-emerald-600" />
+                  <span>{editingProf ? 'Editar Profissional RT' : 'Cadastrar Responsável Técnico'}</span>
+                </DialogTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={loadFerrariPreset}
+                  className="text-xs h-7 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 hover:bg-emerald-100 dark:bg-emerald-950/40 cursor-pointer"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1 text-emerald-600" />
+                  Carregar Dados Oficiais (Fernando G. Ferrari)
+                </Button>
+              </div>
               <DialogDescription className="text-xs">
                 Registro profissional e dados para assinatura e coordenação técnica do PGR.
               </DialogDescription>
@@ -389,7 +433,7 @@ export const ProfessionalsPage: React.FC = () => {
                   <Input
                     value={registrationNumber}
                     onChange={(e) => setRegistrationNumber(e.target.value)}
-                    placeholder="Ex: 089452-1"
+                    placeholder="Ex: 5060011940 / Visto 5060011940SP"
                     required
                     className="h-9 mt-1 text-xs font-mono font-bold"
                   />
@@ -400,8 +444,19 @@ export const ProfessionalsPage: React.FC = () => {
                   <Input
                     value={registrationState}
                     onChange={(e) => setRegistrationState(e.target.value)}
-                    placeholder="SC"
+                    placeholder="SP"
                     className="h-9 mt-1 text-xs uppercase font-mono"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs">CPF do Responsável Técnico</Label>
+                  <Input
+                    value={cpf}
+                    onChange={(e) => setCpf(maskCPF(e.target.value))}
+                    placeholder="132.188.318-81"
+                    maxLength={14}
+                    className="h-9 mt-1 text-xs font-mono"
                   />
                 </div>
 
@@ -421,7 +476,7 @@ export const ProfessionalsPage: React.FC = () => {
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(47) 99876-5432"
+                    placeholder="(11) 4496-4320"
                     className="h-9 mt-1 text-xs"
                   />
                 </div>

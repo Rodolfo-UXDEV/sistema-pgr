@@ -36,7 +36,7 @@ export function renderMarkdownInline(text: string): React.ReactNode {
 export function renderFormattedBlockContent(content: string): React.ReactNode {
   const lines = content.split('\n');
   return (
-    <div className="space-y-1 text-foreground leading-relaxed">
+    <div className="space-y-1 text-foreground leading-relaxed text-justify">
       {lines.map((line, lineIdx) => {
         const trimmed = line.trim();
         if (!trimmed) {
@@ -44,21 +44,21 @@ export function renderFormattedBlockContent(content: string): React.ReactNode {
         }
         if (trimmed.startsWith('### ')) {
           return (
-            <h4 key={lineIdx} className="text-sm font-bold text-foreground mt-3 mb-1">
+            <h4 key={lineIdx} className="text-sm font-bold text-foreground mt-3 mb-1 text-left">
               {trimmed.replace(/^###\s*/, '')}
             </h4>
           );
         }
         if (trimmed.startsWith('• ') || trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           return (
-            <div key={lineIdx} className="flex items-start gap-1.5 pl-2">
+            <div key={lineIdx} className="flex items-start gap-1.5 pl-2 text-justify">
               <span className="text-emerald-600 font-bold">•</span>
               <span className="flex-1">{renderMarkdownInline(trimmed.replace(/^[•\-\*]\s*/, ''))}</span>
             </div>
           );
         }
         return (
-          <p key={lineIdx} className="leading-relaxed">
+          <p key={lineIdx} className="leading-relaxed text-justify">
             {renderMarkdownInline(line)}
           </p>
         );

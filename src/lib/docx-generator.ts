@@ -17,7 +17,7 @@ import {
 import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { parseContentWithTables } from '@/lib/table-parser';
-import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
+import { HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix } from '@/lib/risk-matrix';
 import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
@@ -255,17 +255,30 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
       const med = section.medicoPcmso;
 
       if (el) {
-        children.push(
+        const qualifText = el.qualificacoes && el.qualificacoes.length > 0
+          ? el.qualificacoes.join(' | ')
+          : (el.cargo || '-');
+
+        const elParas = [
           new Paragraph({
             children: [new TextRun({ text: 'Responsável Técnico pela Elaboração e ART:', bold: true })],
             spacing: { before: 200, after: 100 },
           }),
           new Paragraph({ text: `• Nome: ${el.nome}` }),
-          new Paragraph({ text: `• Qualificação: ${el.cargo}` }),
+          new Paragraph({ text: `• Qualificações / Cargos Habilitados: ${qualifText}` }),
           new Paragraph({ text: `• Registro Profissional: ${el.conselho}` }),
-          new Paragraph({ text: `• Número da ART / RRT: ${el.art}` }),
-          new Paragraph({ text: `• Consultoria Especializada: ${el.empresaConsultoria}` })
-        );
+        ];
+
+        if (el.cpf) {
+          elParas.push(new Paragraph({ text: `• CPF do Responsável Técnico: ${el.cpf}` }));
+        }
+
+        if (el.art && el.art !== 'ART Emitida' && el.art !== '-' && el.art.trim() !== '') {
+          elParas.push(new Paragraph({ text: `• Número da ART / RRT: ${el.art}` }));
+        }
+
+        elParas.push(new Paragraph({ text: `• Consultoria Especializada: ${el.empresaConsultoria}` }));
+        children.push(...elParas);
       }
 
       if (med) {
@@ -293,15 +306,19 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                 })
               ),
             }),
-            ...block.rows.map((row) =>
+            ...block.rows.map((r) =>
               new TableRow({
-                children: row.map((cell) => {
-                  const trimmed = cell.trim();
+                children: r.map((c) => {
+                  const trimmed = c.trim();
                   let fill: string | undefined = undefined;
-                  let textColor: string | undefined = undefined;
+                  let textColor = '000000';
                   let align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT;
 
-                  if (/\(TRI\)/i.test(trimmed) || /\(TOL\)/i.test(trimmed)) {
+                  if (/\(TRIV\)/i.test(trimmed)) {
+                    fill = '10B981';
+                    textColor = 'FFFFFF';
+                    align = AlignmentType.CENTER;
+                  } else if (/\(TOL\)/i.test(trimmed)) {
                     fill = '10B981';
                     textColor = 'FFFFFF';
                     align = AlignmentType.CENTER;
@@ -362,7 +379,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         } else {
           const paras = block.content.split('\n\n');
           for (const p of paras) {
-            children.push(new Paragraph({ children: parseTextToTextRuns(p), spacing: { after: 150 } }));
+            children.push(new Paragraph({ children: parseTextToTextRuns(p), spacing: { after: 150 }, alignment: AlignmentType.JUSTIFIED }));
           }
         }
       }
@@ -416,42 +433,164 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
             for (const item of group.risks) {
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catHex = (catConfig?.color || '#16a34a').replace('#', '');
+              const catLabel = (catConfig?.label || item.hazardCategory || 'FÍSICO').toUpperCase();
 
               if (isNoExposureRisk(item)) {
-                const noExpRow = new TableRow({
-                  children: [
-                    new TableCell({
-                      width: { size: 28, type: WidthType.PERCENTAGE },
-                      shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
-                      verticalAlign: VerticalAlign.CENTER,
-                      children: [
-                        new Paragraph({
-                          alignment: AlignmentType.CENTER,
-                          children: [new TextRun({ text: `Risco ${catConfig?.label || item.hazardCategory}`, bold: true, color: 'FFFFFF', size: 16 })],
-                        }),
-                      ],
-                    }),
-                    new TableCell({
-                      width: { size: 72, type: WidthType.PERCENTAGE },
-                      verticalAlign: VerticalAlign.CENTER,
-                      children: [
-                        new Paragraph({
-                          children: [
-                            new TextRun({ text: 'Agente: ', bold: true, size: 16 }),
-                            new TextRun({ text: item.hazardName || 'Não há exposição / Não se Aplica', size: 16, color: '334155' }),
-                          ],
-                        }),
-                      ],
-                    }),
-                  ],
-                });
+                const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+                const noExpRows = [
+                  // Row 1: Header Gray
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 4,
+                        shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [
+                          new Paragraph({
+                            children: [new TextRun({ text: headerTitle, bold: true, color: 'FFFFFF' })],
+                            alignment: AlignmentType.CENTER,
+                          }),
+                        ],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 2: Risco Categoria & Agente
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [
+                          new Paragraph({
+                            children: [new TextRun({ text: `RISCO ${catLabel}`, bold: true, color: 'FFFFFF' })],
+                            alignment: AlignmentType.CENTER,
+                          }),
+                        ],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 3,
+                        children: [
+                          new Paragraph({
+                            children: [
+                              new TextRun({ text: 'Agente: ', bold: true }),
+                              new TextRun({ text: item.hazardName || 'Não há exposição / Não se Aplica' }),
+                            ],
+                          }),
+                        ],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 3: Tipo de Exposição
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [new Paragraph({ children: [new TextRun({ text: 'Tipo de Exposição', bold: true })] })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 1,
+                        children: [new Paragraph({ text: 'NAP', alignment: AlignmentType.CENTER })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 2,
+                        children: [new Paragraph({ text: 'NAP', alignment: AlignmentType.CENTER })],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 4: Fontes ou circunstância
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [new Paragraph({ children: [new TextRun({ text: 'Fontes ou circunstância', bold: true })] })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 3,
+                        children: [new Paragraph({ text: item.sourceDescription || 'Não há exposição / Não se Aplica (NAP)' })],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 5: Trajetória
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [new Paragraph({ children: [new TextRun({ text: 'Trajetória', bold: true })] })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 3,
+                        children: [new Paragraph({ text: item.trajectory || 'NAP' })],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 6: Via de penetração
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [new Paragraph({ children: [new TextRun({ text: 'Via de penetração', bold: true })] })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 3,
+                        children: [new Paragraph({ text: item.penetrationRoute || 'NAP' })],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 7: Efeitos a saúde
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [new Paragraph({ children: [new TextRun({ text: 'Efeitos a saúde', bold: true })] })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 3,
+                        children: [new Paragraph({ text: item.healthDamage || 'NAP' })],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                  // Row 8: EPC/EPI
+                  new TableRow({
+                    children: [
+                      new TableCell({
+                        columnSpan: 1,
+                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
+                        children: [new Paragraph({ children: [new TextRun({ text: 'EPC/EPI', bold: true })] })],
+                        borders: cellBorder,
+                      }),
+                      new TableCell({
+                        columnSpan: 3,
+                        children: [new Paragraph({ text: 'NAP' })],
+                        borders: cellBorder,
+                      }),
+                    ],
+                  }),
+                ];
 
                 children.push(
                   new Table({
-                    rows: [noExpRow],
+                    rows: noExpRows,
                     width: { size: 100, type: WidthType.PERCENTAGE },
                   }),
-                  new Paragraph({ text: '', spacing: { after: 60 } })
+                  new Paragraph({ text: '', spacing: { after: 120 } })
                 );
                 continue;
               }
@@ -489,34 +628,21 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               const meas = item.measurements && item.measurements.length > 0 ? item.measurements[0] : null;
               const criterio = meas?.criteria || (meas ? 'Quantitativo (Pontual)' : 'Qualitativo / NAP');
               const tecnica = meas?.technique || (meas ? 'NR-15 / NHO' : 'NAP');
-              const dataMedicao = meas?.measurementDate || (meas ? '25/02/2026' : 'NAP');
+              const dataMedicao = meas?.measurementDate 
+                ? (meas.measurementDate.includes('-') ? meas.measurementDate.split('-').reverse().join('/') : meas.measurementDate)
+                : (meas ? '25/02/2026' : 'NAP');
               const resultado = meas?.resultText || (meas?.measuredValue ? `${meas.measuredValue} ${meas.unit || ''}` : 'NAP');
               const lt = meas?.toleranceLimitText || (meas?.toleranceLimit ? `${meas.toleranceLimit} ${meas.unit || ''}` : 'NAP');
 
-              let statusAgente = 'Risco Baixo';
+              // Cálculo de nível de risco conforme Tabela 5 e 7 da NR-01 / PGR (Matriz 5x5)
+              const score = item.riskScore || (Number(item.severity || 1) * Number(item.probability || 1));
+              const norm = getNormativeRiskMatrix(score);
+              const displayRiskLevel = norm.displayLevel;
+              const prioridadeFinal = item.actionPriority || norm.priority;
               let statusHex = '16A34A';
-              let prioridade = 'Baixa';
-              if (item.riskLevel === 'TRIVIAL') {
-                statusAgente = 'Risco Muito Baixo';
-                statusHex = '16A34A';
-                prioridade = 'Nenhuma';
-              } else if (item.riskLevel === 'TOLERAVEL') {
-                statusAgente = 'Risco Baixo';
-                statusHex = '16A34A';
-                prioridade = 'Baixa';
-              } else if (item.riskLevel === 'MODERADO') {
-                statusAgente = 'Risco Médio';
-                statusHex = 'D97706';
-                prioridade = 'Média';
-              } else if (item.riskLevel === 'SUBSTANCIAL') {
-                statusAgente = 'Risco Alto';
-                statusHex = 'EA580C';
-                prioridade = 'Alta';
-              } else if (item.riskLevel === 'INTOLERAVEL') {
-                statusAgente = 'Risco Crítico';
-                statusHex = 'DC2626';
-                prioridade = 'Crítica / Imediata';
-              }
+              if (norm.level === 'Médio') statusHex = 'D97706';
+              else if (norm.level === 'Alto') statusHex = 'EA580C';
+              else if (norm.level === 'Extremo') statusHex = 'DC2626';
 
               const rows = [
                 // Row 1: Header Gray
@@ -544,7 +670,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                       shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
                       children: [
                         new Paragraph({
-                          children: [new TextRun({ text: `Risco ${catConfig?.label || 'Físico'}`, bold: true, color: 'FFFFFF' })],
+                          children: [new TextRun({ text: `RISCO ${catLabel}`, bold: true, color: 'FFFFFF' })],
                           alignment: AlignmentType.CENTER,
                         }),
                       ],
@@ -714,13 +840,13 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   ],
                 }),
 
-                // Row 11: Data da medição | Resultado | LT Headers
+                // Row 11: Data da Avaliação | Resultado | LT Headers
                 new TableRow({
                   children: [
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Data da medição', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Data da Avaliação', bold: true })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
@@ -771,7 +897,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   ],
                 }),
 
-                // Row 14: Severidade | Probabilidade | Status do agente | Prioridade Headers
+                // Row 14: Severidade | Probabilidade | Nível de Risco | Prioridade de ação Headers
                 new TableRow({
                   children: [
                     new TableCell({
@@ -789,7 +915,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Status do agente', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Nível de Risco', bold: true })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
@@ -801,27 +927,27 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   ],
                 }),
 
-                // Row 15: Severidade | Probabilidade | Status do agente | Prioridade Values
+                // Row 15: Severidade | Probabilidade | Nível de Risco | Prioridade Values
                 new TableRow({
                   children: [
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: String(item.severity), alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ text: String(item.severity || '1'), alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: String(item.probability), alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ text: String(item.probability || '1'), alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ children: [new TextRun({ text: statusAgente, bold: true, color: statusHex })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: displayRiskLevel, bold: true, color: statusHex })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: item.actionPriority || prioridade, alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ text: prioridadeFinal, alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -898,15 +1024,26 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
             const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
             const startDateText = act.startDate || 'Contínuo';
             const endDateText = act.whenDate || 'Contínuo';
-            const responsibleText = act.who || ctx.establishment?.managerName || 'SESMT';
+            const responsibleText = act.who || ctx.establishment?.managerName || ctx.company?.legalRepresentative || 'SESMT';
+            
+            let statusText = 'NÃO INICIADA';
+            if (act.status) {
+              const upper = act.status.toUpperCase();
+              if (upper === 'IN_PROGRESS' || upper === 'EM_ANDAMENTO') statusText = 'EM ANDAMENTO';
+              else if (upper === 'COMPLETED' || upper === 'CONCLUIDA' || upper === 'CONCLUÍDA') statusText = 'CONCLUÍDA';
+              else if (upper === 'CANCELLED' || upper === 'CANCELADA') statusText = 'CANCELADA';
+              else if (upper === 'NOT_STARTED' || upper === 'NAO_INICIADA') statusText = 'NÃO INICIADA';
+              else statusText = act.status.replace(/_/g, ' ').toUpperCase();
+            }
+
             return new TableRow({
               children: [
-                new TableCell({ children: [new Paragraph({ text: act.what })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: act.what, alignment: AlignmentType.JUSTIFIED })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: priorityText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: startDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: endDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: responsibleText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: act.status.replace('_', ' ').toUpperCase(), alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: statusText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
               ],
             });
           });
