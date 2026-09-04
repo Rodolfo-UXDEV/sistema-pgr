@@ -17,7 +17,7 @@ export const ActionPlanOverview: React.FC = () => {
   const completionRate = Math.round((stats.completedActions / total) * 100);
 
   const getStatusBadge = (status: string, whenDate: string) => {
-    const isDelayed = status !== 'CONCLUIDA' && new Date(whenDate) < new Date();
+    const isDelayed = status !== 'CONCLUIDA' && whenDate && !whenDate.toLowerCase().includes('continuo') && !whenDate.toLowerCase().includes('contínuo') && !isNaN(new Date(whenDate).getTime()) && new Date(whenDate) < new Date();
     if (isDelayed || status === 'ATRASADA') {
       return <Badge variant="danger" className="text-[10px]">Atrasada</Badge>;
     }

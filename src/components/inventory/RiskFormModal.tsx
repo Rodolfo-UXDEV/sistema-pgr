@@ -36,7 +36,8 @@ import {
   Layers, 
   FileText,
   Eye,
-  Info
+  Info,
+  Infinity as InfinityIcon
 } from 'lucide-react';
 
 interface RiskFormModalProps {
@@ -143,9 +144,24 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   // 5. Recomendações & Plano de Ação
   const [recommendations, setRecommendations] = useState('');
   const [actionRequired, setActionRequired] = useState(true);
+  const [isContinuous, setIsContinuous] = useState(false);
   const [actionStartDate, setActionStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [actionEndDate, setActionEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [actionResponsible, setActionResponsible] = useState('');
+
+  const toggleContinuousDates = () => {
+    setIsContinuous(prev => {
+      const next = !prev;
+      if (next) {
+        setActionStartDate('Contínuo');
+        setActionEndDate('Contínuo');
+      } else {
+        setActionStartDate(new Date().toISOString().split('T')[0]);
+        setActionEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      }
+      return next;
+    });
+  };
 
   const defaultResp = activeCompany?.legalRepresentative 
     ? `${activeCompany.legalRepresentative}${activeCompany.representativeRole ? ` / ${activeCompany.representativeRole}` : ''}`
@@ -206,8 +222,22 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
       setProbability(initialItem.probability || 3);
       const linkedAction = actionPlans.find(a => a.riskInventoryId === initialItem.id);
       setActionPriority(initialItem.actionPriority || linkedAction?.priority || (initialItem.riskLevel === 'INTOLERAVEL' ? 'Urgente' : initialItem.riskLevel === 'SUBSTANCIAL' ? 'Alta' : initialItem.riskLevel === 'MODERADO' ? 'Média' : 'Baixa'));
-      setActionStartDate(initialItem.actionStartDate || linkedAction?.startDate || new Date().toISOString().split('T')[0]);
-      setActionEndDate(initialItem.actionEndDate || linkedAction?.whenDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+
+      const rawStart = initialItem.actionStartDate || linkedAction?.startDate || '';
+      const rawEnd = initialItem.actionEndDate || linkedAction?.whenDate || '';
+      const isCont = Boolean(
+        (rawStart && (rawStart.toLowerCase().includes('continuo') || rawStart.toLowerCase().includes('contínuo'))) ||
+        (rawEnd && (rawEnd.toLowerCase().includes('continuo') || rawEnd.toLowerCase().includes('contínuo')))
+      );
+
+      setIsContinuous(isCont);
+      if (isCont) {
+        setActionStartDate('Contínuo');
+        setActionEndDate('Contínuo');
+      } else {
+        setActionStartDate(rawStart || new Date().toISOString().split('T')[0]);
+        setActionEndDate(rawEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      }
       setActionResponsible(initialItem.actionResponsible || linkedAction?.who || activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção');
 
       setRecommendations(initialItem.recommendations || '');
@@ -245,6 +275,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
 
       setSeverity(3);
       setProbability(3);
+      setIsContinuous(false);
       setActionPriority('Média');
       setActionStartDate(new Date().toISOString().split('T')[0]);
       setActionEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
@@ -400,8 +431,8 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
         riskScore: score,
         riskLevel: level,
         actionPriority: actionPriority || (level === 'INTOLERAVEL' ? 'Urgente' : level === 'SUBSTANCIAL' ? 'Alta' : level === 'MODERADO' ? 'Média' : 'Baixa'),
-        actionStartDate: actionStartDate || undefined,
-        actionEndDate: actionEndDate || undefined,
+        actionStartDate: isContinuous ? 'Contínuo' : (actionStartDate || undefined),
+        actionEndDate: isContinuous ? 'Contínuo' : (actionEndDate || undefined),
         actionResponsible: actionResponsible.trim() || undefined,
         epcExisting: epcList,
         adminMeasuresExisting: [],
@@ -420,8 +451,8 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
           await updateActionPlan(linkedAction.id, {
             what: recommendations.trim() || linkedAction.what,
             priority: actionPriority,
-            startDate: actionStartDate,
-            whenDate: actionEndDate || linkedAction.whenDate,
+            startDate: isContinuous ? 'Contínuo' : actionStartDate,
+            whenDate: isContinuous ? 'Contínuo' : (actionEndDate || linkedAction.whenDate),
             who: actionResponsible.trim() || linkedAction.who,
           });
         }
@@ -900,11 +931,24 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
 
             {actionRequired && (
               <div className="p-3.5 rounded-lg bg-card border border-border space-y-3 mt-3 shadow-2xs">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Prioridade, Prazos & Responsável do Plano de Ação (NR-01.5.5)</span>
                   </span>
+                  <button
+                    type="button"
+                    onClick={toggleContinuousDates}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                      isContinuous
+                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                        : 'bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground border-border'
+                    }`}
+                    title="Definir ação com prazo contínuo (sem data fixa de término)"
+                  >
+                    <InfinityIcon className="h-3.5 w-3.5" />
+                    <span>{isContinuous ? '✓ Prazo Contínuo' : 'Definir como Contínuo'}</span>
+                  </button>
                 </div>
 
                 {/* Diretriz de Controle (NR-01.5.5) */}
@@ -914,7 +958,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                     <strong className="text-foreground">Diretriz de Controle (NR-01.5.5): </strong>
                     <span className="text-muted-foreground">{currentRiskConfig.actionRequirement}</span>
                     <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
-                      Prazo limite sugerido para controle: {currentRiskConfig.deadlineDays} dias.
+                      Prazo limite sugerido para controle: {isContinuous ? 'Ação Contínua' : `${currentRiskConfig.deadlineDays} dias`}.
                     </span>
                   </div>
                 </div>
@@ -965,27 +1009,67 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   {/* LINHA 2: Prazo Inicial (Início) e Prazo Final (Término / Limite) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                     <div>
-                      <div className="h-5 flex items-center">
+                      <div className="h-5 flex items-center justify-between">
                         <Label className="text-[11px] font-semibold">Prazo Inicial (Início)</Label>
+                        {isContinuous && (
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            Ação Contínua
+                          </span>
+                        )}
                       </div>
-                      <Input
-                        type="date"
-                        value={actionStartDate}
-                        onChange={(e) => setActionStartDate(e.target.value)}
-                        className="h-8 mt-1 text-xs"
-                      />
+                      {isContinuous ? (
+                        <div className="relative mt-1">
+                          <Input
+                            type="text"
+                            value="Contínuo"
+                            readOnly
+                            disabled
+                            className="h-8 text-xs font-semibold bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 cursor-not-allowed pl-7"
+                          />
+                          <InfinityIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2 top-2.5" />
+                        </div>
+                      ) : (
+                        <Input
+                          type="date"
+                          value={actionStartDate}
+                          onChange={(e) => setActionStartDate(e.target.value)}
+                          className="h-8 mt-1 text-xs"
+                        />
+                      )}
                     </div>
 
                     <div>
-                      <div className="h-5 flex items-center">
+                      <div className="h-5 flex items-center justify-between">
                         <Label className="text-[11px] font-semibold">Prazo Final (Término / Limite)</Label>
+                        {isContinuous && (
+                          <button
+                            type="button"
+                            onClick={toggleContinuousDates}
+                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer font-medium"
+                          >
+                            Mudar para data fixa
+                          </button>
+                        )}
                       </div>
-                      <Input
-                        type="date"
-                        value={actionEndDate}
-                        onChange={(e) => setActionEndDate(e.target.value)}
-                        className="h-8 mt-1 text-xs"
-                      />
+                      {isContinuous ? (
+                        <div className="relative mt-1">
+                          <Input
+                            type="text"
+                            value="Contínuo"
+                            readOnly
+                            disabled
+                            className="h-8 text-xs font-semibold bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 cursor-not-allowed pl-7"
+                          />
+                          <InfinityIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2 top-2.5" />
+                        </div>
+                      ) : (
+                        <Input
+                          type="date"
+                          value={actionEndDate}
+                          onChange={(e) => setActionEndDate(e.target.value)}
+                          className="h-8 mt-1 text-xs"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

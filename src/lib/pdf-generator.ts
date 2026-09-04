@@ -1070,10 +1070,14 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               }
               const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
               const startDateText = act.startDate 
-                ? (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate)
+                ? (act.startDate.toLowerCase().includes('continuo') || act.startDate.toLowerCase().includes('contínuo')
+                    ? 'Contínuo'
+                    : (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate))
                 : 'Contínuo';
               const endDateText = act.whenDate 
-                ? (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate)
+                ? (act.whenDate.toLowerCase().includes('continuo') || act.whenDate.toLowerCase().includes('contínuo')
+                    ? 'Contínuo'
+                    : (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate))
                 : 'Contínuo';
               const responsibleText = act.who || ctx.establishment?.managerName || 'SESMT';
               const statusText = act.status ? act.status.replace(/_/g, ' ').toUpperCase() : 'NÃO INICIADA';

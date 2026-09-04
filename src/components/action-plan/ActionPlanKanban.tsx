@@ -54,7 +54,7 @@ export const ActionPlanKanban: React.FC = () => {
                 </div>
               ) : (
                 columnItems.map((action) => {
-                  const isDelayed = action.status !== 'CONCLUIDA' && new Date(action.whenDate) < new Date();
+                  const isDelayed = action.status !== 'CONCLUIDA' && action.whenDate && !action.whenDate.toLowerCase().includes('continuo') && !action.whenDate.toLowerCase().includes('contínuo') && !isNaN(new Date(action.whenDate).getTime()) && new Date(action.whenDate) < new Date();
 
                   return (
                     <Card

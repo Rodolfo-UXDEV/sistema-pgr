@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { CheckSquare, DollarSign, Calendar, User, MapPin } from 'lucide-react';
+import { CheckSquare, DollarSign, Calendar, User, MapPin, Infinity as InfinityIcon } from 'lucide-react';
 
 interface ActionPlanModalProps {
   isOpen: boolean;
@@ -41,6 +41,7 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
   const [why, setWhy] = useState('');
   const [whereLoc, setWhereLoc] = useState('');
   const [who, setWho] = useState('');
+  const [isContinuous, setIsContinuous] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [whenDate, setWhenDate] = useState('');
   const [priority, setPriority] = useState<string>('Média');
@@ -53,6 +54,20 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
   const [efficacyNotes, setEfficacyNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  const toggleContinuousDates = () => {
+    setIsContinuous(prev => {
+      const next = !prev;
+      if (next) {
+        setStartDate('Contínuo');
+        setWhenDate('Contínuo');
+      } else {
+        setStartDate(new Date().toISOString().split('T')[0]);
+        setWhenDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+      }
+      return next;
+    });
+  };
+
   const companyRisks = riskInventory.filter(
     r => !activeCompany || r.companyId === activeCompany.id
   );
@@ -64,8 +79,17 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
       setWhy(initialItem.why);
       setWhereLoc(initialItem.whereLoc);
       setWho(initialItem.who);
-      setStartDate(initialItem.startDate || '');
-      setWhenDate(initialItem.whenDate);
+
+      const rawStart = initialItem.startDate || '';
+      const rawEnd = initialItem.whenDate || '';
+      const isCont = Boolean(
+        (rawStart && (rawStart.toLowerCase().includes('continuo') || rawStart.toLowerCase().includes('contínuo'))) ||
+        (rawEnd && (rawEnd.toLowerCase().includes('continuo') || rawEnd.toLowerCase().includes('contínuo')))
+      );
+      setIsContinuous(isCont);
+      setStartDate(isCont ? 'Contínuo' : rawStart);
+      setWhenDate(isCont ? 'Contínuo' : rawEnd);
+
       setPriority(initialItem.priority || 'Média');
       setHow(initialItem.how);
       setHowMuch(initialItem.howMuch || 0);
@@ -75,6 +99,7 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
       setEfficacyVerified(Boolean(initialItem.efficacyVerified));
       setEfficacyNotes(initialItem.efficacyNotes || '');
     } else {
+      setIsContinuous(false);
       setRiskInventoryId('');
       setWhat('');
       setWhy('');
@@ -99,7 +124,10 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
       alert('Selecione uma empresa, estabelecimento e PGR ativos.');
       return;
     }
-    if (!what.trim() || !why.trim() || !whereLoc.trim() || !who.trim() || !whenDate) {
+    const finalStartDate = isContinuous ? 'Contínuo' : (startDate || undefined);
+    const finalWhenDate = isContinuous ? 'Contínuo' : whenDate;
+
+    if (!what.trim() || !why.trim() || !whereLoc.trim() || !who.trim() || !finalWhenDate) {
       alert('Por favor, preencha todos os campos obrigatórios da metodologia 5W2H.');
       return;
     }
@@ -115,8 +143,8 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
         why: why.trim(),
         whereLoc: whereLoc.trim(),
         who: who.trim(),
-        startDate: startDate || undefined,
-        whenDate,
+        startDate: finalStartDate,
+        whenDate: finalWhenDate,
         priority: priority || 'Média',
         how: how.trim() || 'Conforme especificação técnica',
         howMuch: Number(howMuch) || 0,
@@ -239,30 +267,94 @@ export const ActionPlanModal: React.FC<ActionPlanModalProps> = ({
               />
             </div>
 
-            {/* Prazo Inicial e Prazo Final */}
-            <div>
-              <Label className="text-xs font-bold text-foreground">
-                Prazo Inicial (Data de Início)
-              </Label>
-              <Input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="h-9 mt-1 text-xs"
-              />
+            {/* Prazo Inicial e Prazo Final com suporte a Contínuo */}
+            <div className="md:col-span-2 flex items-center justify-between pt-1 border-t border-border/50">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-emerald-600" />
+                <span>Prazos de Execução da Ação</span>
+              </span>
+              <button
+                type="button"
+                onClick={toggleContinuousDates}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-semibold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  isContinuous
+                    ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                    : 'bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground border-border'
+                }`}
+                title="Definir ação com prazo contínuo (sem data fixa de término)"
+              >
+                <InfinityIcon className="h-3.5 w-3.5" />
+                <span>{isContinuous ? '✓ Prazo Contínuo' : 'Definir como Contínuo'}</span>
+              </button>
             </div>
 
             <div>
-              <Label className="text-xs font-bold text-foreground">
-                WHEN? - Prazo Final / Término *
-              </Label>
-              <Input
-                type="date"
-                value={whenDate}
-                onChange={(e) => setWhenDate(e.target.value)}
-                required
-                className="h-9 mt-1 text-xs"
-              />
+              <div className="h-5 flex items-center justify-between">
+                <Label className="text-xs font-bold text-foreground">
+                  Prazo Inicial (Data de Início)
+                </Label>
+                {isContinuous && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    Ação Contínua
+                  </span>
+                )}
+              </div>
+              {isContinuous ? (
+                <div className="relative mt-1">
+                  <Input
+                    type="text"
+                    value="Contínuo"
+                    readOnly
+                    disabled
+                    className="h-9 text-xs font-semibold bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 cursor-not-allowed pl-7"
+                  />
+                  <InfinityIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2 top-3" />
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="h-9 mt-1 text-xs"
+                />
+              )}
+            </div>
+
+            <div>
+              <div className="h-5 flex items-center justify-between">
+                <Label className="text-xs font-bold text-foreground">
+                  WHEN? - Prazo Final / Término *
+                </Label>
+                {isContinuous && (
+                  <button
+                    type="button"
+                    onClick={toggleContinuousDates}
+                    className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer font-medium"
+                  >
+                    Mudar para data fixa
+                  </button>
+                )}
+              </div>
+              {isContinuous ? (
+                <div className="relative mt-1">
+                  <Input
+                    type="text"
+                    value="Contínuo"
+                    readOnly
+                    disabled
+                    className="h-9 text-xs font-semibold bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 cursor-not-allowed pl-7"
+                  />
+                  <InfinityIcon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 absolute left-2 top-3" />
+                </div>
+              ) : (
+                <Input
+                  type="date"
+                  value={whenDate}
+                  onChange={(e) => setWhenDate(e.target.value)}
+                  required
+                  className="h-9 mt-1 text-xs"
+                />
+              )}
             </div>
 
             {/* Priority */}

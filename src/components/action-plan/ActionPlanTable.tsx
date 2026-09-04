@@ -62,7 +62,7 @@ export const ActionPlanTable: React.FC = () => {
   };
 
   const getStatusBadge = (status: ActionStatus, whenDate: string) => {
-    const isDelayed = status !== 'CONCLUIDA' && new Date(whenDate) < new Date();
+    const isDelayed = status !== 'CONCLUIDA' && whenDate && !whenDate.toLowerCase().includes('continuo') && !whenDate.toLowerCase().includes('contínuo') && !isNaN(new Date(whenDate).getTime()) && new Date(whenDate) < new Date();
     if (isDelayed || status === 'ATRASADA') {
       return <Badge variant="danger" className="text-[10px]">Atrasada</Badge>;
     }
@@ -193,7 +193,9 @@ export const ActionPlanTable: React.FC = () => {
 
                   <TableCell className="text-xs">
                     <span className="font-mono text-muted-foreground text-[11px]">
-                      {action.startDate ? `${formatDate(action.startDate)} - ${formatDate(action.whenDate)}` : formatDate(action.whenDate)}
+                      {action.startDate && action.startDate !== action.whenDate
+                        ? `${formatDate(action.startDate)} - ${formatDate(action.whenDate)}`
+                        : formatDate(action.whenDate || action.startDate)}
                     </span>
                   </TableCell>
 

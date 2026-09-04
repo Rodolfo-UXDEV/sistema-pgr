@@ -44,8 +44,18 @@ export function formatCurrency(value: number): string {
 
 export function formatDate(dateString: string | Date | undefined | null): string {
   if (!dateString) return "-";
+  if (typeof dateString === "string") {
+    const lower = dateString.toLowerCase().trim();
+    if (lower === "continuo" || lower === "contínuo" || lower.includes("continuo") || lower.includes("contínuo")) {
+      return "Contínuo";
+    }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      const [y, m, d] = dateString.split("-");
+      return `${d}/${m}/${y}`;
+    }
+  }
   const date = typeof dateString === "string" ? new Date(dateString) : dateString;
-  if (isNaN(date.getTime())) return "-";
+  if (isNaN(date.getTime())) return typeof dateString === "string" ? dateString : "-";
   return new Intl.DateTimeFormat("pt-BR").format(date);
 }
 

@@ -616,3 +616,23 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
 13. **Build & Deploy:**
     - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
     - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.
+
+14. **Suporte e Botão de Seleção para Prazo "Contínuo" no Inventário de Riscos e Plano de Ação (NR-01.5.5):**
+    - **Solicitação do Usuário:** Inclusão de um botão seletor de prazo "Contínuo" no card de Prioridade, Prazos & Responsável do Plano de Ação, propagando a informação para todo o sistema e documentos gerados.
+    - **Modal de Inventário de Riscos (`RiskFormModal.tsx`):**
+      - Adicionado botão interativo com ícone de infinito (`InfinityIcon`) no cabeçalho do card: `Definir como Contínuo` / `✓ Prazo Contínuo`.
+      - Alternância dinâmica: ao ativar, os inputs de tipo `date` são substituídos por campos informativos estilizados com o badge e valor `"Contínuo"` e atalho para retorno à data fixa.
+      - Ao salvar o risco, a ação vinculada é salva com `startDate: 'Contínuo'` e `whenDate: 'Contínuo'` no Firestore e no estado local.
+    - **Modal do Plano de Ação 5W2H (`ActionPlanModal.tsx`):**
+      - Adicionado suporte idêntico com o botão `Definir como Contínuo` na modal direta do Plano de Ação.
+      - Validação de formulário flexibilizada para aceitar `"Contínuo"` sem requerer formato ISO `YYYY-MM-DD`.
+    - **Inteligência Anti-Atraso & Formatação (`PgrContext.tsx`, `ActionPlanTable.tsx`, `ActionPlanKanban.tsx`, `ActionPlanOverview.tsx`, `utils.ts`):**
+      - Ações marcadas como contínuas não são contabilizadas como atrasadas (`delayedActions`).
+      - A função `formatDate` trata variações (`continuo`, `contínuo`, `Contínuo`) retornando `"Contínuo"` padronizado.
+      - Na tabela do Plano de Ação, o intervalo de datas é exibido de forma limpa como `"Contínuo"` (ao invés de duplicar `"Contínuo - Contínuo"`).
+    - **Exportações e Visualizadores (PDF, DOCX, Excel e Web):**
+      - No Laudo PDF Oficial (`pdf-generator.ts`): colunas de Prazo Inicial e Prazo Final renderizam `"Contínuo"`.
+      - No Documento Word (`docx-generator.ts`): tabela do Plano de Ação 5W2H renderiza `"Contínuo"`.
+      - Na Planilha Excel (`excel-generator.ts`): exportação padronizada via `formatDate`.
+      - No Editor do PGR (`PgrBuilderPage.tsx`) e Visualizador (`PgrViewerPage.tsx`): renderização limpa do prazo contínuo.
+

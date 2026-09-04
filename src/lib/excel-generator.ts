@@ -3,6 +3,7 @@ import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany } from '@/lib/pgr-official-template';
 import { HAZARD_CATEGORY_CONFIG } from '@/lib/risk-matrix';
 import { HazardCategory, RiskInventoryItem } from '@/types/pgr';
+import { formatDate } from '@/lib/utils';
 
 export async function generatePgrExcel(rawCtx: PgrDocumentContext): Promise<void> {
   const ctx = filterContextForCompany(rawCtx);
@@ -228,7 +229,7 @@ export async function generatePgrExcel(rawCtx: PgrDocumentContext): Promise<void
         act.why,
         act.whereLoc || 'Unidade Geral',
         act.who,
-        act.whenDate,
+        formatDate(act.whenDate),
         act.how || 'Procedimento operacional e normas internas',
         Number(act.howMuch || 0),
         act.status.replace('_', ' ').toUpperCase(),

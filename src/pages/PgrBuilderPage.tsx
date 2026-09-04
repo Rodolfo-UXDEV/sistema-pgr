@@ -644,7 +644,7 @@ export const PgrBuilderPage: React.FC = () => {
                               <TableRow key={a.id} className="text-xs">
                                 <TableCell className="font-semibold">{a.what}</TableCell>
                                 <TableCell>{a.who || 'SESMT'}</TableCell>
-                                <TableCell>{a.whenDate || 'Contínuo'}</TableCell>
+                                <TableCell>{a.whenDate ? formatDate(a.whenDate) : 'Contínuo'}</TableCell>
                                 <TableCell className="text-center"><Badge variant="outline">{a.status}</Badge></TableCell>
                               </TableRow>
                             ))}

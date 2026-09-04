@@ -796,7 +796,7 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     pendingActions: companyActions.filter(a => a.status === 'NAO_INICIADA').length,
     inProgressActions: companyActions.filter(a => a.status === 'EM_ANDAMENTO').length,
     completedActions: companyActions.filter(a => a.status === 'CONCLUIDA').length,
-    delayedActions: companyActions.filter(a => a.status === 'ATRASADA' || (a.status !== 'CONCLUIDA' && new Date(a.whenDate) < new Date())).length,
+    delayedActions: companyActions.filter(a => a.status === 'ATRASADA' || (a.status !== 'CONCLUIDA' && a.whenDate && !a.whenDate.toLowerCase().includes('continuo') && !a.whenDate.toLowerCase().includes('contínuo') && !isNaN(new Date(a.whenDate).getTime()) && new Date(a.whenDate) < new Date())).length,
     totalInvestment: companyActions.reduce((acc, curr) => acc + (curr.howMuch || 0), 0),
   };
 

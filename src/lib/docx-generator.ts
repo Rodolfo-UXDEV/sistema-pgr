@@ -1093,8 +1093,8 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               }
             }
             const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
-            const startDateText = act.startDate || 'Contínuo';
-            const endDateText = act.whenDate || 'Contínuo';
+            const startDateText = act.startDate ? (act.startDate.toLowerCase().includes('continuo') || act.startDate.toLowerCase().includes('contínuo') ? 'Contínuo' : (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate)) : 'Contínuo';
+            const endDateText = act.whenDate ? (act.whenDate.toLowerCase().includes('continuo') || act.whenDate.toLowerCase().includes('contínuo') ? 'Contínuo' : (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate)) : 'Contínuo';
             const responsibleText = act.who || ctx.establishment?.managerName || ctx.company?.legalRepresentative || 'SESMT';
             
             let statusText = 'NÃO INICIADA';
