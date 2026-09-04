@@ -585,6 +585,15 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
     - **Visualizador Web (`src/pages/PgrViewerPage.tsx`):**
       - Adicionado preenchimento superior (`pt-4 sm:pt-6`) na capa formal, conferindo maior respiro visual.
 
-11. **Build & Deploy:**
+11. **Remoção da Linha "ART / RRT Vinculada" na Geração do Documento (Cap. 4):**
+    - **Solicitação do Usuário:** *"retire a linha "ART / RRT Vinculada" da geração do documento"*.
+    - **Gerador PDF Oficial (`src/lib/pdf-generator.ts`):**
+      - Removida a linha `ART / RRT Vinculada` da tabela da Seção 4 (*Responsável Técnico pela Elaboração do PGR*).
+    - **Gerador Word (.docx) Oficial (`src/lib/docx-generator.ts`):**
+      - Removido o item `• Número da ART / RRT` e simplificado o cabeçalho para *Responsável Técnico pela Elaboração do PGR*.
+    - **Visualizador Web (`src/pages/PgrViewerPage.tsx`):**
+      - Removida a exibição de `• Número da ART / RRT` no card da Seção 4.
+
+12. **Build & Deploy:**
     - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
     - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.

@@ -265,7 +265,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
         const elParas = [
           new Paragraph({
-            children: [new TextRun({ text: 'Responsável Técnico pela Elaboração e ART:', bold: true })],
+            children: [new TextRun({ text: 'Responsável Técnico pela Elaboração do PGR:', bold: true })],
             spacing: { before: 200, after: 100 },
           }),
           new Paragraph({ text: `• Nome: ${el.nome}` }),
@@ -275,10 +275,6 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
         if (el.cpf) {
           elParas.push(new Paragraph({ text: `• CPF do Responsável Técnico: ${el.cpf}` }));
-        }
-
-        if (el.art && el.art !== 'ART Emitida' && el.art !== '-' && el.art.trim() !== '') {
-          elParas.push(new Paragraph({ text: `• Número da ART / RRT: ${el.art}` }));
         }
 
         elParas.push(new Paragraph({ text: `• Consultoria Especializada: ${el.empresaConsultoria}` }));

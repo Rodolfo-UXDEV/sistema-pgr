@@ -440,11 +440,6 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             [{ content: 'CPF do Responsável', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.cpf }]
           );
         }
-        if (el.art && el.art !== 'ART Emitida' && el.art !== '-' && el.art.trim() !== '') {
-          respTableData.push(
-            [{ content: 'ART / RRT Vinculada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.art }]
-          );
-        }
         respTableData.push(
           [{ content: 'Consultoria Especializada', styles: { fontStyle: 'bold', fillColor: [248, 250, 252], cellWidth: 50 } }, { content: el.empresaConsultoria || '-' }]
         );

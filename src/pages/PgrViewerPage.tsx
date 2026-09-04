@@ -426,15 +426,12 @@ export const PgrViewerPage: React.FC = () => {
               <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-3 text-xs">
                 <div className="space-y-1">
                   <div className="font-semibold text-foreground text-sm">
-                    Responsável Técnico pela Elaboração e ART:
+                    Responsável Técnico pela Elaboração do PGR:
                   </div>
                   <div>• <strong>Nome:</strong> {el?.nome || docData.header.techRespName}</div>
                   <div>• <strong>Qualificações / Cargos Habilitados:</strong> {qualifText}</div>
                   <div>• <strong>Registro Profissional:</strong> {el?.conselho || docData.header.techRespCouncil}</div>
                   {cpfText && <div>• <strong>CPF do Responsável Técnico:</strong> {cpfText}</div>}
-                  {docData.header.techRespArt && docData.header.techRespArt !== 'ART Emitida' && docData.header.techRespArt !== '-' && (
-                    <div>• <strong>Número da ART / RRT:</strong> {docData.header.techRespArt}</div>
-                  )}
                   <div>• <strong>Consultoria Especializada:</strong> {el?.empresaConsultoria || `${issuerConfig.name || OFFICIAL_PGR_TEXTS.consultingCompany} (${issuerConfig.registrationCouncil || OFFICIAL_PGR_TEXTS.consultingCrea})`}</div>
                 </div>
 
