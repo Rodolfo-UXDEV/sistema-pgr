@@ -226,7 +226,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   doc.rect(0, 0, 210, 12, 'F');
   doc.rect(0, 285, 210, 12, 'F');
 
-  // Logo da ES no Topo da Capa (com proporção preservada para nunca desconfigurar)
+  // Logo da ES no Topo da Capa (com proporção preservada para nunca desconfigurar e respiro elegante)
   if (emissoraPng && emissoraPng.startsWith('data:image/')) {
     try {
       const imgProps = doc.getImageProperties(emissoraPng);
@@ -236,7 +236,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       const w = imgProps.width * ratio;
       const h = imgProps.height * ratio;
       const x = (210 - w) / 2;
-      doc.addImage(emissoraPng, 'PNG', x, 16 + (maxH - h) / 2, w, h, undefined, 'FAST');
+      doc.addImage(emissoraPng, 'PNG', x, 28 + (maxH - h) / 2, w, h, undefined, 'FAST');
     } catch (e) {
       console.error('Erro ao adicionar logo da emissora no PDF:', e);
     }
@@ -245,26 +245,26 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9.5);
   doc.setTextColor(0, 0, 0);
-  doc.text(docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 41, { align: 'center' });
+  doc.text(docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany, 105, 53, { align: 'center' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
-  doc.text(docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 46, { align: 'center' });
+  doc.text(docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea, 105, 58, { align: 'center' });
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
   doc.setTextColor(0, 0, 0);
-  doc.text('PROGRAMA DE GERENCIAMENTO', 105, 66, { align: 'center' });
-  doc.text('DE RISCOS - PGR', 105, 74, { align: 'center' });
+  doc.text('PROGRAMA DE GERENCIAMENTO', 105, 78, { align: 'center' });
+  doc.text('DE RISCOS - PGR', 105, 86, { align: 'center' });
 
   doc.setFontSize(9.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) — NR-01', 105, 83, { align: 'center' });
+  doc.text('GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) — NR-01', 105, 95, { align: 'center' });
 
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.8);
-  doc.line(40, 89, 170, 89);
+  doc.line(40, 101, 170, 101);
 
   if (clientePng && clientePng.startsWith('data:image/')) {
     try {
@@ -275,7 +275,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       const w = cProps.width * ratio;
       const h = cProps.height * ratio;
       const x = (210 - w) / 2;
-      doc.addImage(clientePng, 'PNG', x, 95 + (maxH - h) / 2, w, h, undefined, 'FAST');
+      doc.addImage(clientePng, 'PNG', x, 107 + (maxH - h) / 2, w, h, undefined, 'FAST');
     } catch (e) {
       console.error('Erro ao adicionar logo do cliente no PDF:', e);
     }
@@ -284,28 +284,28 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(13);
   doc.setTextColor(0, 0, 0);
-  doc.text(docData.header.companyName.toUpperCase(), 105, 122, { align: 'center' });
+  doc.text(docData.header.companyName.toUpperCase(), 105, 134, { align: 'center' });
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(0, 0, 0);
-  doc.text(`CNPJ: ${docData.header.cnpj}`, 105, 129, { align: 'center' });
-  doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 135, { align: 'center' });
+  doc.text(`CNPJ: ${docData.header.cnpj}`, 105, 141, { align: 'center' });
+  doc.text(`Estabelecimento: ${docData.header.establishmentName}`, 105, 147, { align: 'center' });
 
   doc.setFillColor(248, 250, 252);
-  doc.roundedRect(30, 155, 150, 38, 3, 3, 'FD');
+  doc.roundedRect(30, 167, 150, 38, 3, 3, 'FD');
   doc.setDrawColor(203, 213, 225);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(0, 0, 0);
-  doc.text(`DOCUMENTO TÉCNICO: ${docData.header.code} (REV: ${docData.header.version})`, 35, 164);
+  doc.text(`DOCUMENTO TÉCNICO: ${docData.header.code} (REV: ${docData.header.version})`, 35, 176);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
-  doc.text(`Responsável Técnico: ${docData.header.techRespName}`, 35, 172);
-  doc.text(`Registro de Classe: ${docData.header.techRespCouncil}`, 35, 180);
-  doc.text(`Data de Elaboração: ${docData.header.elaborationDate}`, 35, 188);
+  doc.text(`Responsável Técnico: ${docData.header.techRespName}`, 35, 184);
+  doc.text(`Registro de Classe: ${docData.header.techRespCouncil}`, 35, 192);
+  doc.text(`Data de Elaboração: ${docData.header.elaborationDate}`, 35, 200);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);

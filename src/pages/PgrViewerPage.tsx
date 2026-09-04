@@ -284,9 +284,9 @@ export const PgrViewerPage: React.FC = () => {
       <div className="bg-card border border-border shadow-md rounded-2xl p-6 sm:p-12 space-y-10 text-foreground">
         
         {/* CAPA FORMAL */}
-        <div className="text-center space-y-6 border-b border-border pb-12">
+        <div className="text-center space-y-6 border-b border-border pb-12 pt-4 sm:pt-6">
           {issuerConfig.logoUrl && (
-            <div className="flex justify-center mb-1">
+            <div className="flex justify-center mb-1 pt-2">
               <img 
                 src={issuerConfig.logoUrl} 
                 alt={`Logo ${issuerConfig.name}`} 

@@ -575,6 +575,16 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
      - O utilitário de conversão de texto e markdown `parseTextToTextRuns` atualizado para emitir `color: '000000'`.
      - Todos os textos de seções, cabeçalhos, cargos, descrições de atividades, notas de inventário e plano de ação convertidos para `'000000'`.
 
-10. **Build & Deploy:**
+10. **Ajuste de Espaçamento e Respiro no Topo da Capa Institucional:**
+    - **Solicitação do Usuário:** *"na capa, de um respiro maior entre o logo da empresa e o topo da pagina, mantenha o conteudo da capa como está, apenas de um respiro maior"*.
+    - **Gerador PDF Oficial (`src/lib/pdf-generator.ts`):**
+      - Aumentado o recuo do logotipo do topo da capa de `y = 16mm` para `y = 28mm` (respiro de 16mm em relação à faixa superior e 28mm da borda física da página A4).
+      - Rebalanceamento proporcional de todos os elementos subsequentes da capa (títulos, logo do cliente, dados cadastrais e caixa técnica), mantendo 100% do conteúdo original intacto com harmonia visual.
+    - **Gerador Word (.docx) Oficial (`src/lib/docx-generator.ts`):**
+      - Aumentado o espaçamento superior antes do logotipo na capa (`spacing: { before: 600 }`).
+    - **Visualizador Web (`src/pages/PgrViewerPage.tsx`):**
+      - Adicionado preenchimento superior (`pt-4 sm:pt-6`) na capa formal, conferindo maior respiro visual.
+
+11. **Build & Deploy:**
     - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
     - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.

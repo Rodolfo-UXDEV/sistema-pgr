@@ -66,7 +66,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { before: 200, after: 150 },
+        spacing: { before: 600, after: 150 },
         children: [
           new ImageRun({
             data: emissoraBytes,
