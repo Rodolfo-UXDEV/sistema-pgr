@@ -15,6 +15,25 @@ export interface GheGroupData {
   risks: RiskInventoryItem[];
 }
 
+/**
+ * Retorna o peso numérico da categoria para ordenação fixa normativa:
+ * 1º Físico
+ * 2º Químico
+ * 3º Biológico
+ * 4º Ergonômico / Psicossocial
+ * 5º Acidentes / Mecânico
+ */
+export function getCategoryOrderWeight(cat?: string): number {
+  if (!cat) return 99;
+  const clean = cat.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  if (clean.includes('fisic')) return 1;
+  if (clean.includes('quimic')) return 2;
+  if (clean.includes('biolog')) return 3;
+  if (clean.includes('ergo') || clean.includes('psico')) return 4;
+  if (clean.includes('acident') || clean.includes('mecanic')) return 5;
+  return 99;
+}
+
 export const HAZARD_CATEGORY_ORDER: Record<string, number> = {
   fisico: 1,
   quimico: 2,
@@ -40,6 +59,7 @@ export function isNoExposureRisk(item: RiskInventoryItem): boolean {
   const name = (item.hazardName || '').toLowerCase().trim();
   const desc = (item.sourceDescription || '').toLowerCase().trim();
   const health = (item.healthDamage || '').toLowerCase().trim();
+  const code = (item.hazardCode || '').toLowerCase().trim();
   
   const keywords = [
     'não há exposição',
@@ -51,10 +71,12 @@ export function isNoExposureRisk(item: RiskInventoryItem): boolean {
     'sem exposição',
     'sem exposicao',
     'inexistente',
-    'ausente'
+    'ausente',
+    'nap'
   ];
 
-  return keywords.some(k => name.includes(k) || desc.includes(k) || health.includes(k)) || name === 'nap';
+  if (name === 'nap' || desc === 'nap' || health === 'nap' || code === 'nap') return true;
+  return keywords.some(k => name.includes(k) || desc.includes(k) || health.includes(k));
 }
 
 /**
@@ -63,10 +85,8 @@ export function isNoExposureRisk(item: RiskInventoryItem): boolean {
  */
 export function sortRisksByNormativeCategory(items: RiskInventoryItem[]): RiskInventoryItem[] {
   return [...items].sort((a, b) => {
-    const keyA = (a.hazardCategory || '').toLowerCase();
-    const keyB = (b.hazardCategory || '').toLowerCase();
-    const orderA = HAZARD_CATEGORY_ORDER[keyA] || 99;
-    const orderB = HAZARD_CATEGORY_ORDER[keyB] || 99;
+    const orderA = getCategoryOrderWeight(a.hazardCategory);
+    const orderB = getCategoryOrderWeight(b.hazardCategory);
     if (orderA !== orderB) return orderA - orderB;
     return (a.hazardName || '').localeCompare(b.hazardName || '');
   });

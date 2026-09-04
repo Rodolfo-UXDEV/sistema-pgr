@@ -94,3 +94,22 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(107, 114, 128, 0.6);
 }
+
+/* Print optimization */
+@media print {
+  .page-break-before,
+  .print\:break-before-page {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+  .page-break-after,
+  .print\:break-after-page {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+  .page-break-inside-avoid,
+  .print\:break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}

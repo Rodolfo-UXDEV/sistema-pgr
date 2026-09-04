@@ -161,8 +161,11 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
   for (const section of docData.sections) {
     // Título da Seção
     const sectionHeading = /^\d+\./.test(section.title) ? section.title : `${section.number}. ${section.title}`;
+    const shouldPageBreak = section.id === 'sec-2' || section.id === 'sec-3' || section.id === 'sec-4' || section.id === 'sec-5' || section.id === 'sec-6' || section.type === 'risk_inventory_table' || section.type === 'action_plan_table' || section.type === 'closing_signatures' || section.id === 'sec-17';
+
     children.push(
       new Paragraph({
+        pageBreakBefore: shouldPageBreak,
         children: [
           new TextRun({
             text: sectionHeading,
@@ -393,13 +396,15 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         const sectionGray = 'E2E8F0';
         const labelGray = 'F8FAFC';
 
-        for (const group of gheGroups) {
+        for (let gIdx = 0; gIdx < gheGroups.length; gIdx++) {
+          const group = gheGroups[gIdx];
           // 1. Título do GHE / Setor em Negrito
           const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
           const gheHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
 
           children.push(
             new Paragraph({
+              pageBreakBefore: gIdx > 0,
               children: [new TextRun({ text: gheHeader, bold: true, size: 20 })],
               spacing: { before: 280, after: 60 },
             })
@@ -430,167 +435,69 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               })
             );
           } else {
+            // Salto de página obrigatório após finalizar descrição de cargos/funções antes das tabelas APR-HO
+            children.push(
+              new Paragraph({
+                pageBreakBefore: true,
+                spacing: { before: 0, after: 100 },
+              })
+            );
+
             for (const item of group.risks) {
               const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory as HazardCategory];
               const catHex = (catConfig?.color || '#16a34a').replace('#', '');
               const catLabel = (catConfig?.label || item.hazardCategory || 'FÍSICO').toUpperCase();
 
               if (isNoExposureRisk(item)) {
-                const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
-                const noExpRows = [
-                  // Row 1: Header Gray
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 4,
-                        shading: { fill: headerGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [
-                          new Paragraph({
-                            children: [new TextRun({ text: headerTitle, bold: true, color: 'FFFFFF' })],
-                            alignment: AlignmentType.CENTER,
-                          }),
-                        ],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 2: Risco Categoria & Agente
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [
-                          new Paragraph({
-                            children: [new TextRun({ text: `RISCO ${catLabel}`, bold: true, color: 'FFFFFF' })],
-                            alignment: AlignmentType.CENTER,
-                          }),
-                        ],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 3,
-                        children: [
-                          new Paragraph({
-                            children: [
-                              new TextRun({ text: 'Agente: ', bold: true }),
-                              new TextRun({ text: item.hazardName || 'Não há exposição / Não se Aplica' }),
-                            ],
-                          }),
-                        ],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 3: Tipo de Exposição
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [new Paragraph({ children: [new TextRun({ text: 'Tipo de Exposição', bold: true })] })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 1,
-                        children: [new Paragraph({ text: 'NAP', alignment: AlignmentType.CENTER })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 2,
-                        children: [new Paragraph({ text: 'NAP', alignment: AlignmentType.CENTER })],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 4: Fontes ou circunstância
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [new Paragraph({ children: [new TextRun({ text: 'Fontes ou circunstância', bold: true })] })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 3,
-                        children: [new Paragraph({ text: item.sourceDescription || 'Não há exposição / Não se Aplica (NAP)' })],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 5: Trajetória
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [new Paragraph({ children: [new TextRun({ text: 'Trajetória', bold: true })] })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 3,
-                        children: [new Paragraph({ text: item.trajectory || 'NAP' })],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 6: Via de penetração
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [new Paragraph({ children: [new TextRun({ text: 'Via de penetração', bold: true })] })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 3,
-                        children: [new Paragraph({ text: item.penetrationRoute || 'NAP' })],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 7: Efeitos a saúde
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [new Paragraph({ children: [new TextRun({ text: 'Efeitos a saúde', bold: true })] })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 3,
-                        children: [new Paragraph({ text: item.healthDamage || 'NAP' })],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                  // Row 8: EPC/EPI
-                  new TableRow({
-                    children: [
-                      new TableCell({
-                        columnSpan: 1,
-                        shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                        children: [new Paragraph({ children: [new TextRun({ text: 'EPC/EPI', bold: true })] })],
-                        borders: cellBorder,
-                      }),
-                      new TableCell({
-                        columnSpan: 3,
-                        children: [new Paragraph({ text: 'NAP' })],
-                        borders: cellBorder,
-                      }),
-                    ],
-                  }),
-                ];
+                const stripLabel = catConfig?.label ? `Risco ${catConfig.label}` : `Risco ${item.hazardCategory}`;
+                const agentText = item.hazardName && item.hazardName.toLowerCase() !== 'nap'
+                  ? item.hazardName
+                  : 'Não há exposição / Não se Aplica';
+
+                const rawCondition = (item.sourceDescription || item.healthDamage || '').trim();
+                const isGenericNap = !rawCondition || rawCondition.toLowerCase() === 'nap' || rawCondition.toLowerCase().includes('não se aplica') || rawCondition.toLowerCase().includes('não há exposição');
+                const condText = isGenericNap
+                  ? 'NAP'
+                  : `NAP (${rawCondition})`;
+
+                const compactRow = new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 2400, type: WidthType.DXA },
+                      shading: { fill: catHex, type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: stripLabel, bold: true, color: 'FFFFFF', size: 16 })],
+                          alignment: AlignmentType.CENTER,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                    new TableCell({
+                      width: { size: 6960, type: WidthType.DXA },
+                      shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: 'Agente: ', bold: true, size: 16, color: '1E293B' }),
+                            new TextRun({ text: `${agentText}   |   `, size: 16, color: '334155' }),
+                            new TextRun({ text: 'Condição: ', bold: true, size: 16, color: '1E293B' }),
+                            new TextRun({ text: condText, size: 16, color: '334155' }),
+                          ],
+                          alignment: AlignmentType.LEFT,
+                        }),
+                      ],
+                      borders: cellBorder,
+                    }),
+                  ],
+                });
 
                 children.push(
                   new Table({
-                    rows: noExpRows,
+                    rows: [compactRow],
                     width: { size: 100, type: WidthType.PERCENTAGE },
                   }),
-                  new Paragraph({ text: '', spacing: { after: 120 } })
+                  new Paragraph({ text: '', spacing: { after: 80 } })
                 );
                 continue;
               }

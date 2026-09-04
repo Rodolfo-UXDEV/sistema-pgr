@@ -690,40 +690,58 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               const catRgb = hexToRgb(catConfig?.color || '#16a34a');
 
               if (isNoExposureRisk(item)) {
-                checkPageBreak(32);
+                checkPageBreak(8);
 
-                const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
-                const catLabel = catConfig?.label?.toUpperCase() || item.hazardCategory.toUpperCase();
-                const noExpRows: any[] = [
+                const catLabel = catConfig?.label ? `Risco ${catConfig.label}` : `Risco ${item.hazardCategory}`;
+                const agentText = item.hazardName && item.hazardName.toLowerCase() !== 'nap'
+                  ? item.hazardName
+                  : 'Não há exposição / Não se Aplica';
+
+                const rawCondition = (item.sourceDescription || item.healthDamage || '').trim();
+                const isGenericNap = !rawCondition || rawCondition.toLowerCase() === 'nap' || rawCondition.toLowerCase().includes('não se aplica') || rawCondition.toLowerCase().includes('não há exposição');
+                const condText = isGenericNap
+                  ? 'NAP'
+                  : `NAP (${rawCondition})`;
+
+                const noExpRow: any[] = [
                   [
-                    { content: headerTitle, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'left' } },
-                    { content: 'IDENTIFICAÇÃO DO PERIGO / FATOR DE RISCO', colSpan: 3, styles: { fillColor: headerGray, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } },
-                    { content: `RISCO ${catLabel}`, styles: { fillColor: catRgb, textColor: [255, 255, 255], fontStyle: 'bold', halign: 'center' } }
-                  ],
-                  [
-                    { content: '1. IDENTIFICAÇÃO E CARACTERIZAÇÃO DO AGENTE / PERIGO', colSpan: 5, styles: { fillColor: sectionGray, textColor: [15, 23, 42], fontStyle: 'bold' } }
-                  ],
-                  [
-                    { content: 'Tipo do Agente / Perigo:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
-                    { content: item.hazardName || 'Não há exposição / Não se Aplica', colSpan: 4 }
-                  ],
-                  [
-                    { content: 'Fonte ou Circunstância:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
-                    { content: item.sourceDescription || 'Não há exposição / Não se Aplica (NAP)', colSpan: 2 },
-                    { content: 'Possíveis Lesões / Danos à Saúde:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 42 } },
-                    { content: item.healthDamage || 'NAP', cellWidth: 36 }
+                    {
+                      content: catLabel,
+                      styles: {
+                        fillColor: catRgb,
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        halign: 'center',
+                        valign: 'middle',
+                        cellWidth: 34,
+                        fontSize: 7
+                      }
+                    },
+                    {
+                      content: `Agente: ${agentText}   |   Condição: ${condText}`,
+                      styles: {
+                        fillColor: [248, 250, 252],
+                        textColor: [30, 41, 59],
+                        valign: 'middle',
+                        cellPadding: 1.6,
+                        fontSize: 7,
+                        cellWidth: 148
+                      }
+                    }
                   ]
                 ];
 
                 autoTable(doc, {
                   startY: cursor.y,
-                  body: noExpRows,
+                  body: noExpRow,
                   theme: 'grid',
-                  styles: { fontSize: 7, cellPadding: 1.8, textColor: [30, 41, 59] },
+                  tableLineWidth: 0.15,
+                  tableLineColor: [203, 213, 225],
+                  styles: { cellPadding: 1.6 },
                   margin: { left: 14, right: 14 },
                 });
 
-                cursor.y = (doc as any).lastAutoTable.finalY + 4;
+                cursor.y = (doc as any).lastAutoTable.finalY + 2.5;
                 continue;
               }
 

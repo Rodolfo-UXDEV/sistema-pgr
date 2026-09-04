@@ -490,7 +490,7 @@ export const PgrViewerPage: React.FC = () => {
         </section>
 
         {/* 14. INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO) COM CARGOS E ATIVIDADES */}
-        <section className="space-y-6">
+        <section className="space-y-6 print:break-before-page">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2 border-b border-border pb-1">
             <span className="text-[#334155] dark:text-slate-300 font-mono">14.</span> {getSectionTitle('sec-14', 'INVENTÁRIO DE RISCOS OCUPACIONAIS (MODELO APR-HO)')}
           </h2>
@@ -508,12 +508,15 @@ export const PgrViewerPage: React.FC = () => {
 
             return (
               <div className="space-y-10">
-                {gheGroups.map((group) => {
+                {gheGroups.map((group, groupIdx) => {
                   const emrInfo = group.emr ? ` | EMR: ${group.emr}` : '';
                   const gheSectorHeader = `${group.gheCode} | Setor: ${group.sectorName} | Efetivo Exposto: ${group.workerCount} trabalhador(es)${emrInfo}`;
 
                   return (
-                    <div key={group.id} className="space-y-4 pt-1 pb-6 border-b border-border/70 last:border-b-0">
+                    <div 
+                      key={group.id} 
+                      className={`space-y-4 pt-1 pb-6 border-b border-border/70 last:border-b-0 ${groupIdx > 0 ? 'print:break-before-page' : ''}`}
+                    >
                       {/* Bloco de Cabeçalho do GHE / Setor e Lista de Cargos */}
                       <div className="space-y-2">
                         {/* 1. Título do GHE / Setor em Negrito */}
@@ -536,101 +539,48 @@ export const PgrViewerPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* 3. Tabelas APR-HO deste GHE/Setor */}
+                      {/* 3. Tabelas APR-HO deste GHE/Setor (Salto de página obrigatório após cargos/funções na impressão) */}
                       {group.risks.length === 0 ? (
                         <div className="p-4 text-center text-xs text-muted-foreground bg-muted/10 border border-dashed rounded-lg">
                           Nenhum risco ocupacional identificado para este setor/GHE.
                         </div>
                       ) : (
-                        <div className="space-y-4 pt-2">
+                        <div className="space-y-4 pt-2 print:break-before-page">
                           {group.risks.map((item) => {
                             const catConfig = HAZARD_CATEGORY_CONFIG[item.hazardCategory];
                             const catLabel = (catConfig?.label || item.hazardCategory || 'FÍSICO').toUpperCase();
 
                             if (isNoExposureRisk(item)) {
-                              const headerTitle = `${group.gheCode} APR-HO - ${docData.header.elaborationDate || '02/2026'}`;
+                              const agentText = item.hazardName && item.hazardName.toLowerCase() !== 'nap'
+                                ? item.hazardName
+                                : 'Não há exposição / Não se Aplica';
+                              
+                              const rawCondition = (item.sourceDescription || item.healthDamage || '').trim();
+                              const isGenericNap = !rawCondition || rawCondition.toLowerCase() === 'nap' || rawCondition.toLowerCase().includes('não se aplica') || rawCondition.toLowerCase().includes('não há exposição');
+                              const condText = isGenericNap
+                                ? 'NAP'
+                                : `NAP (${rawCondition})`;
+
                               return (
-                                <div key={item.id} className="border border-slate-600 rounded-xs overflow-hidden text-xs bg-white text-slate-900 shadow-xs print:break-inside-avoid">
-                                  {/* Header Dark Gray */}
-                                  <div className="bg-[#52525b] text-white text-center font-bold py-1.5 px-3 uppercase tracking-wider text-xs">
-                                    {headerTitle}
+                                <div
+                                  key={item.id}
+                                  className="border border-slate-300 dark:border-slate-700 rounded-md overflow-hidden text-xs bg-slate-50/60 dark:bg-slate-900/40 flex items-stretch shadow-2xs print:break-inside-avoid my-1.5"
+                                >
+                                  {/* Badge da Categoria com cor normativa */}
+                                  <div
+                                    className="text-white font-bold px-3 py-1.5 flex items-center justify-center text-xs tracking-wide shrink-0 min-w-[130px]"
+                                    style={{ backgroundColor: catConfig?.color || '#16a34a' }}
+                                  >
+                                    Risco {catLabel}
                                   </div>
 
-                                  {/* Row 2: Risco Categoria & Agente */}
-                                  <div className="grid grid-cols-12 border-t border-slate-400">
-                                    <div 
-                                      className="col-span-3 text-white font-bold py-1.5 px-3 flex items-center justify-center text-center text-xs tracking-wide uppercase"
-                                      style={{ backgroundColor: catConfig?.color || '#16a34a' }}
-                                    >
-                                      RISCO {catLabel}
-                                    </div>
-                                    <div className="col-span-9 py-1.5 px-3 flex items-center font-semibold bg-white border-l border-slate-400">
-                                      <span className="font-bold text-slate-900 mr-1.5">Agente:</span>
-                                      <span className="text-slate-800 font-normal">{item.hazardName || 'Não há exposição / Não se Aplica'}</span>
-                                    </div>
-                                  </div>
-
-                                  {/* Row 3: Tipo de Exposição */}
-                                  <div className="grid grid-cols-12 border-t border-slate-300">
-                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                                      Tipo de Exposição
-                                    </div>
-                                    <div className="col-span-4 py-1 px-3 text-slate-800 border-r border-slate-300 flex items-center">
-                                      NAP
-                                    </div>
-                                    <div className="col-span-5 py-1 px-3 text-slate-800 flex items-center">
-                                      NAP
-                                    </div>
-                                  </div>
-
-                                  {/* Row 4: Fontes ou circunstância */}
-                                  <div className="grid grid-cols-12 border-t border-slate-300">
-                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                                      Fontes ou circunstância
-                                    </div>
-                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                                      {item.sourceDescription || 'Não há exposição / Não se Aplica (NAP)'}
-                                    </div>
-                                  </div>
-
-                                  {/* Row 5: Trajetória */}
-                                  <div className="grid grid-cols-12 border-t border-slate-300">
-                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                                      Trajetória
-                                    </div>
-                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                                      {item.trajectory || 'NAP'}
-                                    </div>
-                                  </div>
-
-                                  {/* Row 6: Via de penetração */}
-                                  <div className="grid grid-cols-12 border-t border-slate-300">
-                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                                      Via de penetração
-                                    </div>
-                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                                      {item.penetrationRoute || 'NAP'}
-                                    </div>
-                                  </div>
-
-                                  {/* Row 7: Efeitos a saúde */}
-                                  <div className="grid grid-cols-12 border-t border-slate-300">
-                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                                      Efeitos a saúde
-                                    </div>
-                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                                      {item.healthDamage || 'NAP'}
-                                    </div>
-                                  </div>
-
-                                  {/* Row 8: EPC/EPI */}
-                                  <div className="grid grid-cols-12 border-t border-slate-300">
-                                    <div className="col-span-3 font-bold py-1 px-3 bg-slate-50/60 border-r border-slate-300 flex items-center">
-                                      EPC/EPI
-                                    </div>
-                                    <div className="col-span-9 py-1 px-3 text-slate-800 flex items-center">
-                                      NAP
-                                    </div>
+                                  {/* Texto Compacto Linear */}
+                                  <div className="px-3 py-1.5 flex items-center text-xs text-foreground gap-2 flex-wrap bg-white dark:bg-slate-950/60 flex-1">
+                                    <span className="font-semibold text-foreground/80">Agente:</span>
+                                    <span className="text-foreground">{agentText}</span>
+                                    <span className="text-muted-foreground mx-1">|</span>
+                                    <span className="font-semibold text-foreground/80">Condição:</span>
+                                    <span className="text-foreground">{condText}</span>
                                   </div>
                                 </div>
                               );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePgr } from '@/context/PgrContext';
 import { RiskInventoryItem, HazardCategory, RiskLevel } from '@/types/pgr';
+import { sortRisksByNormativeCategory } from '@/lib/pgr-groups';
 import { 
   Table, 
   TableHeader, 
@@ -49,30 +50,32 @@ export const RiskInventoryTable: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<RiskInventoryItem | null>(null);
 
-  // Filter items
-  const filteredRisks = riskInventory.filter((r) => {
-    if (activeCompany && r.companyId !== activeCompany.id) return false;
-    if (activeEstablishment && r.establishmentId !== activeEstablishment.id) return false;
+  // Filter and sort items by normative category (Físico > Químico > Biológico > Ergonômico > Acidentes)
+  const filteredRisks = sortRisksByNormativeCategory(
+    riskInventory.filter((r) => {
+      if (activeCompany && r.companyId !== activeCompany.id) return false;
+      if (activeEstablishment && r.establishmentId !== activeEstablishment.id) return false;
 
-    if (selectedCategory !== 'ALL' && r.hazardCategory !== selectedCategory) return false;
-    if (selectedLevel !== 'ALL' && r.riskLevel !== selectedLevel) return false;
+      if (selectedCategory !== 'ALL' && r.hazardCategory !== selectedCategory) return false;
+      if (selectedLevel !== 'ALL' && r.riskLevel !== selectedLevel) return false;
 
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      const sectorName = sectors.find(s => s.id === r.sectorId)?.name.toLowerCase() || '';
-      const posName = positions.find(p => p.id === r.positionId)?.title.toLowerCase() || '';
-      const gheMatch = ghes.find(g => g.id === r.gheId);
-      const gheName = (gheMatch?.code || gheMatch?.name || '').toLowerCase();
-      const matchName = r.hazardName.toLowerCase().includes(term);
-      const matchSource = r.sourceDescription.toLowerCase().includes(term);
-      const matchDamage = r.healthDamage.toLowerCase().includes(term);
-      const matchCode = (r.hazardCode || '').toLowerCase().includes(term);
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const sectorName = sectors.find(s => s.id === r.sectorId)?.name.toLowerCase() || '';
+        const posName = positions.find(p => p.id === r.positionId)?.title.toLowerCase() || '';
+        const gheMatch = ghes.find(g => g.id === r.gheId);
+        const gheName = (gheMatch?.code || gheMatch?.name || '').toLowerCase();
+        const matchName = r.hazardName.toLowerCase().includes(term);
+        const matchSource = r.sourceDescription.toLowerCase().includes(term);
+        const matchDamage = r.healthDamage.toLowerCase().includes(term);
+        const matchCode = (r.hazardCode || '').toLowerCase().includes(term);
 
-      return matchName || matchSource || matchDamage || matchCode || sectorName.includes(term) || posName.includes(term) || gheName.includes(term);
-    }
+        return matchName || matchSource || matchDamage || matchCode || sectorName.includes(term) || posName.includes(term) || gheName.includes(term);
+      }
 
-    return true;
-  });
+      return true;
+    })
+  );
 
   const toggleRowExpand = (id: string) => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
