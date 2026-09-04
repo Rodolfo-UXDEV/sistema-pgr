@@ -128,6 +128,7 @@ export const GlobalPgrTemplatePage: React.FC = () => {
         const next = { ...prev };
         delete next[selectedSection.id];
         localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(next));
+        saveGlobalTemplateToFirestore(next);
         window.dispatchEvent(new Event('pgr_template_updated'));
         return next;
       });
@@ -140,6 +141,7 @@ export const GlobalPgrTemplatePage: React.FC = () => {
     if (window.confirm('Atenção: Deseja restaurar TODAS as seções do Modelo Base para os textos originais de fábrica da ES Engenharia?')) {
       localStorage.removeItem(GLOBAL_STORAGE_KEY);
       setGlobalSections({});
+      saveGlobalTemplateToFirestore({});
       window.dispatchEvent(new Event('pgr_template_updated'));
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
@@ -148,6 +150,7 @@ export const GlobalPgrTemplatePage: React.FC = () => {
 
   const handleSaveGlobal = () => {
     localStorage.setItem(GLOBAL_STORAGE_KEY, JSON.stringify(globalSections));
+    saveGlobalTemplateToFirestore(globalSections);
     window.dispatchEvent(new Event('pgr_template_updated'));
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);

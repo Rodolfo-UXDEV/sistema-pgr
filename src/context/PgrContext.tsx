@@ -36,6 +36,7 @@ import {
   COLLECTIONS,
   seedFirestoreDatabase,
 } from '@/lib/firebase-service';
+import { fetchIssuerCompanyFromFirestore } from '@/lib/issuer-company-service';
 
 interface PgrContextType {
   // Estado ativo
@@ -249,6 +250,8 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const firstDoc = data.pgrDocuments.find(p => p.companyId === data.companies[0].id);
           if (firstDoc) setActivePgrId(firstDoc.id);
         }
+        // Carrega também a configuração da Empresa Emissora do Firestore
+        await fetchIssuerCompanyFromFirestore().catch(e => console.warn('Erro ao carregar empresa emissora:', e));
       }
     } catch (err) {
       console.warn('Erro ao carregar dados do Firebase Firestore:', err);
