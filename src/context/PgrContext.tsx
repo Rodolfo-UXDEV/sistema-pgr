@@ -27,6 +27,7 @@ import {
 } from '@/lib/initial-data';
 import { DEFAULT_HAZARDS } from '@/lib/default-hazards';
 import { generateId } from '@/lib/utils';
+import { isNoExposureRisk } from '@/lib/pgr-groups';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import { 
   fetchAllFromFirestore,
@@ -650,22 +651,27 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRiskInventory(prev => [newItem, ...prev]);
     await saveToFirestore(COLLECTIONS.RISK_INVENTORY, newItem);
 
-    // Se o risco requer ação, criar automaticamente uma ação sugerida no Plano de Ação
-    if (newItem.actionRequired) {
+    // Se o risco requer ação, criar automaticamente uma ação sugerida no Plano de Ação (exceto se for não exposição)
+    const isNonExposure = isNoExposureRisk(newItem);
+
+    if (newItem.actionRequired && !isNonExposure) {
+      const defaultRecommendation = newItem.recommendations?.trim() || 
+        'Implementar e manter medidas preventivas e melhorias de proteção coletiva e individual para controle do risco ocupacional.';
+
       const suggestedAction: ActionPlanItem = {
         id: generateId(),
         pgrId: newItem.pgrId,
         companyId: newItem.companyId,
         establishmentId: newItem.establishmentId,
         riskInventoryId: newItem.id,
-        what: newItem.recommendations?.trim() || `Mitigação de ${newItem.hazardName}: implementar melhorias técnicas e controle de exposição`,
+        what: defaultRecommendation,
         why: `Risco classificado como ${newItem.riskLevel}. Necessidade de atendimento à NR-01.`,
         whereLoc: 'Setor operacional',
         who: newItem.actionResponsible || activeEstablishment?.managerName || 'Engenharia de Segurança e Manutenção',
         startDate: newItem.actionStartDate || new Date().toISOString().split('T')[0],
         whenDate: newItem.actionEndDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         priority: newItem.actionPriority || (newItem.riskLevel === 'INTOLERAVEL' ? 'Urgente' : newItem.riskLevel === 'SUBSTANCIAL' ? 'Alta' : newItem.riskLevel === 'MODERADO' ? 'Média' : 'Baixa'),
-        how: 'Desenvolver projeto de enclausuramento / exaustão ou substituição de processo, complementando com EPI com CA.',
+        how: 'Desenvolver projeto de melhorias no ambiente de trabalho e complementar com medidas administrativas e EPIs.',
         howMuch: 0,
         status: 'NAO_INICIADA',
         createdAt: new Date().toISOString(),

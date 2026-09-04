@@ -543,6 +543,17 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
      - Badges em destaque na web (`markdown-renderer.tsx`), no PDF oficial (`pdf-generator.ts`) e no Word (`docx-generator.ts`), mantendo os campos de texto explicativo (Significado e Diretriz) limpos e perfeitamente legíveis.
    - **Auto-migração:** Atualizado gatilho em `pgr-template-resolver.ts` para carregar a nova Tabela 5 automaticamente.
 
-6. **Build & Deploy:**
+6. **Ajuste nas Assinaturas do Laudo (Termo de Encerramento - Cap. 16):**
+   - **Elaborador:** Exibição clara e padronizada do CREA (`docData.header.techRespCouncil`) diretamente abaixo do nome do responsável técnico SST.
+   - **Representante da Empresa:** Substituição do nome do responsável legal pela **Razão Social** da empresa (`company.name`) e inclusão do **CNPJ** formatado (`CNPJ: XX.XXX.XXX/XXXX-XX`).
+   - Aplicado em todas as saídas: Visualizador Web (`PgrViewerPage.tsx`), Laudo PDF Oficial (`pdf-generator.ts`) e Documento Word (`docx-generator.ts`).
+
+7. **Ajuste no Plano de Ação - Metas com Recomendações e Exclusão de "Não há exposição" (Cap. 15):**
+   - **Coluna "Metas":** Passou a trazer fielmente as **Recomendações técnicas** / medidas de controle propostas cadastradas no risco (`recommendations`), ao invés de exibir prefixos genéricos com nomes de perigos/agentes (como `Mitigação de Agente: ...`).
+   - **Exclusão de Registros Sem Exposição:** Removidas do plano de ação quaisquer tarefas associadas a "Não há exposição" ou "Não se Aplica", mantendo a tabela de metas estritamente focada nas ações que demandam intervenção.
+   - **Criação Automática no Contexto (`PgrContext.tsx`):** Prevenção automática de criação de tarefas 5W2H para riscos sem exposição, e geração da meta com a recomendação técnica direta.
+   - Aplicado de forma homogênea no template unificado (`pgr-official-template.ts`), no visualizador Web (`PgrViewerPage.tsx`), no gerador PDF (`pdf-generator.ts`) e no Word DOCX (`docx-generator.ts`).
+
+8. **Build & Deploy:**
    - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
    - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.

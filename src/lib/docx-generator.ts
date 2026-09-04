@@ -22,6 +22,7 @@ import { RiskInventoryItem, ActionPlanItem, HazardCategory } from '@/types/pgr';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
+import { formatCNPJ } from '@/lib/utils';
 
 function parseTextToTextRuns(text: string): TextRun[] {
   if (!text) return [new TextRun({ text: '' })];
@@ -918,7 +919,17 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
       ];
 
-      const dataRows = (!actions || actions.length === 0)
+      const validActions = (actions || []).filter((act: ActionPlanItem) => {
+        const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+        if (matchedRisk && isNoExposureRisk(matchedRisk)) return false;
+        const lowerWhat = (act.what || '').toLowerCase();
+        if (lowerWhat.includes('não há exposição') || lowerWhat.includes('nao ha exposicao') || lowerWhat.includes('não se aplica') || lowerWhat.includes('nao se aplica')) {
+          return false;
+        }
+        return true;
+      });
+
+      const dataRows = (validActions.length === 0)
         ? defaultMetas.map(([meta, prio, start, end, who, st]) => 
             new TableRow({
               children: [
@@ -931,8 +942,20 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               ]
             })
           )
-        : actions.map((act: ActionPlanItem) => {
+        : validActions.map((act: ActionPlanItem) => {
             const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+            let metaText = act.what;
+            if (matchedRisk?.recommendations?.trim()) {
+              metaText = matchedRisk.recommendations.trim();
+            } else if (metaText && metaText.startsWith('Mitigação de ')) {
+              const parts = metaText.split(':');
+              if (parts.length > 1) {
+                const recommendation = parts[parts.length - 1].trim();
+                if (recommendation.length > 5) {
+                  metaText = recommendation.charAt(0).toUpperCase() + recommendation.slice(1);
+                }
+              }
+            }
             const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
             const startDateText = act.startDate || 'Contínuo';
             const endDateText = act.whenDate || 'Contínuo';
@@ -950,7 +973,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
             return new TableRow({
               children: [
-                new TableCell({ children: [new Paragraph({ text: act.what, alignment: AlignmentType.JUSTIFIED })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ text: metaText, alignment: AlignmentType.JUSTIFIED })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: priorityText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: startDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
                 new TableCell({ children: [new Paragraph({ text: endDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
@@ -987,6 +1010,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
       children.push(new Table({ rows, width: { size: 100, type: WidthType.PERCENTAGE } }));
     } else if (section.type === 'closing_signatures') {
+      const creaText = docData.header.techRespCouncil
+        ? (docData.header.techRespCouncil.toUpperCase().includes('CREA') 
+            ? docData.header.techRespCouncil 
+            : `CREA: ${docData.header.techRespCouncil}`)
+        : 'CREA Habilitado';
+
       children.push(
         new Paragraph({ text: section.text, spacing: { after: 300 } }),
         new Paragraph({
@@ -999,7 +1028,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
           alignment: AlignmentType.CENTER,
         }),
         new Paragraph({
-          text: `${docData.header.techRespName}\n${docData.header.techRespCouncil}\n${docData.header.techRespArt}`,
+          text: `${docData.header.techRespName}\n${creaText}`,
           alignment: AlignmentType.CENTER,
           spacing: { after: 600 },
         }),
@@ -1008,7 +1037,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
           alignment: AlignmentType.CENTER,
         }),
         new Paragraph({
-          text: `${ctx.company.legalRepresentative}\n${ctx.company.representativeRole}\n${ctx.company.name}`,
+          text: `${ctx.company.name}\nCNPJ: ${formatCNPJ(ctx.company.cnpj)}`,
           alignment: AlignmentType.CENTER,
           spacing: { after: 200 },
         })

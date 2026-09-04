@@ -8,6 +8,7 @@ import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
+import { formatCNPJ } from '@/lib/utils';
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace('#', '');
@@ -924,15 +925,37 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
         ['Reavaliar as condições de trabalho sempre que houver alterações nos processos, ambientes, atividades ou identificação de novos riscos.', 'Média', 'Contínuo', 'Contínuo', 'SESMT / Diretoria', 'EM ANDAMENTO']
       ];
 
-      const actionRows = (!actions || actions.length === 0)
+      const validActions = (actions || []).filter((act: ActionPlanItem) => {
+        const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+        if (matchedRisk && isNoExposureRisk(matchedRisk)) return false;
+        const lowerWhat = (act.what || '').toLowerCase();
+        if (lowerWhat.includes('não há exposição') || lowerWhat.includes('nao ha exposicao') || lowerWhat.includes('não se aplica') || lowerWhat.includes('nao se aplica')) {
+          return false;
+        }
+        return true;
+      });
+
+      const actionRows = (validActions.length === 0)
         ? [
             [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
             ...defaultMetas
           ]
         : [
             [{ content: gesLabel, colSpan: 6, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold', halign: 'center' } }],
-            ...actions.map((act: ActionPlanItem) => {
+            ...validActions.map((act: ActionPlanItem) => {
               const matchedRisk = ctx.riskInventory?.find((r: any) => r.id === act.riskInventoryId);
+              let metaText = act.what;
+              if (matchedRisk?.recommendations?.trim()) {
+                metaText = matchedRisk.recommendations.trim();
+              } else if (metaText && metaText.startsWith('Mitigação de ')) {
+                const parts = metaText.split(':');
+                if (parts.length > 1) {
+                  const recommendation = parts[parts.length - 1].trim();
+                  if (recommendation.length > 5) {
+                    metaText = recommendation.charAt(0).toUpperCase() + recommendation.slice(1);
+                  }
+                }
+              }
               const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
               const startDateText = act.startDate 
                 ? (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate)
@@ -943,7 +966,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
               const responsibleText = act.who || ctx.establishment?.managerName || 'SESMT';
               const statusText = act.status ? act.status.replace(/_/g, ' ').toUpperCase() : 'NÃO INICIADA';
               return [
-                act.what,
+                metaText,
                 priorityText,
                 startDateText,
                 endDateText,
@@ -999,11 +1022,42 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       checkPageBreak(30);
       doc.setDrawColor(148, 163, 184);
       doc.setLineWidth(0.5);
+
+      // Linha Elaborador (esquerda)
       doc.line(20, cursor.y, 95, cursor.y);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
       doc.text(docData.header.techRespName, 57.5, cursor.y + 4, { align: 'center' });
+
+      // Embaixo do nome do elaborador: colocar o CREA dele
+      const creaText = docData.header.techRespCouncil
+        ? (docData.header.techRespCouncil.toUpperCase().includes('CREA') 
+            ? docData.header.techRespCouncil 
+            : `CREA: ${docData.header.techRespCouncil}`)
+        : 'CREA Habilitado';
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(creaText, 57.5, cursor.y + 8, { align: 'center' });
+
+      // Linha Empresa (direita: Razão Social e CNPJ)
       doc.line(115, cursor.y, 190, cursor.y);
-      doc.text(ctx.company.legalRepresentative, 152.5, cursor.y + 4, { align: 'center' });
-      cursor.y += 20;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      const companyLines = doc.splitTextToSize(ctx.company.name, 72);
+      let compY = cursor.y + 4;
+      companyLines.forEach((lineText: string) => {
+        doc.text(lineText, 152.5, compY, { align: 'center' });
+        compY += 3.8;
+      });
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`CNPJ: ${formatCNPJ(ctx.company.cnpj)}`, 152.5, compY, { align: 'center' });
+
+      cursor.y = Math.max(cursor.y + 22, compY + 12);
     }
   }
 

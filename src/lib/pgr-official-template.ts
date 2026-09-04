@@ -14,6 +14,7 @@ import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
 import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
+import { isNoExposureRisk } from '@/lib/pgr-groups';
 
 export interface PgrDocumentContext {
   company: Company;
@@ -72,13 +73,42 @@ export function filterContextForCompany(rawCtx: PgrDocumentContext): PgrDocument
     return false;
   });
 
-  // Planos de ação vinculados
-  const filteredActions = actionPlans.filter(a => {
-    if (pgr?.id && a.pgrId && a.pgrId === pgr.id) return true;
-    if (compId && a.companyId && a.companyId === compId) return true;
-    if (estId && a.establishmentId && a.establishmentId === estId) return true;
-    return false;
-  });
+  // Planos de ação vinculados (excluindo ações de riscos sem exposição / não se aplica)
+  const filteredActions = actionPlans
+    .filter(a => {
+      const isCompanyMatch =
+        (pgr?.id && a.pgrId && a.pgrId === pgr.id) ||
+        (compId && a.companyId && a.companyId === compId) ||
+        (estId && a.establishmentId && a.establishmentId === estId);
+      if (!isCompanyMatch) return false;
+
+      const matchedRisk = filteredRisks.find(r => r.id === a.riskInventoryId);
+      if (matchedRisk && isNoExposureRisk(matchedRisk)) return false;
+      const lowerWhat = (a.what || '').toLowerCase();
+      if (lowerWhat.includes('não há exposição') || lowerWhat.includes('nao ha exposicao') || lowerWhat.includes('não se aplica') || lowerWhat.includes('nao se aplica')) {
+        return false;
+      }
+      return true;
+    })
+    .map(a => {
+      const matchedRisk = filteredRisks.find(r => r.id === a.riskInventoryId);
+      let meta = a.what;
+      if (matchedRisk?.recommendations?.trim()) {
+        meta = matchedRisk.recommendations.trim();
+      } else if (meta && meta.startsWith('Mitigação de ')) {
+        const parts = meta.split(':');
+        if (parts.length > 1) {
+          const recommendation = parts[parts.length - 1].trim();
+          if (recommendation.length > 5) {
+            meta = recommendation.charAt(0).toUpperCase() + recommendation.slice(1);
+          }
+        }
+      }
+      return {
+        ...a,
+        what: meta || 'Implementar medidas preventivas e melhorias de proteção coletiva para controle do risco.'
+      };
+    });
 
   return {
     company,
