@@ -29,6 +29,14 @@ import {
   Filter 
 } from 'lucide-react';
 import { RiskFormModal } from '@/components/inventory/RiskFormModal';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface RiskInventoryTableProps {
   selectedGheId?: string;
@@ -91,9 +99,21 @@ export const RiskInventoryTable: React.FC<RiskInventoryTableProps> = ({ selected
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja remover este perigo do inventário de riscos?')) {
-      await deleteRiskItem(id);
+  // Modal de confirmação de exclusão de risco
+  const [riskToDelete, setRiskToDelete] = useState<RiskInventoryItem | null>(null);
+  const [isDeletingRisk, setIsDeletingRisk] = useState(false);
+
+  const handleConfirmDeleteRisk = async () => {
+    if (!riskToDelete) return;
+    setIsDeletingRisk(true);
+    try {
+      await deleteRiskItem(riskToDelete.id);
+      setRiskToDelete(null);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao excluir perigo do inventário.');
+    } finally {
+      setIsDeletingRisk(false);
     }
   };
 
@@ -287,7 +307,7 @@ export const RiskInventoryTable: React.FC<RiskInventoryTableProps> = ({ selected
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => setRiskToDelete(item)}
                             title="Excluir risco"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -449,6 +469,80 @@ export const RiskInventoryTable: React.FC<RiskInventoryTableProps> = ({ selected
           defaultGheId={selectedGheId}
           defaultSectorId={ghes.find(g => g.id === selectedGheId)?.sectorId}
         />
+      )}
+
+      {/* Modal de Confirmação para Exclusão de Risco */}
+      {riskToDelete && (
+        <Dialog open={!!riskToDelete} onOpenChange={(open) => !open && !isDeletingRisk && setRiskToDelete(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-950/50 mb-2">
+                <Trash2 className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+              </div>
+              <DialogTitle className="text-center text-lg font-bold text-foreground">
+                Excluir Risco Ocupacional
+              </DialogTitle>
+              <div className="text-center text-xs text-muted-foreground pt-1 space-y-2">
+                <p>
+                  Tem certeza que deseja excluir o perigo{' '}
+                  <strong className="text-foreground">{riskToDelete.hazardName}</strong>?
+                </p>
+                {(() => {
+                  const sec = sectors.find(s => s.id === riskToDelete.sectorId);
+                  const ghe = ghes.find(g => g.id === riskToDelete.gheId);
+                  const displayGhe = ghe?.code ? (ghe.code.replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-')) : '-';
+                  return (
+                    <div className="bg-muted/40 p-3 rounded-lg border border-border text-left text-xs space-y-1">
+                      <div>
+                        <span className="text-muted-foreground">Grupo:</span>{' '}
+                        <strong className="text-foreground">{HAZARD_CATEGORY_CONFIG[riskToDelete.hazardCategory]?.label || riskToDelete.hazardCategory}</strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">GES / Setor:</span>{' '}
+                        <strong className="text-foreground">{displayGhe} • {sec?.name || '-'}</strong>
+                      </div>
+                      {riskToDelete.healthDamage && (
+                        <div>
+                          <span className="text-muted-foreground">Possíveis danos:</span>{' '}
+                          <span className="text-foreground font-medium">{riskToDelete.healthDamage}</span>
+                        </div>
+                      )}
+                      {riskToDelete.actionRequired && (
+                        <div className="text-amber-600 dark:text-amber-400 font-semibold pt-1 border-t border-border mt-1">
+                          ⚠️ Nota: Este risco possui plano de ação vinculado que também será desvinculado/removido.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <p className="text-[11px] text-muted-foreground">
+                  Esta ação é irreversível e removerá permanentemente este perigo do inventário de riscos.
+                </p>
+              </div>
+            </DialogHeader>
+            <DialogFooter className="flex flex-row justify-end gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setRiskToDelete(null)}
+                disabled={isDeletingRisk}
+                className="text-xs font-semibold"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleConfirmDeleteRisk}
+                disabled={isDeletingRisk}
+                className="text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold gap-1.5 shadow-xs"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isDeletingRisk ? 'Excluindo...' : 'Excluir Definitivamente'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

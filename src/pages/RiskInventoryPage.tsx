@@ -199,17 +199,24 @@ export const RiskInventoryPage: React.FC = () => {
     }
   };
 
-  const handleDeleteGes = async (ghe: GHE) => {
-    const risksCount = riskInventory.filter(r => r.gheId === ghe.id).length;
-    const confirmMessage = risksCount > 0
-      ? `Tem certeza que deseja excluir o ${ghe.code}? Há ${risksCount} perigo(s) associado(s) que também serão removidos.`
-      : `Tem certeza que deseja excluir o ${ghe.code}?`;
+  // Modal de confirmação de exclusão de GES
+  const [gesToDelete, setGesToDelete] = useState<GHE | null>(null);
+  const [isDeletingGes, setIsDeletingGes] = useState(false);
 
-    if (window.confirm(confirmMessage)) {
-      if (selectedGheId === ghe.id) {
+  const handleConfirmDeleteGes = async () => {
+    if (!gesToDelete) return;
+    setIsDeletingGes(true);
+    try {
+      if (selectedGheId === gesToDelete.id) {
         setSelectedGheId(null);
       }
-      await deleteGhe(ghe.id);
+      await deleteGhe(gesToDelete.id);
+      setGesToDelete(null);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao excluir GES.');
+    } finally {
+      setIsDeletingGes(false);
     }
   };
 
@@ -483,7 +490,7 @@ export const RiskInventoryPage: React.FC = () => {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                              onClick={() => handleDeleteGes(ghe)}
+                              onClick={() => setGesToDelete(ghe)}
                               title="Excluir GES"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -564,6 +571,16 @@ export const RiskInventoryPage: React.FC = () => {
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Adicionar Risco</span>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setGesToDelete(selectedGhe)}
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                  title="Excluir este GES"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -696,6 +713,80 @@ export const RiskInventoryPage: React.FC = () => {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal de Confirmação para Exclusão de GES */}
+      {gesToDelete && (
+        <Dialog open={!!gesToDelete} onOpenChange={(open) => !open && !isDeletingGes && setGesToDelete(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-950/50 mb-2">
+                <Trash2 className="h-6 w-6 text-rose-600 dark:text-rose-400" />
+              </div>
+              <DialogTitle className="text-center text-lg font-bold text-foreground">
+                Excluir Grupo de Exposição Similar
+              </DialogTitle>
+              <div className="text-center text-xs text-muted-foreground pt-1 space-y-2">
+                <p>
+                  Tem certeza que deseja excluir o{' '}
+                  <strong className="text-foreground">
+                    {(gesToDelete.code || '').replace(/\bGHE\b/gi, 'GES').replace(/GHE-/gi, 'GES-')}
+                  </strong>
+                  ?
+                </p>
+                {(() => {
+                  const risksCount = riskInventory.filter(r => r.gheId === gesToDelete.id).length;
+                  const sec = sectors.find(s => s.id === gesToDelete.sectorId);
+                  return (
+                    <div className="bg-muted/40 p-3 rounded-lg border border-border text-left text-xs space-y-1">
+                      <div>
+                        <span className="text-muted-foreground">Setor:</span>{' '}
+                        <strong className="text-foreground">{sec?.name || '-'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Trabalhadores expostos:</span>{' '}
+                        <strong className="text-foreground">{gesToDelete.workerCount || 1}</strong>
+                      </div>
+                      {risksCount > 0 ? (
+                        <div className="text-rose-600 dark:text-rose-400 font-semibold pt-1 border-t border-border mt-1">
+                          ⚠️ Atenção: Há {risksCount} {risksCount === 1 ? 'perigo associado' : 'perigos associados'} que também {risksCount === 1 ? 'será excluído' : 'serão excluídos'} do inventário.
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground pt-1 border-t border-border mt-1">
+                          Nenhum perigo associado a este grupo.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+                <p className="text-[11px] text-muted-foreground">
+                  Esta ação é irreversível e removerá permanentemente os registros vinculados.
+                </p>
+              </div>
+            </DialogHeader>
+            <DialogFooter className="flex flex-row justify-end gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setGesToDelete(null)}
+                disabled={isDeletingGes}
+                className="text-xs font-semibold"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleConfirmDeleteGes}
+                disabled={isDeletingGes}
+                className="text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold gap-1.5 shadow-xs"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {isDeletingGes ? 'Excluindo...' : 'Excluir Definitivamente'}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
