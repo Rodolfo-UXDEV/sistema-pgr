@@ -40,15 +40,10 @@ function parseMarkdownTokens(text: string): { text: string; bold: boolean }[] {
   return rawTokens;
 }
 
-interface WordPiece {
-  text: string;
-  bold: boolean;
-  width: number;
-  isSpace: boolean;
-}
-
 /**
- * Renderiza parágrafo com quebra de linha inteligente, estilos negrito/normal e alinhamento JUSTIFICADO
+ * Renderiza blocos de texto/markdown com suporte a subtítulos, listas, alíneas e
+ * alinhamento JUSTIFICADO nativo (preenchendo exatamente a largura com word spacing do PDF).
+ * A última linha de cada bloco mantém alinhamento natural à esquerda.
  */
 function renderMarkdownParagraphToPdf(
   doc: jsPDF,
@@ -57,70 +52,137 @@ function renderMarkdownParagraphToPdf(
   checkPageBreak: (needed: number) => boolean,
   startX: number = 14,
   maxWidth: number = 182,
-  lineHeight: number = 4.2
+  lineHeight: number = 3.8
 ): void {
-  const tokens = parseMarkdownTokens(text);
-  const pieces: WordPiece[] = [];
+  const rawLines = text.replace(/\r\n/g, '\n').split('\n');
 
-  for (const token of tokens) {
-    doc.setFont('helvetica', token.bold ? 'bold' : 'normal');
-    doc.setFontSize(8);
+  let currentBlock: string[] = [];
+  let currentType: 'para' | 'bullet' | 'alinea' | 'subalinea' | 'heading' = 'para';
+  let prefix = '';
+  let baseIndent = 0;
+  let textIndent = 0;
 
-    const splitWords = token.text.split(/(\s+)/);
-    for (const item of splitWords) {
-      if (!item) continue;
-      const isSpace = /^\s+$/.test(item);
-      pieces.push({
-        text: item,
-        bold: token.bold,
-        width: doc.getTextWidth(item),
-        isSpace,
-      });
-    }
-  }
+  const flushBlock = () => {
+    if (currentBlock.length === 0) return;
+    const fullText = currentBlock.join(' ').replace(/\s+/g, ' ').trim();
+    currentBlock = [];
+    if (!fullText) return;
 
-  let linePieces: WordPiece[] = [];
-  let currentLineWidth = 0;
-
-  const flushLine = (isLastLine: boolean = false) => {
-    if (linePieces.length === 0) return;
-    checkPageBreak(lineHeight + 2);
-    let drawX = startX;
-
-    // Alinhamento justificado distribuindo a folga entre os espaços da linha
-    const spacesCount = linePieces.filter(p => p.isSpace).length;
-    const diff = maxWidth - currentLineWidth;
-    const extraPerSpace = (!isLastLine && spacesCount > 0 && diff > 0 && (currentLineWidth / maxWidth > 0.65))
-      ? diff / spacesCount
-      : 0;
-
-    for (const piece of linePieces) {
-      doc.setFont('helvetica', piece.bold ? 'bold' : 'normal');
+    if (currentType === 'heading') {
+      checkPageBreak(lineHeight + 4);
+      cursor.y += 1.5;
+      doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
-      doc.setTextColor(51, 65, 85);
-      doc.text(piece.text, drawX, cursor.y);
-      drawX += piece.width + (piece.isSpace ? extraPerSpace : 0);
+      doc.setTextColor(15, 23, 42);
+      doc.text(fullText, startX, cursor.y);
+      cursor.y += lineHeight + 1;
+      return;
     }
-    cursor.y += lineHeight;
-    linePieces = [];
-    currentLineWidth = 0;
+
+    const itemStartX = startX + textIndent;
+    const availWidth = maxWidth - textIndent;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(51, 65, 85);
+
+    const wrapped: string[] = doc.splitTextToSize(fullText, availWidth);
+    for (let i = 0; i < wrapped.length; i++) {
+      checkPageBreak(lineHeight + 2);
+
+      if (i === 0 && prefix) {
+        if (currentType === 'subalinea') {
+          doc.setFont('helvetica', 'bold');
+          doc.text(prefix, itemStartX - 1.8, cursor.y, { align: 'right' });
+          doc.setFont('helvetica', 'normal');
+        } else if (currentType === 'alinea') {
+          doc.setFont('helvetica', 'bold');
+          doc.text(prefix, startX + baseIndent, cursor.y);
+          doc.setFont('helvetica', 'normal');
+        } else if (currentType === 'bullet') {
+          doc.setFont('helvetica', 'normal');
+          doc.text(prefix, startX + baseIndent, cursor.y);
+        }
+      }
+
+      const isLastLine = (i === wrapped.length - 1);
+      const lineText = wrapped[i];
+      if (!isLastLine && lineText.includes(' ')) {
+        doc.text([lineText, ''], itemStartX, cursor.y, { align: 'justify', maxWidth: availWidth });
+      } else {
+        doc.text(lineText, itemStartX, cursor.y);
+      }
+      cursor.y += lineHeight;
+    }
+    cursor.y += 1.2;
   };
 
-  for (let i = 0; i < pieces.length; i++) {
-    const piece = pieces[i];
-    if (piece.text.includes('\n')) {
-      flushLine(true);
+  for (const rawLine of rawLines) {
+    const trimmed = rawLine.trim();
+    if (!trimmed) {
+      flushBlock();
       continue;
     }
-    if (currentLineWidth + piece.width > maxWidth && linePieces.length > 0) {
-      flushLine(false);
-      if (piece.isSpace) continue;
+
+    // Identificação de títulos e subtítulos
+    const isMarkdownHeader = /^#{1,6}\s+/.test(trimmed);
+    const isSpecialHeader = /^CABE AO (EMPREGADOR|TRABALHADOR):?$/i.test(trimmed) ||
+                           /^Principais referências normativas:?$/i.test(trimmed) ||
+                           /^Tabela\s+\d+/i.test(trimmed);
+    const isSectionNumberHeader = /^(\d+\.)+\s+[A-Z]/.test(trimmed) && trimmed.length < 80 && !/[;]$/.test(trimmed);
+    const isAllCapsHeader = /^[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ0-9\s\.\-]{5,60}:$/.test(trimmed);
+
+    const isHeading = isMarkdownHeader || isSpecialHeader || isSectionNumberHeader || isAllCapsHeader;
+
+    // Marcadores de lista
+    const bulletMatch = trimmed.match(/^([•\-\*])\s+(.*)$/);
+
+    // Alíneas a) b) c)
+    const alineaMatch = trimmed.match(/^([a-z]\))\s+(.*)$/i);
+
+    // Numeração romana I. II. III.
+    const romanMatch = trimmed.match(/^([IVXLCDM]+\.)\s+(.*)$/);
+
+    if (isHeading) {
+      flushBlock();
+      currentType = 'heading';
+      prefix = '';
+      baseIndent = 0;
+      textIndent = 0;
+      currentBlock.push(trimmed.replace(/^#{1,6}\s+/, '').replace(/\*\*/g, ''));
+      flushBlock();
+    } else if (romanMatch) {
+      flushBlock();
+      currentType = 'subalinea';
+      prefix = romanMatch[1];
+      baseIndent = 6;
+      textIndent = 12;
+      currentBlock.push(romanMatch[2]);
+    } else if (alineaMatch) {
+      flushBlock();
+      currentType = 'alinea';
+      prefix = alineaMatch[1];
+      baseIndent = 2;
+      textIndent = 7;
+      currentBlock.push(alineaMatch[2]);
+    } else if (bulletMatch) {
+      flushBlock();
+      currentType = 'bullet';
+      prefix = '•';
+      baseIndent = 2;
+      textIndent = 6;
+      currentBlock.push(bulletMatch[2]);
+    } else {
+      if (currentBlock.length === 0) {
+        currentType = 'para';
+        prefix = '';
+        baseIndent = 0;
+        textIndent = 0;
+      }
+      currentBlock.push(trimmed);
     }
-    linePieces.push(piece);
-    currentLineWidth += piece.width;
   }
-  flushLine(true);
-  cursor.y += 2;
+  flushBlock();
 }
 
 export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> {
@@ -592,10 +654,20 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             doc.setFontSize(7.2);
             doc.setTextColor(71, 85, 105);
             const rawAct = pos.activityDescription || 'Atividades operacionais e rotinas da função.';
-            const cleanAct = rawAct.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
-            const actLines = doc.splitTextToSize(`Descrição da Atividade: ${cleanAct}`, 182);
-            doc.text(actLines, 14, cursor.y);
-            cursor.y += actLines.length * 3.2 + 2;
+            const cleanAct = rawAct.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1').replace(/\s+/g, ' ').trim();
+            const actLines: string[] = doc.splitTextToSize(`Descrição da Atividade: ${cleanAct}`, 182);
+            for (let i = 0; i < actLines.length; i++) {
+              checkPageBreak(3.5);
+              const isLast = (i === actLines.length - 1);
+              const lineStr = actLines[i];
+              if (!isLast && lineStr.includes(' ')) {
+                doc.text([lineStr, ''], 14, cursor.y, { align: 'justify', maxWidth: 182 });
+              } else {
+                doc.text(lineStr, 14, cursor.y);
+              }
+              cursor.y += 3.2;
+            }
+            cursor.y += 2;
           }
 
           cursor.y += 1.5;
@@ -873,9 +945,8 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(51, 65, 85);
-      const closeLines = doc.splitTextToSize(section.text, 182);
-      doc.text(closeLines, 14, cursor.y);
-      cursor.y += closeLines.length * 3.6 + 8;
+      renderMarkdownParagraphToPdf(doc, section.text, cursor, checkPageBreak, 14, 182, 3.8);
+      cursor.y += 4;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
