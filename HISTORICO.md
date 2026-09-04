@@ -500,3 +500,36 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
    - Repositório GitHub atualizado na branch `main` (`Rodolfo-UXDEV/sistema-pgr`).
    - Deploy automático na Vercel finalizado com sucesso (`https://sistema-pgr.vercel.app`), com status HTTP 200 e bundle atualizado (`index-GbKHGnnc.js`).
 
+---
+
+### [04/09/2026] Refinamento da Matriz de Risco 5x5, Formulário de Riscos & Emissão de Laudos
+
+1. **Reorganização Estrutural da Modal de Riscos (`RiskFormModal.tsx` & `Matrix5x5Selector.tsx`):**
+   - Realocação dos campos *Prioridade de Ação* e *Diretriz de Controle (NR-01.5.5)* da base da Matriz 5x5 para a **Seção 5: Recomendações & Medidas Propostas**, agrupando todas as definições de plano de ação no mesmo local.
+   - Estruturação dos campos do plano de ação em 2 linhas perfeitamente simétricas (50% de largura cada):
+     - **Linha 1:** *Prioridade de Ação* (esquerda) | *Responsável pela Ação* (direita, integrado com o botão "Puxar Responsável");
+     - **Linha 2:** *Prazo Inicial (Início)* (esquerda) | *Prazo Final (Término / Limite)* (direita).
+   - Ajuste nos rótulos e espaçamentos evitando quebras inadequadas de texto.
+
+2. **Padronização do Rótulo de Medidas Propostas nos Laudos:**
+   - Atualização nos geradores oficial de PDF (`pdf-generator.ts`) e Word (`docx-generator.ts`):
+     - Rótulo alterado de *"Medidas de Controle Propostas:"* para **"Recomendações:"** nos cartões de risco APR-HO.
+
+3. **Alinhamento 100% Idêntico da Matriz 5x5 do Laudo com a Matriz do Sistema:**
+   - **Capítulo 10 do PGR (`src/lib/pgr-default-sections.ts` - `sec-10`):**
+     - **Tabela 2 (Probabilidade):** Ajustada para refletir exatamente os graus da escala do sistema (1 - Raríssima, 2 - Pouco Provável, 3 - Provável / Ocasional, 4 - Frequente, 5 - Muito Frequente / Certa).
+     - **Tabela 3 (Severidade):** Alinhada às definições do sistema (5 - Catastrófica / Fatal, 4 - Crítica / Severa, 3 - Moderada / Grave, 2 - Menor / Moderada, 1 - Leve / Desprezível).
+     - **Tabela 4 (Matriz de Risco 5x5):** Invertidos os eixos para ficarem idênticos ao seletor interativo:
+       - **Colunas:** Probabilidade `P1` a `P5` (Raríssima até Muito Frequente / Certa);
+       - **Linhas:** Severidade de cima para baixo `S5` a `S1` (Catastrófica até Leve / Desprezível);
+       - **Células:** Pontuação com badge de classificação normativa idêntica ao sistema: `(TRI)`, `(TOL)`, `(MOD)`, `(SUB)` e `(INT)`.
+     - **Tabela 5 e Tabela 6:** Diretrizes e prioridades alinhadas com as faixas normativas da NR-01.
+   - **Motores de Renderização e Exportação (`pdf-generator.ts`, `docx-generator.ts` e `markdown-renderer.tsx`):**
+     - Suporte nativo e cores oficiais para cada badge da matriz (`TRI` verde-esmeralda, `TOL` verde-limão, `MOD` âmbar, `SUB` laranja, `INT` vermelho-rose).
+     - Alinhamento refinado com colunas da matriz perfeitamente dimensionadas.
+   - **Mecanismo de Auto-Migração (`pgr-template-resolver.ts`):**
+     - Adicionado gatilho de migração que atualiza automaticamente qualquer documento com modelo em cache para a nova matriz 5x5.
+
+4. **Build & Deploy:**
+   - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
+   - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.
