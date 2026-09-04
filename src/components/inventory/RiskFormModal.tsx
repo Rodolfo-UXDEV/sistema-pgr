@@ -22,7 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Matrix5x5Selector } from '@/components/risk-matrix/Matrix5x5Selector';
-import { calculateRiskLevel, HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix } from '@/lib/risk-matrix';
+import { calculateRiskLevel, HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix, RISK_LEVEL_CONFIG } from '@/lib/risk-matrix';
 import { 
   Plus, 
   Trash2, 
@@ -35,7 +35,8 @@ import {
   Gauge, 
   Layers, 
   FileText,
-  Eye
+  Eye,
+  Info
 } from 'lucide-react';
 
 interface RiskFormModalProps {
@@ -438,6 +439,8 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
   };
 
   const filteredHazards = hazards.filter(h => h.category === hazardCategory);
+  const currentRiskEval = calculateRiskLevel(severity, probability);
+  const currentRiskConfig = RISK_LEVEL_CONFIG[currentRiskEval.level];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -900,7 +903,7 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5 text-emerald-600" />
-                    <span>Prazos & Responsável do Plano de Ação (NR-01.5.5)</span>
+                    <span>Prioridade, Prazos & Responsável do Plano de Ação (NR-01.5.5)</span>
                   </span>
                   {defaultResp && (
                     <button
@@ -913,7 +916,33 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Diretriz de Controle (NR-01.5.5) */}
+                <div className="p-2.5 rounded-lg bg-muted/50 border border-border flex items-start gap-2.5">
+                  <Info className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <strong className="text-foreground">Diretriz de Controle (NR-01.5.5): </strong>
+                    <span className="text-muted-foreground">{currentRiskConfig.actionRequirement}</span>
+                    <span className="block text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-0.5">
+                      Prazo limite sugerido para controle: {currentRiskConfig.deadlineDays} dias.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-[11px] font-semibold">Prioridade de Ação</Label>
+                    <select
+                      value={actionPriority || 'Média'}
+                      onChange={(e) => setActionPriority(e.target.value)}
+                      className="w-full text-xs font-medium rounded-md border border-input bg-background h-8 px-2 mt-1 focus:ring-1 focus:ring-ring"
+                    >
+                      <option value="Baixa">Baixa</option>
+                      <option value="Média">Média</option>
+                      <option value="Alta">Alta</option>
+                      <option value="Urgente">Urgente</option>
+                    </select>
+                  </div>
+
                   <div>
                     <Label className="text-[11px] font-semibold">Prazo Inicial (Início)</Label>
                     <Input

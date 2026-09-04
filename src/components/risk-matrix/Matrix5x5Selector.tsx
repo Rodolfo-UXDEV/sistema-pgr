@@ -10,7 +10,7 @@ import {
 import { RiskLevel } from '@/types/pgr';
 import { RiskLevelBadge } from '@/components/risk-matrix/RiskLevelBadge';
 import { cn } from '@/lib/utils';
-import { HelpCircle, Info } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 
 interface Matrix5x5SelectorProps {
   severity: number;
@@ -28,7 +28,6 @@ export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
   onPriorityChange,
 }) => {
   const currentResult = calculateRiskLevel(severity, probability);
-  const currentConfig = RISK_LEVEL_CONFIG[currentResult.level];
   const normativeMatrix = getNormativeRiskMatrix(severity * probability);
 
   const handleCellClick = (s: number, p: number) => {
@@ -214,37 +213,6 @@ export const Matrix5x5Selector: React.FC<Matrix5x5SelectorProps> = ({
             <p className="text-[11px] text-muted-foreground leading-tight">
               {SEVERITY_SCALE[severity - 1]?.desc}
             </p>
-          </div>
-        </div>
-
-        {/* Prioridade de ação */}
-        <div className="mt-4 pt-3 border-t border-border">
-          <div className="space-y-1.5 max-w-xs">
-            <label className="text-xs font-semibold text-foreground">
-              Prioridade de ação:
-            </label>
-            <select
-              value={actionPriority || 'Média'}
-              onChange={(e) => onPriorityChange?.(e.target.value)}
-              className="w-full text-xs font-medium rounded-md border border-input bg-background p-2 focus:ring-1 focus:ring-ring"
-            >
-              <option value="Baixa">Baixa</option>
-              <option value="Média">Média</option>
-              <option value="Alta">Alta</option>
-              <option value="Urgente">Urgente</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Action requirement message according to NR-01 */}
-        <div className="mt-4 p-3 rounded-lg bg-card border border-border flex items-start gap-2.5">
-          <Info className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-          <div className="text-xs">
-            <strong className="text-foreground">Diretriz de Controle (NR-01.5.5): </strong>
-            <span className="text-muted-foreground">{currentConfig.actionRequirement}</span>
-            <span className="block text-[11px] text-primary font-medium mt-0.5">
-              Prazo limite sugerido para controle: {currentConfig.deadlineDays} dias.
-            </span>
           </div>
         </div>
       </div>
