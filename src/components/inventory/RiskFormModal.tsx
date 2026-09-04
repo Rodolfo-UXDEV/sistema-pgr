@@ -905,15 +905,6 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                     <Calendar className="h-3.5 w-3.5 text-emerald-600" />
                     <span>Prioridade, Prazos & Responsável do Plano de Ação (NR-01.5.5)</span>
                   </span>
-                  {defaultResp && (
-                    <button
-                      type="button"
-                      onClick={() => setActionResponsible(defaultResp)}
-                      className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer"
-                    >
-                      Puxar Responsável ({defaultResp})
-                    </button>
-                  )}
                 </div>
 
                 {/* Diretriz de Controle (NR-01.5.5) */}
@@ -928,49 +919,74 @@ export const RiskFormModal: React.FC<RiskFormModalProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                  <div>
-                    <Label className="text-[11px] font-semibold">Prioridade de Ação</Label>
-                    <select
-                      value={actionPriority || 'Média'}
-                      onChange={(e) => setActionPriority(e.target.value)}
-                      className="w-full text-xs font-medium rounded-md border border-input bg-background h-8 px-2 mt-1 focus:ring-1 focus:ring-ring"
-                    >
-                      <option value="Baixa">Baixa</option>
-                      <option value="Média">Média</option>
-                      <option value="Alta">Alta</option>
-                      <option value="Urgente">Urgente</option>
-                    </select>
+                {/* Grade em 2 LINHAS para melhor legibilidade e facilidade de preenchimento */}
+                <div className="space-y-3 pt-0.5">
+                  {/* LINHA 1: Prioridade de Ação e Responsável pela Ação */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div>
+                      <div className="h-5 flex items-center">
+                        <Label className="text-[11px] font-semibold">Prioridade de Ação</Label>
+                      </div>
+                      <select
+                        value={actionPriority || 'Média'}
+                        onChange={(e) => setActionPriority(e.target.value)}
+                        className="w-full text-xs font-medium rounded-md border border-input bg-background h-8 px-2 mt-1 focus:ring-1 focus:ring-ring"
+                      >
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Urgente">Urgente</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <div className="h-5 flex items-center justify-between">
+                        <Label className="text-[11px] font-semibold">Responsável pela Ação</Label>
+                        {defaultResp && (
+                          <button
+                            type="button"
+                            onClick={() => setActionResponsible(defaultResp)}
+                            className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer"
+                            title={`Preencher com: ${defaultResp}`}
+                          >
+                            Puxar Responsável
+                          </button>
+                        )}
+                      </div>
+                      <Input
+                        value={actionResponsible}
+                        onChange={(e) => setActionResponsible(e.target.value)}
+                        placeholder="Ex: César Roque da Silva ou SESMT"
+                        className="h-8 mt-1 text-xs"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <Label className="text-[11px] font-semibold">Prazo Inicial (Início)</Label>
-                    <Input
-                      type="date"
-                      value={actionStartDate}
-                      onChange={(e) => setActionStartDate(e.target.value)}
-                      className="h-8 mt-1 text-xs"
-                    />
-                  </div>
+                  {/* LINHA 2: Prazo Inicial (Início) e Prazo Final (Término / Limite) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div>
+                      <div className="h-5 flex items-center">
+                        <Label className="text-[11px] font-semibold">Prazo Inicial (Início)</Label>
+                      </div>
+                      <Input
+                        type="date"
+                        value={actionStartDate}
+                        onChange={(e) => setActionStartDate(e.target.value)}
+                        className="h-8 mt-1 text-xs"
+                      />
+                    </div>
 
-                  <div>
-                    <Label className="text-[11px] font-semibold">Prazo Final (Término / Limite)</Label>
-                    <Input
-                      type="date"
-                      value={actionEndDate}
-                      onChange={(e) => setActionEndDate(e.target.value)}
-                      className="h-8 mt-1 text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-[11px] font-semibold">Responsável pela Ação</Label>
-                    <Input
-                      value={actionResponsible}
-                      onChange={(e) => setActionResponsible(e.target.value)}
-                      placeholder="Ex: César Roque da Silva ou SESMT"
-                      className="h-8 mt-1 text-xs"
-                    />
+                    <div>
+                      <div className="h-5 flex items-center">
+                        <Label className="text-[11px] font-semibold">Prazo Final (Término / Limite)</Label>
+                      </div>
+                      <Input
+                        type="date"
+                        value={actionEndDate}
+                        onChange={(e) => setActionEndDate(e.target.value)}
+                        className="h-8 mt-1 text-xs"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
