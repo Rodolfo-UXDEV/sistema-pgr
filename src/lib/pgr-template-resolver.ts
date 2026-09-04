@@ -89,7 +89,13 @@ export function getResolvedPgrSections(pgrId?: string): ResolvedSection[] {
       content = sec.defaultContent;
     }
     if (sec.id === 'sec-10') {
-      if (!content.includes('Riscos Psicossociais') || !content.includes('Tabela 6') || !content.includes('Tabela 1 – Critérios de avaliação')) {
+      if (
+        !content.includes('Severidade \\ Probabilidade') ||
+        !content.includes('P1 - Raríssima') ||
+        !content.includes('Riscos Psicossociais') || 
+        !content.includes('Tabela 6') || 
+        !content.includes('Tabela 1 – Critérios de avaliação')
+      ) {
         content = sec.defaultContent;
       }
     }

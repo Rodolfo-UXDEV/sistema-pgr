@@ -503,12 +503,24 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
             headStyles: { fillColor: primaryColor, textColor: 255, fontStyle: 'bold', fontSize: 7.5, halign: 'center' },
             styles: { fontSize: 7, cellPadding: 2 },
             margin: { left: 14, right: 14 },
+            columnStyles: isMatrixTable ? {
+              0: { halign: 'left', cellWidth: 42, fontStyle: 'bold' },
+              1: { halign: 'center' },
+              2: { halign: 'center' },
+              3: { halign: 'center' },
+              4: { halign: 'center' },
+              5: { halign: 'center' },
+            } : undefined,
             didParseCell: (data) => {
               if (data.section === 'body') {
                 const text = String(data.cell.raw || '').trim();
 
                 // 1. Cores das Categorias de Risco (Item 10.2 do Desenvolvimento do PGR)
                 if (data.column.index === 0) {
+                  if (isMatrixTable) {
+                    data.cell.styles.fontStyle = 'bold';
+                    data.cell.styles.halign = 'left';
+                  }
                   if (/Agentes Físicos/i.test(text)) {
                     data.cell.styles.fillColor = [22, 163, 74]; // Verde
                     data.cell.styles.textColor = [255, 255, 255];
@@ -537,8 +549,13 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                 }
 
                 // 2. Cores da Matriz 5x5 e Prioridades
-                if (/\(TRI\)/i.test(text) || /\(TOL\)/i.test(text)) {
+                if (/\(TRI\)/i.test(text)) {
                   data.cell.styles.fillColor = [16, 185, 129]; // Emerald 500
+                  data.cell.styles.textColor = [255, 255, 255];
+                  data.cell.styles.fontStyle = 'bold';
+                  data.cell.styles.halign = 'center';
+                } else if (/\(TOL\)/i.test(text)) {
+                  data.cell.styles.fillColor = [132, 204, 22]; // Lime 500
                   data.cell.styles.textColor = [255, 255, 255];
                   data.cell.styles.fontStyle = 'bold';
                   data.cell.styles.halign = 'center';

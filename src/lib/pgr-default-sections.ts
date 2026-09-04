@@ -284,40 +284,40 @@ Tabela 1 – Critérios de avaliação
 | Classificação do Risco | Resultado da combinação entre a probabilidade de ocorrência e a severidade das consequências. |
 
 Tabela 2 – Critério de Probabilidade Quantitativo e Qualitativo
-| Índice | Perfil de exposição qualitativo | Perfil de exposição quantitativo |
+| Grau | Classificação | Perfil de Exposição Qualitativo / Descrição | Perfil de Exposição Quantitativo |
+| :---: | :--- | :--- | :--- |
+| 1 | Raríssima | Praticamente impossível de ocorrer; medidas de proteção altamente eficazes e redundantes. | Exposições < 10% do LEO (Limite de Exposição Ocupacional). |
+| 2 | Pouco Provável | Rara ocorrência conhecida; medidas de controle existentes com boa eficácia. | Exposições > 10% e < 50% do LEO. |
+| 3 | Provável / Ocasional | Pode ocorrer durante a vida útil da instalação; controles parciais ou falhas eventuais. | Exposições > 50% e < 100% do LEO. |
+| 4 | Frequente | Ocorre com frequência no histórico de operações; medidas de controle deficientes. | Exposições > 100% e ≤ 500% do LEO. |
+| 5 | Muito Frequente / Certa | Ocorrência sistemática ou contínua; ausência de medidas de controle aplicadas. | Exposições > 5 × LEO (superiores a 500% do LEO). |
+
+Tabela 3 – Critérios para Classificação de Severidade
+| Grau | Classificação | Definição / Consequência à Saúde e Integridade Física |
 | :---: | :--- | :--- |
-| 1 | Exposição muito baixa: Contato não frequente com o agente ou exposição esporádica a concentrações/intensidades desprezíveis. | Exposições < 10% do LEO (Limite de Exposição Ocupacional). |
-| 2 | Exposição baixa: Contato frequente com o agente em baixas concentrações/intensidades. | Exposições > 10% e < 50% do LEO. |
-| 3 | Exposição moderada: Contato frequente com o agente em concentrações/intensidades relevantes. | Exposições > 50% e < 100% do LEO. |
-| 4 | Exposição excessiva: Contato frequente com o agente em concentrações/intensidades acima dos limites aceitáveis. | Exposições > 100% e ≤ 500% do LEO. |
-| 5 | Exposição muito excessiva: Situação crítica de exposição, indicando condições severamente inadequadas de controle. | Exposições > 5 × LEO (superiores a 500% do LEO). |
+| 5 | Catastrófica / Fatal | Morte de um ou mais trabalhadores, desastre operacional ou colapso ambiental. |
+| 4 | Crítica / Severa | Incapacidade permanente parcial ou total, amputações, perda auditiva severa. |
+| 3 | Moderada / Grave | Lesão severa reversível, afastamento temporário significativo (> 15 dias). |
+| 2 | Menor / Moderada | Lesão leve com atendimento médico e retorno rápido ao trabalho (< 3 dias). |
+| 1 | Leve / Desprezível | Pequenos ferimentos sem necessidade de afastamento ou primeiros socorros simples. |
 
-Tabela 3 – Critérios para classificação de Severidade
-| Nível | Pontuação | Definição |
-| :--- | :---: | :--- |
-| Crítica | 5 | Fatalidade, invalidez permanente ou doença ocupacional irreversível. |
-| Grave | 4 | Lesão grave com afastamento prolongado, hospitalização ou incapacidade parcial permanente. |
-| Moderada | 3 | Lesão ou agravo à saúde que exija tratamento médico e/ou afastamento temporário. |
-| Menor | 2 | Lesão leve que demande apenas primeiros socorros ou tratamento simples, sem afastamento. |
-| Insignificante | 1 | Sem lesão ou com consequências desprezíveis à saúde do trabalhador. |
+Tabela 4 – Matriz de Risco 5x5 (NR-01)
+Na matriz de risco 5×5, cada célula representa a pontuação resultante da multiplicação entre a Severidade (linhas de 1 a 5) e a Probabilidade (colunas de 1 a 5), acompanhada da classificação do nível de risco: TRIVIAL (TRI), TOLERÁVEL (TOL), MODERADO (MOD), SUBSTANCIAL (SUB) e INTOLERÁVEL (INT).
 
-Tabela 4 – Matriz de Risco 5x5, com Pontuações
-Na matriz de risco 5×5, cada célula representa a pontuação de probabilidade multiplicada pela pontuação de severidade, resultando em uma pontuação de risco de 1 a 25.
-
-| Probabilidade \ Severidade | Insignificante (1) | Menor (2) | Moderada (3) | Grave (4) | Crítica (5) |
+| Severidade \ Probabilidade | P1 - Raríssima (1) | P2 - Pouco Provável (2) | P3 - Provável / Ocasional (3) | P4 - Frequente (4) | P5 - Muito Frequente / Certa (5) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Muito Provável (5)** | 5 | 10 | 15 | 20 | 25 |
-| **Provável (4)** | 4 | 8 | 12 | 16 | 20 |
-| **Possível (3)** | 3 | 6 | 9 | 12 | 15 |
-| **Pouco Provável (2)** | 2 | 4 | 6 | 8 | 10 |
-| **Rara (1)** | 1 | 2 | 3 | 4 | 5 |
+| **S5 - Catastrófica / Fatal (5)** | 5 (MOD) | 10 (SUB) | 15 (INT) | 20 (INT) | 25 (INT) |
+| **S4 - Crítica / Severa (4)** | 4 (TOL) | 8 (MOD) | 12 (SUB) | 16 (INT) | 20 (INT) |
+| **S3 - Moderada / Grave (3)** | 3 (TOL) | 6 (MOD) | 9 (MOD) | 12 (SUB) | 15 (INT) |
+| **S2 - Menor / Moderada (2)** | 2 (TRI) | 4 (TOL) | 6 (MOD) | 8 (MOD) | 10 (SUB) |
+| **S1 - Leve / Desprezível (1)** | 1 (TRI) | 2 (TRI) | 3 (TOL) | 4 (TOL) | 5 (MOD) |
 
 Tabela 5 – Critérios para Classificação do Nível de Risco
 | Pontuação | Nível de Risco | Significado | Diretriz de Tratamento |
 | :---: | :--- | :--- | :--- |
-| 16 a 25 | Extremo | Risco inaceitável, com elevado potencial de ocorrência e/ou consequências graves à saúde e segurança dos trabalhadores. | Adotar medidas imediatas para eliminação ou redução do risco. A atividade deve ser reavaliada antes de sua continuidade. |
+| 16 a 25 | Extremo | Risco inaceitável, com elevado potencial de ocorrência e/ou consequências graves à saúde e segurança dos trabalhadores. | Adotar medidas imediatas para eliminação ou redução do risco. A atividade deve ser interrompida ou reavaliada antes de sua continuidade. |
 | 10 a 15 | Alto | Risco significativo que requer atenção prioritária e controle sistemático. | Implementar medidas de controle com prioridade definida e acompanhar a eficácia das ações adotadas. |
-| 5 a 9 | Médio | Risco controlável por meio das medidas preventivas existentes, desde que mantidas e monitoradas. | Monitorar periodicamente e avaliar oportunidades de melhoria dos controles. |
+| 5 a 9 | Médio | Risco controlável por meio das medidas preventivas existentes, desde que mantidas e monitoradas. | Monitorar periodicamente e implementar plano de ação para melhoria contínua dos controles. |
 | 1 a 4 | Baixo | Risco aceitável nas condições atuais de controle. | Manter as medidas de prevenção existentes e realizar monitoramento periódico. |
 
 Tabela 6 – Critérios para Priorização das Ações
@@ -325,10 +325,10 @@ A priorização das ações de controle será definida com base no nível de ris
 
 | Faixa de Pontuação | Classificação | Prioridade | Ação |
 | :---: | :--- | :---: | :--- |
-| 🟥 16 a 25 | Intolerável | Urgente | Intervenção imediata. |
+| 🟥 16 a 25 | Intolerável | Urgente | Intervenção imediata / Medidas emergenciais. |
 | 🟧 10 a 15 | Substancial | Alta | Controle prioritário. |
 | 🟨 5 a 9 | Moderado | Média | Monitoramento e melhoria contínua. |
-| 🟩 1 a 4 | Tolerável | Baixa | Manutenção dos controles existentes. |
+| 🟩 1 a 4 | Tolerável / Trivial | Baixa | Manutenção dos controles existentes. |
 
 10.4. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
 • GES (Grupo de Exposição Similar): Grupo de trabalhadores que experimentam exposição semelhante a determinado agente ocupacional decorrente do mesmo ambiente e processo.

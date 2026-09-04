@@ -317,12 +317,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   let textColor = '000000';
                   let align: (typeof AlignmentType)[keyof typeof AlignmentType] = AlignmentType.LEFT;
 
-                  if (/\(TRIV\)/i.test(trimmed)) {
+                  if (/\(TRI(V)?\)/i.test(trimmed)) {
                     fill = '10B981';
                     textColor = 'FFFFFF';
                     align = AlignmentType.CENTER;
                   } else if (/\(TOL\)/i.test(trimmed)) {
-                    fill = '10B981';
+                    fill = '84CC16';
                     textColor = 'FFFFFF';
                     align = AlignmentType.CENTER;
                   } else if (/\(MOD\)/i.test(trimmed)) {

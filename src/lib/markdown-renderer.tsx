@@ -81,7 +81,7 @@ export function renderTableCellContent(cell: string): React.ReactNode {
 
     let bgClass = 'bg-slate-500 text-white';
     if (code === 'TRI') bgClass = 'bg-emerald-600 text-white';
-    else if (code === 'TOL') bgClass = 'bg-emerald-500 text-white';
+    else if (code === 'TOL') bgClass = 'bg-lime-600 text-white';
     else if (code === 'MOD') bgClass = 'bg-amber-500 text-white';
     else if (code === 'SUB') bgClass = 'bg-orange-500 text-white';
     else if (code === 'INT') bgClass = 'bg-rose-600 text-white';
@@ -220,21 +220,30 @@ export const MarkdownSectionRenderer: React.FC<{ content: string; className?: st
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/60 text-xs">
-                    {block.headers.map((h, hIdx) => (
-                      <TableHead key={hIdx} className="font-bold text-foreground py-2.5 px-3 text-center">
-                        {renderMarkdownInline(h)}
-                      </TableHead>
-                    ))}
+                    {block.headers.map((h, hIdx) => {
+                      const isFirstCol = hIdx === 0;
+                      return (
+                        <TableHead key={hIdx} className={`font-bold text-foreground py-2.5 px-3 ${isFirstCol ? 'text-left' : 'text-center'}`}>
+                          {renderMarkdownInline(h)}
+                        </TableHead>
+                      );
+                    })}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {block.rows.map((row, rIdx) => (
                     <TableRow key={rIdx} className="text-xs hover:bg-muted/30">
-                      {row.map((cell, cIdx) => (
-                        <TableCell key={cIdx} className="py-2 px-3 text-foreground text-center">
-                          {renderTableCellContent(cell)}
-                        </TableCell>
-                      ))}
+                      {row.map((cell, cIdx) => {
+                        const trimmed = cell.trim();
+                        const isMatrixRowHeader = cIdx === 0 && /^(\*\*)?S[1-5]/i.test(trimmed);
+                        const isLongText = trimmed.length > 25;
+                        const isCenter = !isMatrixRowHeader && !isLongText;
+                        return (
+                          <TableCell key={cIdx} className={`py-2 px-3 text-foreground ${isCenter ? 'text-center' : 'text-left'}`}>
+                            {renderTableCellContent(cell)}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
                   ))}
                 </TableBody>
