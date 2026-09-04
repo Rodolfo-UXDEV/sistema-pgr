@@ -244,29 +244,17 @@ export const PgrViewerPage: React.FC = () => {
             <span className="hidden md:inline">Imprimir</span>
           </Button>
 
-          {/* Opções Word e Excel temporariamente ocultadas (recurso preservado no código para ativação futura) */}
-          {/*
           <Button
             variant="outline"
             size="sm"
             disabled={isGeneratingDocx}
             onClick={handleDownloadDocx}
             className="text-xs gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 dark:bg-blue-950/40 dark:border-blue-800 dark:text-blue-300 font-semibold"
+            title="Baixar Documento Word (.docx) editável"
           >
-            <FileCode className="h-3.5 w-3.5" />
+            <FileCode className="h-3.5 w-3.5 text-blue-600" />
             <span>{isGeneratingDocx ? 'Gerando Word...' : 'Baixar Word (.docx)'}</span>
           </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadExcel}
-            className="text-xs gap-1.5 border-emerald-200 text-emerald-800 bg-emerald-50/50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300 font-semibold"
-          >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
-            <span>Baixar Excel (.xlsx)</span>
-          </Button>
-          */}
 
           <Button
             size="sm"

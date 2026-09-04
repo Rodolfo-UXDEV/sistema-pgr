@@ -213,10 +213,10 @@ export const PgrDocumentsPage: React.FC = () => {
       actionPlans,
     };
     try {
-      await generatePgrFromMasterTemplate(ctx);
-    } catch (err) {
-      console.warn('Fallback para gerador alternativo docx:', err);
       await generatePgrDocx(ctx);
+    } catch (err) {
+      console.error('Erro ao gerar DOCX:', err);
+      alert('Erro ao gerar arquivo Word.');
     }
   };
 
@@ -380,48 +380,19 @@ export const PgrDocumentsPage: React.FC = () => {
                           title="Baixar PDF Oficial do documento"
                         >
                           <Download className="h-3.5 w-3.5" />
-                          <span>Baixar PDF</span>
+                          <span>PDF</span>
                         </Button>
 
-                        {/* Opções Word e Excel temporariamente ocultadas (recurso preservado no código para ativação futura) */}
-                        {/*
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-xs"
-                              title="Gerar / Exportar documento"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                              <span>Gerar</span>
-                              <ChevronDown className="h-3 w-3 opacity-80" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-52 text-xs">
-                            <DropdownMenuItem
-                              onClick={() => handleDownloadPdf(doc)}
-                              className="cursor-pointer gap-2 font-medium py-2 text-foreground hover:bg-muted"
-                            >
-                              <Download className="h-4 w-4 text-emerald-600" />
-                              <span>Baixar PDF Oficial</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDownloadDocx(doc)}
-                              className="cursor-pointer gap-2 font-medium py-2 text-foreground hover:bg-muted"
-                            >
-                              <FileCode className="h-4 w-4 text-blue-600" />
-                              <span>Exportar Word (.docx)</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDownloadExcel(doc)}
-                              className="cursor-pointer gap-2 font-medium py-2 text-foreground hover:bg-muted"
-                            >
-                              <FileSpreadsheet className="h-4 w-4 text-emerald-700" />
-                              <span>Exportar Excel (.xlsx)</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                        */}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDownloadDocx(doc)}
+                          className="h-8 text-xs gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 font-semibold"
+                          title="Baixar Documento Word (.docx) editável"
+                        >
+                          <FileCode className="h-3.5 w-3.5 text-blue-600" />
+                          <span>Word</span>
+                        </Button>
 
                         <Button
                           variant="ghost"

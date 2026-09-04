@@ -12,7 +12,10 @@ import {
   BorderStyle, 
   WidthType, 
   ShadingType,
-  VerticalAlign 
+  VerticalAlign,
+  Header,
+  Footer,
+  PageNumber
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { PgrDocumentContext, buildPgrFullDocument, filterContextForCompany, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
@@ -23,25 +26,52 @@ import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { ensurePngDataUrl, dataUrlToUint8Array } from '@/lib/image-utils';
 import { DEFAULT_EMISSORA_LOGO, DEFAULT_CLIENTE_LOGO } from '@/lib/default-logos';
 import { formatCNPJ, getExposureParts } from '@/lib/utils';
+import { getIssuerCompanyConfig } from '@/lib/issuer-company-service';
 
-function parseTextToTextRuns(text: string): TextRun[] {
-  if (!text) return [new TextRun({ text: '', color: '000000' })];
-  const normalized = text.replace(/<\/?(b|strong)>/gi, '**');
-  const tokens = normalized.split(/(\*\*[\s\S]*?\*\*|\*[^\*\n]+?\*)/g);
-  return tokens.map((token) => {
+function parseTextToTextRuns(text: string, defaultSize: number = 20): TextRun[] {
+  if (!text) return [new TextRun({ text: '', color: '000000', size: defaultSize })];
+  const normalized = text
+    .replace(/<strong[^>]*>([\s\S]*?)<\/strong>/gi, '**$1**')
+    .replace(/<b[^>]*>([\s\S]*?)<\/b>/gi, '**$1**')
+    .replace(/<em[^>]*>([\s\S]*?)<\/em>/gi, '*$1*')
+    .replace(/<i[^>]*>([\s\S]*?)<\/i>/gi, '*$1*');
+
+  const tokens: { text: string; bold: boolean; italics: boolean }[] = [];
+  const regex = /(\*\*[\s\S]+?\*\*|\*[^\*\n]+?\*)/g;
+  let lastIdx = 0;
+  let match;
+  while ((match = regex.exec(normalized)) !== null) {
+    if (match.index > lastIdx) {
+      tokens.push({ text: normalized.slice(lastIdx, match.index), bold: false, italics: false });
+    }
+    const token = match[1];
     if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
-      return new TextRun({ text: token.slice(2, -2), bold: true, color: '000000' });
+      tokens.push({ text: token.slice(2, -2), bold: true, italics: false });
+    } else if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
+      tokens.push({ text: token.slice(1, -1), bold: false, italics: true });
     }
-    if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
-      return new TextRun({ text: token.slice(1, -1), italics: true, color: '000000' });
-    }
-    return new TextRun({ text: token, color: '000000' });
-  });
+    lastIdx = regex.lastIndex;
+  }
+  if (lastIdx < normalized.length) {
+    tokens.push({ text: normalized.slice(lastIdx), bold: false, italics: false });
+  }
+
+  return tokens.map(
+    (t) =>
+      new TextRun({
+        text: t.text,
+        bold: t.bold,
+        italics: t.italics,
+        color: '000000',
+        size: defaultSize,
+      })
+  );
 }
 
 export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void> {
   const ctx = filterContextForCompany(rawCtx);
   const docData = buildPgrFullDocument(ctx);
+  const issuerConfig = getIssuerCompanyConfig();
 
   const lightGray = 'F1F5F9';
   const borderColor = 'CBD5E1';
@@ -60,18 +90,25 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
   // ==========================================
 
   // 1. Logotipo da Empresa Emissora / Consultoria SST
-  const emissoraPng = await ensurePngDataUrl(docData.header.consultingLogo || DEFAULT_EMISSORA_LOGO, 600, 150);
-  const emissoraBytes = dataUrlToUint8Array(emissoraPng);
+  const emissoraLogoUrl = issuerConfig.logoUrl || docData.header.consultingLogo || DEFAULT_EMISSORA_LOGO;
+  const clienteLogoUrl = docData.header.companyLogo || DEFAULT_CLIENTE_LOGO;
 
+  const emissoraPng = await ensurePngDataUrl(emissoraLogoUrl, 600, 150);
+  const clientePng = await ensurePngDataUrl(clienteLogoUrl, 600, 150);
+
+  const emissoraBytes = dataUrlToUint8Array(emissoraPng);
+  const clienteBytes = dataUrlToUint8Array(clientePng);
+
+  // Espaçamento e respiro generoso antes do logo da emissora (atendendo ao pedido de respiro elegante)
   if (emissoraBytes) {
     children.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { before: 600, after: 150 },
+        spacing: { before: 1200, after: 150 },
         children: [
           new ImageRun({
             data: emissoraBytes,
-            transformation: { width: 340, height: 85 },
+            transformation: { width: 320, height: 80 },
             type: 'png',
           } as any),
         ],
@@ -81,32 +118,67 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
   children.push(
     new Paragraph({
-      text: docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany,
       alignment: AlignmentType.CENTER,
-      spacing: { before: 100, after: 80 },
+      spacing: { before: 80, after: 60 },
+      children: [
+        new TextRun({
+          text: docData.header.consultingCompany || OFFICIAL_PGR_TEXTS.consultingCompany,
+          bold: true,
+          size: 20,
+          color: '000000',
+        }),
+      ],
     }),
     new Paragraph({
-      text: docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea,
       alignment: AlignmentType.CENTER,
-      spacing: { after: 1000 },
+      spacing: { after: 700 },
+      children: [
+        new TextRun({
+          text: docData.header.consultingCrea || OFFICIAL_PGR_TEXTS.consultingCrea,
+          size: 17,
+          color: '000000',
+        }),
+      ],
     }),
     new Paragraph({
-      text: 'PROGRAMA DE GERENCIAMENTO DE RISCOS',
-      heading: HeadingLevel.TITLE,
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 120 },
+      children: [
+        new TextRun({
+          text: 'PROGRAMA DE GERENCIAMENTO DE RISCOS',
+          bold: true,
+          size: 34,
+          color: '000000',
+        }),
+      ],
     }),
     new Paragraph({
-      text: 'PGR / GRO — NORMA REGULAMENTADORA Nº 01',
       alignment: AlignmentType.CENTER,
-      spacing: { after: 600 },
+      spacing: { after: 120 },
+      children: [
+        new TextRun({
+          text: 'DE RISCOS - PGR',
+          bold: true,
+          size: 34,
+          color: '000000',
+        }),
+      ],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 500 },
+      children: [
+        new TextRun({
+          text: 'GERENCIAMENTO DE RISCOS OCUPACIONAIS (GRO) — NR-01',
+          bold: true,
+          size: 20,
+          color: '000000',
+        }),
+      ],
     })
   );
 
   // 2. Logotipo da Empresa Cliente Contratante
-  const clientePng = await ensurePngDataUrl(docData.header.companyLogo || DEFAULT_CLIENTE_LOGO, 600, 150);
-  const clienteBytes = dataUrlToUint8Array(clientePng);
-
   if (clienteBytes) {
     children.push(
       new Paragraph({
@@ -115,7 +187,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         children: [
           new ImageRun({
             data: clienteBytes,
-            transformation: { width: 340, height: 85 },
+            transformation: { width: 300, height: 75 },
             type: 'png',
           } as any),
         ],
@@ -125,36 +197,122 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
   children.push(
     new Paragraph({
-      text: docData.header.companyName.toUpperCase(),
-      heading: HeadingLevel.HEADING_1,
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
-    }),
-    new Paragraph({
-      text: `CNPJ: ${docData.header.cnpj} | ${docData.header.establishmentName}`,
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 1200 },
-    }),
-    new Paragraph({
-      text: `DOCUMENTO: ${docData.header.code} - VERSÃO ${docData.header.version}`,
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
+      children: [
+        new TextRun({
+          text: docData.header.companyName.toUpperCase(),
+          bold: true,
+          size: 26,
+          color: '000000',
+        }),
+      ],
     }),
     new Paragraph({
-      text: `RESPONSÁVEL TÉCNICO: ${docData.header.techRespName} (${docData.header.techRespCouncil})`,
       alignment: AlignmentType.CENTER,
-      spacing: { after: 100 },
+      spacing: { after: 60 },
+      children: [
+        new TextRun({
+          text: `CNPJ: ${docData.header.cnpj}`,
+          size: 19,
+          color: '000000',
+        }),
+      ],
     }),
     new Paragraph({
-      text: `DATA DE ELABORAÇÃO: ${docData.header.elaborationDate}`,
       alignment: AlignmentType.CENTER,
-      spacing: { after: 1600 },
-    }),
-    new Paragraph({
-      text: `${ctx.company.address.city}/${ctx.company.address.state} — ${docData.header.year}`,
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 800 },
+      spacing: { after: 700 },
+      children: [
+        new TextRun({
+          text: `Estabelecimento: ${docData.header.establishmentName}`,
+          size: 19,
+          color: '000000',
+        }),
+      ],
     })
+  );
+
+  // Bloco de Metadados Técnicos da Capa (Sem linha de ART/RRT)
+  const metaBorder = {
+    top: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
+    bottom: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
+    left: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
+    right: { style: BorderStyle.SINGLE, size: 1, color: 'CBD5E1' },
+  };
+
+  const coverMetaTable = new Table({
+    width: { size: 80, type: WidthType.PERCENTAGE },
+    alignment: AlignmentType.CENTER,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            borders: metaBorder,
+            shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `DOCUMENTO TÉCNICO: ${docData.header.code} (REV: ${docData.header.version})`,
+                    bold: true,
+                    size: 18,
+                    color: '000000',
+                  }),
+                ],
+                spacing: { before: 80, after: 60 },
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `Responsável Técnico: ${docData.header.techRespName}`,
+                    size: 18,
+                    color: '000000',
+                  }),
+                ],
+                spacing: { after: 60 },
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `Registro de Classe: ${docData.header.techRespCouncil}`,
+                    size: 18,
+                    color: '000000',
+                  }),
+                ],
+                spacing: { after: 60 },
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `Data de Elaboração: ${docData.header.elaborationDate}`,
+                    size: 18,
+                    color: '000000',
+                  }),
+                ],
+                spacing: { after: 80 },
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+
+  children.push(
+    coverMetaTable,
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 800, after: 200 },
+      children: [
+        new TextRun({
+          text: `${ctx.company.address.city}/${ctx.company.address.state} — ${docData.header.year}`,
+          bold: true,
+          size: 19,
+          color: '000000',
+        }),
+      ],
+    }),
+    new Paragraph({ pageBreakBefore: true })
   );
 
   // ==========================================
@@ -225,28 +383,36 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
     if (section.type === 'company_info') {
       const d = section.data;
       const rows = [
-        ['Razão Social:', d.razaoSocial],
-        ['Nome Fantasia:', d.nomeFantasia],
-        ['CNPJ:', d.cnpj],
-        ['Atividade Principal (CNAE):', d.cnae],
-        ['Grau de Risco (NR-04):', d.grauDeRisco],
-        ['Endereço da Matriz:', d.enderecoMatriz],
-        ['Estabelecimento Avaliado:', d.estabelecimento],
-        ['Representante Legal:', d.representanteLegal],
-        ['População Trabalhadora:', d.totalTrabalhadores],
-        ['Contato / E-mail:', d.contato],
+        ['Razão Social:', d.razaoSocial || '-'],
+        ['Nome Fantasia:', d.nomeFantasia || '-'],
+        ['CNPJ:', d.cnpj || '-'],
+        ['Atividade Principal (CNAE):', d.cnae || '-'],
+        ['Grau de Risco (NR-04):', d.grauDeRisco || '-'],
+        ['Endereço da Matriz:', d.enderecoMatriz || '-'],
+        ['Estabelecimento Avaliado:', d.estabelecimento || '-'],
+        ['Representante Legal:', d.representanteLegal || '-'],
+        ['População Trabalhadora:', d.totalTrabalhadores || '-'],
+        ['Contato / E-mail:', d.contato || '-'],
       ].map(
         ([label, val]) =>
           new TableRow({
             children: [
               new TableCell({
-                children: [new Paragraph({ children: [new TextRun({ text: label, bold: true })] })],
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: label, bold: true, color: '000000', size: 19 })],
+                  }),
+                ],
                 width: { size: 3500, type: WidthType.DXA },
                 shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' },
                 borders: cellBorder,
               }),
               new TableCell({
-                children: [new Paragraph({ text: val })],
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: val, color: '000000', size: 19 })],
+                  }),
+                ],
                 width: { size: 6500, type: WidthType.DXA },
                 borders: cellBorder,
               }),
@@ -259,39 +425,163 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
       const el = section.elaborador;
       const med = section.medicoPcmso;
 
+      const respRows: TableRow[] = [];
       if (el) {
         const qualifText = el.qualificacoes && el.qualificacoes.length > 0
           ? el.qualificacoes.join(' | ')
           : (el.cargo || '-');
 
-        const elParas = [
-          new Paragraph({
-            children: [new TextRun({ text: 'Responsável Técnico pela Elaboração do PGR:', bold: true })],
-            spacing: { before: 200, after: 100 },
+        respRows.push(
+          new TableRow({
+            children: [
+              new TableCell({
+                columnSpan: 2,
+                shading: { fill: 'F1F5F9', type: ShadingType.CLEAR, color: 'auto' },
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: 'Responsável Técnico pela Elaboração do PGR', bold: true, color: '000000', size: 20 })],
+                  }),
+                ],
+                borders: cellBorder,
+              }),
+            ],
           }),
-          new Paragraph({ text: `• Nome: ${el.nome}` }),
-          new Paragraph({ text: `• Qualificações / Cargos Habilitados: ${qualifText}` }),
-          new Paragraph({ text: `• Registro Profissional: ${el.conselho}` }),
-        ];
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 3500, type: WidthType.DXA },
+                shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Nome do Profissional:', bold: true, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+              new TableCell({
+                width: { size: 6500, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: el.nome || '-', color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 3500, type: WidthType.DXA },
+                shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Qualificações / Cargos Habilitados:', bold: true, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+              new TableCell({
+                width: { size: 6500, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: qualifText, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 3500, type: WidthType.DXA },
+                shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Registro Profissional:', bold: true, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+              new TableCell({
+                width: { size: 6500, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: el.conselho || '-', color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+            ],
+          })
+        );
 
         if (el.cpf) {
-          elParas.push(new Paragraph({ text: `• CPF do Responsável Técnico: ${el.cpf}` }));
+          respRows.push(
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 3500, type: WidthType.DXA },
+                  shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                  children: [new Paragraph({ children: [new TextRun({ text: 'CPF do Responsável:', bold: true, color: '000000', size: 19 })] })],
+                  borders: cellBorder,
+                }),
+                new TableCell({
+                  width: { size: 6500, type: WidthType.DXA },
+                  children: [new Paragraph({ children: [new TextRun({ text: el.cpf, color: '000000', size: 19 })] })],
+                  borders: cellBorder,
+                }),
+              ],
+            })
+          );
         }
 
-        elParas.push(new Paragraph({ text: `• Consultoria Especializada: ${el.empresaConsultoria}` }));
-        children.push(...elParas);
+        respRows.push(
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 3500, type: WidthType.DXA },
+                shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Consultoria Especializada:', bold: true, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+              new TableCell({
+                width: { size: 6500, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: el.empresaConsultoria || '-', color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+            ],
+          })
+        );
       }
 
       if (med) {
-        children.push(
-          new Paragraph({
-            children: [new TextRun({ text: 'Médico Coordenador do PCMSO (NR-07):', bold: true })],
-            spacing: { before: 200, after: 100 },
+        respRows.push(
+          new TableRow({
+            children: [
+              new TableCell({
+                columnSpan: 2,
+                shading: { fill: 'F1F5F9', type: ShadingType.CLEAR, color: 'auto' },
+                children: [
+                  new Paragraph({
+                    children: [new TextRun({ text: 'Médico Coordenador do PCMSO (NR-07)', bold: true, color: '000000', size: 20 })],
+                  }),
+                ],
+                borders: cellBorder,
+              }),
+            ],
           }),
-          new Paragraph({ text: `• Nome: ${med.nome}` }),
-          new Paragraph({ text: `• Conselho: ${med.conselho}` })
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 3500, type: WidthType.DXA },
+                shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Nome do Médico:', bold: true, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+              new TableCell({
+                width: { size: 6500, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: med.nome || '-', color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+            ],
+          }),
+          new TableRow({
+            children: [
+              new TableCell({
+                width: { size: 3500, type: WidthType.DXA },
+                shading: { fill: 'F8FAFC', type: ShadingType.CLEAR, color: 'auto' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Registro CRM:', bold: true, color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+              new TableCell({
+                width: { size: 6500, type: WidthType.DXA },
+                children: [new Paragraph({ children: [new TextRun({ text: med.conselho || '-', color: '000000', size: 19 })] })],
+                borders: cellBorder,
+              }),
+            ],
+          })
         );
       }
+
+      children.push(new Table({ rows: respRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
     } else if (section.type === 'text') {
       const blocks = parseContentWithTables(section.content);
       for (const block of blocks) {
@@ -720,23 +1010,27 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   ],
                 }),
 
-                // Row 3: Tipo de Exposição
+                // Row 3: Tipo e Regime de Exposição
                 new TableRow({
                   children: [
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Tipo de Exposição', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Tipo e Regime de Exposição:', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
-                      columnSpan: 1,
-                      children: [new Paragraph({ text: expPart1, alignment: AlignmentType.CENTER })],
-                      borders: cellBorder,
-                    }),
-                    new TableCell({
-                      columnSpan: 2,
-                      children: [new Paragraph({ text: expPart2, alignment: AlignmentType.CENTER })],
+                      columnSpan: 3,
+                      children: [
+                        new Paragraph({
+                          children: [
+                            new TextRun({
+                              text: expPart2 ? `${expPart1} - ${expPart2}` : (expPart1 || 'Não informado'),
+                              color: '000000',
+                            }),
+                          ],
+                        }),
+                      ],
                       borders: cellBorder,
                     }),
                   ],
@@ -748,12 +1042,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Fontes ou circunstância', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Fonte ou Circunstância:', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 3,
-                      children: [new Paragraph({ text: item.sourceDescription || 'NAP' })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.sourceDescription || 'Não informada', color: '000000' })] })],
                       borders: cellBorder,
                     }),
                   ],
@@ -765,12 +1059,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Trajetória', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Meio de Propagação / Trajetória:', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 3,
-                      children: [new Paragraph({ text: item.trajectory || 'Ar' })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.trajectory || 'Ar', color: '000000' })] })],
                       borders: cellBorder,
                     }),
                   ],
@@ -782,12 +1076,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Via de penetração', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Via de Penetração:', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 3,
-                      children: [new Paragraph({ text: item.penetrationRoute || 'NAP' })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.penetrationRoute || 'Cutânea / Respiratória / NAP', color: '000000' })] })],
                       borders: cellBorder,
                     }),
                   ],
@@ -799,12 +1093,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Efeitos a saúde', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Possíveis Lesões / Danos à Saúde:', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 3,
-                      children: [new Paragraph({ text: item.healthDamage || 'NAP' })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.healthDamage || 'Não informado', color: '000000' })] })],
                       borders: cellBorder,
                     }),
                   ],
@@ -816,12 +1110,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'EPC/EPI', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Medidas de Controle (EPC/EPI):', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 3,
-                      children: [new Paragraph({ text: epcEpiFinal })],
+                      children: [new Paragraph({ children: [new TextRun({ text: epcEpiFinal, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                   ],
@@ -833,7 +1127,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 4,
                       shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Medição', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: '3. AVALIAÇÃO QUANTITATIVA / QUALITATIVA DO AGENTE', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -847,8 +1141,8 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                       children: [
                         new Paragraph({
                           children: [
-                            new TextRun({ text: 'Critério: ', bold: true }),
-                            new TextRun({ text: criterio }),
+                            new TextRun({ text: 'Tipo de Avaliação / Critério: ', bold: true, color: '000000' }),
+                            new TextRun({ text: criterio, color: '000000' }),
                           ],
                         }),
                       ],
@@ -859,8 +1153,8 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                       children: [
                         new Paragraph({
                           children: [
-                            new TextRun({ text: 'Técnica utilizada: ', bold: true }),
-                            new TextRun({ text: tecnica }),
+                            new TextRun({ text: 'Técnica / Norma: ', bold: true, color: '000000' }),
+                            new TextRun({ text: tecnica, color: '000000' }),
                           ],
                         }),
                       ],
@@ -875,19 +1169,19 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Data da Avaliação', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Data da Avaliação', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 2,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Resultado', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Nível / Concentração Obtida', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'LT', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Limite de Tolerância (LT)', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -898,17 +1192,17 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   children: [
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: dataMedicao, alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: dataMedicao, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 2,
-                      children: [new Paragraph({ children: [new TextRun({ text: resultado, bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: resultado, bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: lt, alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: lt, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -920,7 +1214,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 4,
                       shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Categorização do risco/perigo', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: '4. CLASSIFICAÇÃO DO RISCO OCUPACIONAL (MATRIZ 5x5 - GRO)', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -932,25 +1226,25 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Severidade', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Severidade', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Probabilidade', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Probabilidade', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Nível de Risco', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Nível de Risco', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Prioridade de ação', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Prioridade de Ação', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -961,12 +1255,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                   children: [
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: String(item.severity || '1'), alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: `${item.severity || '1'} (Nível ${item.severity || '1'})`, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: String(item.probability || '1'), alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: `${item.probability || '1'} (Nível ${item.probability || '1'})`, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                     new TableCell({
@@ -976,7 +1270,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     }),
                     new TableCell({
                       columnSpan: 1,
-                      children: [new Paragraph({ text: prioridadeFinal, alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: prioridadeFinal, bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -988,7 +1282,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 4,
                       shading: { fill: sectionGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações', bold: true })], alignment: AlignmentType.CENTER })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações e Medidas Propostas', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
                       borders: cellBorder,
                     }),
                   ],
@@ -1000,12 +1294,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações:', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações:', bold: true, color: '000000' })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({
                       columnSpan: 3,
-                      children: [new Paragraph({ text: item.recommendations || 'NAP' })],
+                      children: [new Paragraph({ children: [new TextRun({ text: item.recommendations || 'Manter o monitoramento contínuo das condições ambientais e o cumprimento dos procedimentos operacionais padrão.', color: '000000' })] })],
                       borders: cellBorder,
                     }),
                   ],
@@ -1049,12 +1343,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         ? defaultMetas.map(([meta, prio, start, end, who, st]) => 
             new TableRow({
               children: [
-                new TableCell({ children: [new Paragraph({ text: meta })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: prio, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: start, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: end, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: who, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: st, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: meta, color: '000000' })], alignment: AlignmentType.JUSTIFIED })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: prio, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: start, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: end, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: who, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: st, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
               ]
             })
           )
@@ -1073,8 +1367,19 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
               }
             }
             const priorityText = act.priority || matchedRisk?.actionPriority || 'Média';
-            const startDateText = act.startDate ? (act.startDate.toLowerCase().includes('continuo') || act.startDate.toLowerCase().includes('contínuo') ? 'Contínuo' : (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate)) : 'Contínuo';
-            const endDateText = act.whenDate ? (act.whenDate.toLowerCase().includes('continuo') || act.whenDate.toLowerCase().includes('contínuo') ? 'Contínuo' : (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate)) : 'Contínuo';
+            
+            const isContinuous = !!act.isContinuousDeadline ||
+              (act.startDate && (act.startDate.toLowerCase().includes('continuo') || act.startDate.toLowerCase().includes('contínuo'))) ||
+              (act.whenDate && (act.whenDate.toLowerCase().includes('continuo') || act.whenDate.toLowerCase().includes('contínuo')));
+
+            const startDateText = isContinuous 
+              ? 'Contínuo' 
+              : (act.startDate ? (act.startDate.includes('-') ? act.startDate.split('-').reverse().join('/') : act.startDate) : 'Contínuo');
+            
+            const endDateText = isContinuous
+              ? (act.continuousDeadlineNote ? `Contínuo (${act.continuousDeadlineNote})` : 'Contínuo')
+              : (act.whenDate ? (act.whenDate.includes('-') ? act.whenDate.split('-').reverse().join('/') : act.whenDate) : 'Contínuo');
+
             const responsibleText = act.who || ctx.establishment?.managerName || ctx.company?.legalRepresentative || 'SESMT';
             
             let statusText = 'NÃO INICIADA';
@@ -1089,12 +1394,12 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
 
             return new TableRow({
               children: [
-                new TableCell({ children: [new Paragraph({ text: metaText, alignment: AlignmentType.JUSTIFIED })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: priorityText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: startDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: endDateText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: responsibleText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
-                new TableCell({ children: [new Paragraph({ text: statusText, alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: metaText, color: '000000' })], alignment: AlignmentType.JUSTIFIED })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: priorityText, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: startDateText, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: endDateText, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: responsibleText, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
+                new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: statusText, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder }),
               ],
             });
           });
@@ -1103,19 +1408,19 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         new TableRow({
           tableHeader: true,
           children: [
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Metas', bold: true })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Grau de Prioridade', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prazo Inicial', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prazo Final', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Responsável', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
-            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Status', bold: true })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Metas', bold: true, color: '000000' })] })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Grau de Prioridade', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prazo Inicial', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Prazo Final', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Responsável', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Status', bold: true, color: '000000' })], alignment: AlignmentType.CENTER })], borders: cellBorder, shading: { fill: lightGray, type: ShadingType.CLEAR, color: 'auto' } }),
           ],
         }),
         new TableRow({
           children: [
             new TableCell({
               columnSpan: 6,
-              children: [new Paragraph({ children: [new TextRun({ text: gesLabel, bold: true })], alignment: AlignmentType.CENTER })],
+              children: [new Paragraph({ children: [new TextRun({ text: gesLabel, bold: true, color: '000000' })], alignment: AlignmentType.CENTER })],
               borders: cellBorder,
               shading: { fill: 'F1F5F9', type: ShadingType.CLEAR, color: 'auto' }
             })
@@ -1133,27 +1438,46 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
         : 'CREA Habilitado';
 
       children.push(
-        new Paragraph({ text: section.text, spacing: { after: 300 } }),
         new Paragraph({
-          text: `${section.city}/${section.state}, ${section.date}.`,
+          pageBreakBefore: true,
+          children: parseTextToTextRuns(section.text),
+          spacing: { before: 200, after: 400 },
+          alignment: AlignmentType.JUSTIFIED,
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${section.city}/${section.state}, ${section.date}.`,
+              bold: true,
+              color: '000000',
+            }),
+          ],
           alignment: AlignmentType.RIGHT,
           spacing: { after: 800 },
         }),
         new Paragraph({
-          text: '____________________________________________________',
+          children: [new TextRun({ text: '____________________________________________________', color: '000000' })],
           alignment: AlignmentType.CENTER,
         }),
         new Paragraph({
-          text: `${docData.header.techRespName}\n${creaText}`,
+          children: [
+            new TextRun({ text: docData.header.techRespName, bold: true, color: '000000' }),
+            new TextRun({ text: `\n${creaText}`, color: '000000' }),
+            new TextRun({ text: '\nResponsável Técnico pelo PGR', color: '000000' }),
+          ],
           alignment: AlignmentType.CENTER,
           spacing: { after: 600 },
         }),
         new Paragraph({
-          text: '____________________________________________________',
+          children: [new TextRun({ text: '____________________________________________________', color: '000000' })],
           alignment: AlignmentType.CENTER,
         }),
         new Paragraph({
-          text: `${ctx.company.name}\nCNPJ: ${formatCNPJ(ctx.company.cnpj)}`,
+          children: [
+            new TextRun({ text: ctx.company.name, bold: true, color: '000000' }),
+            new TextRun({ text: `\nCNPJ: ${formatCNPJ(ctx.company.cnpj)}`, color: '000000' }),
+            new TextRun({ text: `\nRepresentante Legal: ${ctx.company.legalRepresentative || 'Diretoria'}`, color: '000000' }),
+          ],
           alignment: AlignmentType.CENTER,
           spacing: { after: 200 },
         })
@@ -1161,20 +1485,67 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
     }
   }
 
-  // Gera o documento .docx
+  // Gera o documento .docx com paginação, cabeçalho e rodapé oficial
   const doc = new Document({
     styles: {
       default: {
         document: {
           run: {
             color: '000000',
+            font: 'Arial',
+          },
+          paragraph: {
+            spacing: {
+              line: 276, // 1.15 line spacing
+            },
           },
         },
       },
     },
     sections: [
       {
-        properties: {},
+        properties: {
+          titlePage: true, // Primeira página (Capa) sem cabeçalho/rodapé
+          page: {
+            margin: {
+              top: 1440,
+              bottom: 1440,
+              left: 1440,
+              right: 1440,
+            },
+          },
+        },
+        headers: {
+          default: new Header({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({
+                    text: `PGR / GRO — ${docData.header.code} (REV: ${docData.header.version}) | ${docData.header.companyName}`,
+                    size: 16,
+                    color: '666666',
+                  }),
+                ],
+              }),
+            ],
+          }),
+        },
+        footers: {
+          default: new Footer({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [
+                  new TextRun({ text: 'Página ', size: 16, color: '666666' }),
+                  new TextRun({ children: [PageNumber.CURRENT], size: 16, color: '666666' }),
+                  new TextRun({ text: ' de ', size: 16, color: '666666' }),
+                  new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 16, color: '666666' }),
+                ],
+              }),
+            ],
+          }),
+        },
         children,
       },
     ],

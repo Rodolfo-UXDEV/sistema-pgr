@@ -377,19 +377,17 @@ export const PgrBuilderPage: React.FC = () => {
             <span>Ver Documento</span>
           </Button>
 
-          {/* Opção Word temporariamente ocultada (recurso preservado no código para ativação futura) */}
-          {/*
           <Button
             variant="outline"
             size="sm"
             disabled={isGeneratingDocx}
             onClick={handleDownloadDocx}
             className="text-xs gap-1.5 border-blue-200 text-blue-700 bg-blue-50/50 hover:bg-blue-100 font-semibold"
+            title="Baixar Documento Word (.docx) editável"
           >
-            <FileCode className="h-3.5 w-3.5" />
+            <FileCode className="h-3.5 w-3.5 text-blue-600" />
             <span>{isGeneratingDocx ? 'Gerando Word...' : 'Baixar Word (.docx)'}</span>
           </Button>
-          */}
 
           <Button
             variant="outline"

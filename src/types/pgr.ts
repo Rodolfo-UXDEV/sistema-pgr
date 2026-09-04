@@ -234,6 +234,8 @@ export interface ActionPlanItem {
   startDate?: string; // Prazo Inicial
   whenDate: string; // Prazo Final (Prazo limite)
   priority?: 'Baixa' | 'Média' | 'Alta' | 'Urgente' | string; // Grau de Prioridade
+  isContinuousDeadline?: boolean;
+  continuousDeadlineNote?: string;
   how: string; // Como será executado
   howMuch?: number; // Custo estimado (R$)
   
