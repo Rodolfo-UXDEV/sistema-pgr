@@ -601,14 +601,34 @@ export const PgrProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatedAt: new Date().toISOString(),
     }));
 
+    // Clona também quaisquer planos de ação vinculados aos riscos duplicados
+    const newActions: ActionPlanItem[] = [];
+    newRisks.forEach((newRisk, idx) => {
+      const sourceRisk = sourceRisks[idx];
+      const relatedActions = actionPlans.filter(a => a.riskInventoryId === sourceRisk.id);
+      relatedActions.forEach(action => {
+        newActions.push({
+          ...action,
+          id: generateId(),
+          riskInventoryId: newRisk.id,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      });
+    });
+
     setGhes(prev => [newGhe, ...prev]);
     if (newRisks.length > 0) {
       setRiskInventory(prev => [...newRisks, ...prev]);
+    }
+    if (newActions.length > 0) {
+      setActionPlans(prev => [...newActions, ...prev]);
     }
 
     await Promise.all([
       saveToFirestore(COLLECTIONS.GHES, newGhe),
       ...newRisks.map(r => saveToFirestore(COLLECTIONS.RISK_INVENTORY, r)),
+      ...newActions.map(a => saveToFirestore(COLLECTIONS.ACTION_PLANS, a)),
     ]);
 
     return newGhe;
