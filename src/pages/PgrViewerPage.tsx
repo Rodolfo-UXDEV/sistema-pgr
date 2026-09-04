@@ -12,14 +12,15 @@ import { generatePgrDocx } from '@/lib/docx-generator';
 import { generatePgrExcel } from '@/lib/excel-generator';
 import { buildPgrFullDocument, filterContextForCompany, PgrDocumentContext, OFFICIAL_PGR_TEXTS } from '@/lib/pgr-official-template';
 import { DEFAULT_PGR_SECTIONS } from '@/lib/pgr-default-sections';
-import { getResolvedPgrSections } from '@/lib/pgr-template-resolver';
+import { getResolvedPgrSections, GLOBAL_TEMPLATE_STORAGE_KEY } from '@/lib/pgr-template-resolver';
 import { parseContentWithTables } from '@/lib/table-parser';
 import { MarkdownSectionRenderer } from '@/lib/markdown-renderer';
 import { HAZARD_CATEGORY_CONFIG, getNormativeRiskMatrix } from '@/lib/risk-matrix';
 import { groupInventoryByGhe, isNoExposureRisk } from '@/lib/pgr-groups';
 import { PgrCustomSectionData } from '@/types/pgr-builder';
 import { ActionPlanItem } from '@/types/pgr';
-import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT } from '@/lib/issuer-company-service';
+import { getIssuerCompanyConfig, ISSUER_UPDATED_EVENT, fetchIssuerCompanyFromFirestore } from '@/lib/issuer-company-service';
+import { fetchDocumentSectionsFromFirestore, fetchGlobalTemplateFromFirestore } from '@/lib/firebase-service';
 import { formatDate } from '@/lib/utils';
 import { 
   ArrowLeft, 
@@ -86,6 +87,40 @@ export const PgrViewerPage: React.FC = () => {
         setIssuerConfig(getIssuerCompanyConfig());
       }
     };
+
+    // Sincronização em background com o Firestore (garante persistência entre múltiplos dispositivos/sessões)
+    const syncFromCloud = async () => {
+      if (pgr) {
+        try {
+          const [cloudDocSections, cloudGlobalSections, cloudIssuer] = await Promise.all([
+            fetchDocumentSectionsFromFirestore(pgr.id),
+            fetchGlobalTemplateFromFirestore(),
+            fetchIssuerCompanyFromFirestore(),
+          ]);
+
+          let hasChanges = false;
+          if (cloudDocSections && Object.keys(cloudDocSections).length > 0) {
+            localStorage.setItem(`pgr_custom_sections_v2_${pgr.id}`, JSON.stringify(cloudDocSections));
+            hasChanges = true;
+          }
+          if (cloudGlobalSections && Object.keys(cloudGlobalSections).length > 0) {
+            localStorage.setItem(GLOBAL_TEMPLATE_STORAGE_KEY, JSON.stringify(cloudGlobalSections));
+            hasChanges = true;
+          }
+          if (cloudIssuer) {
+            setIssuerConfig(cloudIssuer);
+          }
+          if (hasChanges) {
+            setResolvedList(getResolvedPgrSections(pgr.id));
+          }
+        } catch (err) {
+          console.warn('Sincronização em segundo plano das seções do PGR:', err);
+        }
+      }
+    };
+
+    syncFromCloud();
+
     window.addEventListener('pgr_template_updated', refresh);
     window.addEventListener(ISSUER_UPDATED_EVENT, refresh);
     window.addEventListener('focus', refresh);
