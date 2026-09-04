@@ -129,31 +129,38 @@ export function renderTableCellContent(cell: string): React.ReactNode {
     );
   }
 
-  // 4. Badges para Níveis de Risco e Prioridades
-  if (['Intolerável', 'Extremo', 'Urgente'].includes(trimmed)) {
+  // 4. Badges para Níveis de Risco, Classificações e Faixas de Pontuação
+  if (['Intolerável', 'Extremo', 'Urgente', 'Intolerável / Crítico', 'Intolerável/Crítico', '15 a 25', '16 a 25'].includes(trimmed)) {
     return (
-      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border border-rose-300 rounded">
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-200 border border-rose-300 rounded whitespace-nowrap">
         {trimmed}
       </span>
     );
   }
-  if (['Substancial', 'Alto', 'Alta'].includes(trimmed)) {
+  if (['Substancial', 'Alto', 'Alta', 'Substancial / Alto', 'Substancial/Alto', '10 a 16', '10 a 15'].includes(trimmed)) {
     return (
-      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200 border border-orange-300 rounded">
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-200 border border-orange-300 rounded whitespace-nowrap">
         {trimmed}
       </span>
     );
   }
-  if (['Moderado', 'Médio', 'Média'].includes(trimmed)) {
+  if (['Moderado', 'Médio', 'Média', 'Moderado / Médio', 'Moderado/Médio', '5 a 9'].includes(trimmed)) {
     return (
-      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-300 rounded">
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200 border border-amber-300 rounded whitespace-nowrap">
         {trimmed}
       </span>
     );
   }
-  if (['Tolerável', 'Baixo', 'Baixa'].includes(trimmed)) {
+  if (['Tolerável', 'Baixo', 'Baixa', 'Tolerável / Baixo', 'Tolerável/Baixo', '3 a 4', '1 a 4'].includes(trimmed)) {
     return (
-      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border border-emerald-300 rounded">
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-lime-100 text-lime-800 dark:bg-lime-900/50 dark:text-lime-200 border border-lime-300 rounded whitespace-nowrap">
+        {trimmed}
+      </span>
+    );
+  }
+  if (['Trivial', 'Muito Baixo', 'Trivial / Muito Baixo', 'Trivial/Muito Baixo', '1 a 2'].includes(trimmed)) {
+    return (
+      <span className="inline-block px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200 border border-emerald-300 rounded whitespace-nowrap">
         {trimmed}
       </span>
     );

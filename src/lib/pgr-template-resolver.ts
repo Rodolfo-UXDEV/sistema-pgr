@@ -90,6 +90,7 @@ export function getResolvedPgrSections(pgrId?: string): ResolvedSection[] {
     }
     if (sec.id === 'sec-10') {
       if (
+        !content.includes('Trivial / Muito Baixo') ||
         !content.includes('Severidade \\ Probabilidade') ||
         !content.includes('P1 - Raríssima') ||
         !content.includes('Riscos Psicossociais') || 

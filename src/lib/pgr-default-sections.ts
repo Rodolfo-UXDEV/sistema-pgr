@@ -313,22 +313,24 @@ Na matriz de risco 5×5, cada célula representa a pontuação resultante da mul
 | **S1 - Leve / Desprezível (1)** | 1 (TRI) | 2 (TRI) | 3 (TOL) | 4 (TOL) | 5 (MOD) |
 
 Tabela 5 – Critérios para Classificação do Nível de Risco
-| Pontuação | Nível de Risco | Significado | Diretriz de Tratamento |
+| Pontuação | Classificação | Significado | Diretriz de Tratamento |
 | :---: | :--- | :--- | :--- |
-| 16 a 25 | Extremo | Risco inaceitável, com elevado potencial de ocorrência e/ou consequências graves à saúde e segurança dos trabalhadores. | Adotar medidas imediatas para eliminação ou redução do risco. A atividade deve ser interrompida ou reavaliada antes de sua continuidade. |
-| 10 a 15 | Alto | Risco significativo que requer atenção prioritária e controle sistemático. | Implementar medidas de controle com prioridade definida e acompanhar a eficácia das ações adotadas. |
-| 5 a 9 | Médio | Risco controlável por meio das medidas preventivas existentes, desde que mantidas e monitoradas. | Monitorar periodicamente e implementar plano de ação para melhoria contínua dos controles. |
-| 1 a 4 | Baixo | Risco aceitável nas condições atuais de controle. | Manter as medidas de prevenção existentes e realizar monitoramento periódico. |
+| 15 a 25 | Intolerável / Crítico | Risco crítico e intolerável com potencial de fatalidade ou consequências graves. Exige intervenção emergencial. | INTERRUPÇÃO IMEDIATA da atividade até implantação de medidas que reduzam o risco a níveis aceitáveis. |
+| 10 a 16 | Substancial / Alto | Risco significativo com necessidade de medidas robustas e controle prioritário sistemático. | Ação prioritária e urgente. Não iniciar ou restringir atividade até a implantação de medidas de mitigação. |
+| 5 a 9 | Moderado / Médio | Risco de magnitude moderada, controlável por meio de medidas preventivas mantidas e monitoradas. | Necessário estabelecer plano de ação corretivo e preventivo para redução contínua do risco. |
+| 3 a 4 | Tolerável / Baixo | Risco tolerável e aceitável nas condições operacionais vigentes, mantidos os controles existentes. | Monitorar periodicamente para assegurar que as medidas de controle permaneçam eficazes. |
+| 1 a 2 | Trivial / Muito Baixo | Risco trivial e muito baixo com consequências desprezíveis à segurança e integridade física. | Nenhuma ação adicional é necessária. Manter e acompanhar as medidas de controle existentes. |
 
 Tabela 6 – Critérios para Priorização das Ações
-A priorização das ações de controle será definida com base no nível de risco obtido a partir do cruzamento entre a Probabilidade de Ocorrência e a Severidade das Consequências. Os riscos classificados como Intoleráveis e Substanciais terão prioridade na implementação das medidas de prevenção, observando-se a hierarquia de controles prevista na NR-01.
+A priorização das ações de controle será definida com base na classificação de risco obtida a partir do cruzamento entre a Probabilidade de Ocorrência e a Severidade das Consequências. Os riscos classificados como Intoleráveis e Substanciais terão prioridade na implementação das medidas de prevenção, observando-se a hierarquia de controles prevista na NR-01.
 
 | Faixa de Pontuação | Classificação | Prioridade | Ação |
 | :---: | :--- | :---: | :--- |
-| 🟥 16 a 25 | Intolerável | Urgente | Intervenção imediata / Medidas emergenciais. |
-| 🟧 10 a 15 | Substancial | Alta | Controle prioritário. |
-| 🟨 5 a 9 | Moderado | Média | Monitoramento e melhoria contínua. |
-| 🟩 1 a 4 | Tolerável / Trivial | Baixa | Manutenção dos controles existentes. |
+| 🟥 15 a 25 | Intolerável / Crítico | Urgente | Intervenção imediata / Medidas emergenciais. |
+| 🟧 10 a 16 | Substancial / Alto | Alta | Controle prioritário e mitigação prévia. |
+| 🟨 5 a 9 | Moderado / Médio | Média | Monitoramento e melhoria contínua. |
+| 🟩 3 a 4 | Tolerável / Baixo | Baixa | Monitoramento periódico dos controles. |
+| 🟩 1 a 2 | Trivial / Muito Baixo | Baixa | Manutenção dos controles existentes. |
 
 10.4. CONCEITOS ADOTADOS E CRITÉRIOS CONSIDERADOS
 • GES (Grupo de Exposição Similar): Grupo de trabalhadores que experimentam exposição semelhante a determinado agente ocupacional decorrente do mesmo ambiente e processo.

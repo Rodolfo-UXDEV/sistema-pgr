@@ -592,22 +592,29 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   data.cell.styles.fontStyle = 'bold';
                   data.cell.styles.halign = 'center';
                 } else if (isPriorityTable) {
-                  if (text.includes('16 a 25') || text === 'Intolerável' || text === 'Urgente' || text === 'Extremo') {
-                    data.cell.styles.fillColor = [254, 226, 226];
-                    data.cell.styles.textColor = [159, 18, 57];
-                    data.cell.styles.fontStyle = 'bold';
-                  } else if (text.includes('10 a 15') || text === 'Substancial' || text === 'Alta' || text === 'Alto') {
-                    data.cell.styles.fillColor = [255, 237, 213];
-                    data.cell.styles.textColor = [154, 52, 18];
-                    data.cell.styles.fontStyle = 'bold';
-                  } else if (text.includes('5 a 9') || text === 'Moderado' || text === 'Média' || text === 'Médio') {
-                    data.cell.styles.fillColor = [254, 243, 199];
-                    data.cell.styles.textColor = [146, 64, 14];
-                    data.cell.styles.fontStyle = 'bold';
-                  } else if (text.includes('1 a 4') || text === 'Tolerável' || text === 'Baixa' || text === 'Baixo') {
-                    data.cell.styles.fillColor = [209, 250, 229];
-                    data.cell.styles.textColor = [6, 95, 70];
-                    data.cell.styles.fontStyle = 'bold';
+                  const isLabelColumn = data.column.index <= 1 || (data.column.index === 2 && block.headers.length <= 4);
+                  if (isLabelColumn) {
+                    if (text.includes('15 a 25') || text.includes('16 a 25') || text.includes('Intolerável') || text === 'Urgente' || text === 'Extremo') {
+                      data.cell.styles.fillColor = [254, 226, 226];
+                      data.cell.styles.textColor = [159, 18, 57];
+                      data.cell.styles.fontStyle = 'bold';
+                    } else if (text.includes('10 a 16') || text.includes('10 a 15') || text.includes('Substancial') || text === 'Alta' || text === 'Alto') {
+                      data.cell.styles.fillColor = [255, 237, 213];
+                      data.cell.styles.textColor = [154, 52, 18];
+                      data.cell.styles.fontStyle = 'bold';
+                    } else if (text.includes('5 a 9') || text.includes('Moderado') || text === 'Média' || text === 'Médio') {
+                      data.cell.styles.fillColor = [254, 243, 199];
+                      data.cell.styles.textColor = [146, 64, 14];
+                      data.cell.styles.fontStyle = 'bold';
+                    } else if (text.includes('3 a 4') || text.includes('Tolerável') || text === 'Baixa' || text === 'Baixo') {
+                      data.cell.styles.fillColor = [236, 252, 203];
+                      data.cell.styles.textColor = [54, 83, 20];
+                      data.cell.styles.fontStyle = 'bold';
+                    } else if (text.includes('1 a 2') || text.includes('1 a 4') || text.includes('Trivial') || text.includes('Muito Baixo')) {
+                      data.cell.styles.fillColor = [209, 250, 229];
+                      data.cell.styles.textColor = [6, 95, 70];
+                      data.cell.styles.fontStyle = 'bold';
+                    }
                   }
                 }
               }

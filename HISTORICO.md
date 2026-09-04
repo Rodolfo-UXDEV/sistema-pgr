@@ -530,6 +530,19 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
    - **Mecanismo de Auto-Migração (`pgr-template-resolver.ts`):**
      - Adicionado gatilho de migração que atualiza automaticamente qualquer documento com modelo em cache para a nova matriz 5x5.
 
-4. **Build & Deploy:**
+5. **Alinhamento das 5 Classificações Normativas na Tabela 5 do Laudo:**
+   - **Cabeçalho:** Alterado de *"Nível de Risco"* para **"Classificação"**, espelhando o rótulo do sistema.
+   - **Estruturação em 5 Resultados Oficiais da Matriz 5x5:**
+     - `15 a 25`: **Intolerável / Crítico** (Risco crítico, interrupção imediata / emergencial);
+     - `10 a 16`: **Substancial / Alto** (Risco significativo, ação prioritária e mitigação prévia);
+     - `5 a 9`: **Moderado / Médio** (Risco moderado, plano de ação corretivo e melhoria contínua);
+     - `3 a 4`: **Tolerável / Baixo** (Risco tolerável, monitoramento periódico da eficácia);
+     - `1 a 2`: **Trivial / Muito Baixo** (Risco trivial, manutenção dos controles existentes sem ação adicional).
+   - **Tabela 6 (Priorização das Ações):** Sincronizada com as 5 classificações e faixas de pontuação correspondentes.
+   - **Renderização e Cores:**
+     - Badges em destaque na web (`markdown-renderer.tsx`), no PDF oficial (`pdf-generator.ts`) e no Word (`docx-generator.ts`), mantendo os campos de texto explicativo (Significado e Diretriz) limpos e perfeitamente legíveis.
+   - **Auto-migração:** Atualizado gatilho em `pgr-template-resolver.ts` para carregar a nova Tabela 5 automaticamente.
+
+6. **Build & Deploy:**
    - Verificação de tipos TypeScript e build de produção Vite concluídos com sucesso.
    - Sincronização e deploy contínuo enviados para a branch `main` do GitHub / Vercel.

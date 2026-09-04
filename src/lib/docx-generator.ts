@@ -311,7 +311,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
             }),
             ...block.rows.map((r) =>
               new TableRow({
-                children: r.map((c) => {
+                children: r.map((c, cellIndex) => {
                   const trimmed = c.trim();
                   let fill: string | undefined = undefined;
                   let textColor = '000000';
@@ -345,18 +345,23 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     else fill = '10B981';
                     textColor = 'FFFFFF';
                     align = AlignmentType.CENTER;
-                  } else if (trimmed.includes('16 a 25') || trimmed === 'Intolerável' || trimmed === 'Urgente' || trimmed === 'Extremo') {
-                    fill = 'FEE2E2';
-                    textColor = '9F1239';
-                  } else if (trimmed.includes('10 a 15') || trimmed === 'Substancial' || trimmed === 'Alta' || trimmed === 'Alto') {
-                    fill = 'FFEDD5';
-                    textColor = '9A3412';
-                  } else if (trimmed.includes('5 a 9') || trimmed === 'Moderado' || trimmed === 'Média' || trimmed === 'Médio') {
-                    fill = 'FEF3C7';
-                    textColor = '92400E';
-                  } else if (trimmed.includes('1 a 4') || trimmed === 'Tolerável' || trimmed === 'Baixa' || trimmed === 'Baixo') {
-                    fill = 'D1FAE5';
-                    textColor = '065F46';
+                  } else if (cellIndex <= 1 || (cellIndex === 2 && block.headers.length <= 4)) {
+                    if (trimmed.includes('15 a 25') || trimmed.includes('16 a 25') || trimmed.includes('Intolerável') || trimmed === 'Urgente' || trimmed === 'Extremo') {
+                      fill = 'FEE2E2';
+                      textColor = '9F1239';
+                    } else if (trimmed.includes('10 a 16') || trimmed.includes('10 a 15') || trimmed.includes('Substancial') || trimmed === 'Alta' || trimmed === 'Alto') {
+                      fill = 'FFEDD5';
+                      textColor = '9A3412';
+                    } else if (trimmed.includes('5 a 9') || trimmed.includes('Moderado') || trimmed === 'Média' || trimmed === 'Médio') {
+                      fill = 'FEF3C7';
+                      textColor = '92400E';
+                    } else if (trimmed.includes('3 a 4') || trimmed.includes('Tolerável') || trimmed === 'Baixa' || trimmed === 'Baixo') {
+                      fill = 'ECFCCB';
+                      textColor = '365314';
+                    } else if (trimmed.includes('1 a 2') || trimmed.includes('1 a 4') || trimmed.includes('Trivial') || trimmed.includes('Muito Baixo')) {
+                      fill = 'D1FAE5';
+                      textColor = '065F46';
+                    }
                   }
 
                   const cleanCellText = trimmed.replace(/[🟥🟧🟨🟩]/g, '').trim();
