@@ -440,3 +440,63 @@ Com base no documento formal de auditoria técnica (`especificacao_ajustes_pgr.p
    - **PDF:** Algoritmo de justificativa customizado no jsPDF (`renderMarkdownParagraphToPdf`) com distribuição balanceada de folga proporcional entre os espaços (`diff / spacesCount`) mantendo a última linha à esquerda.
    - **Word DOCX:** Alinhamento `AlignmentType.JUSTIFIED` configurado em todos os parágrafos de texto corridos e descrições de atividades.
    - **Visualizador Web:** Classe CSS `text-justify` aplicada universalmente nos blocos e parágrafos do `MarkdownSectionRenderer` e descrições de cargos.
+
+---
+
+### [03/09/2026] Marco: Especificação Técnica Parte 2 (AJ-V2-01 a AJ-V2-04) & Justificação Nativa Total no PDF
+
+Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte2.pdf`:
+
+1. **AJ-V2-01: Quebras de Página & Layout Limpo para Documentação Formal:**
+   - O **Inventário de Riscos Ocupacionais (Seção 10)** passa a iniciar obrigatoriamente em uma nova página limpa no PDF (`pdf-generator.ts`) e no Word (`docx-generator.ts`).
+   - O **Plano de Ação 5W2H (Seção 11)** também inicia obrigatoriamente em página separada, evitando que suas tabelas sejam misturadas com os cartões de riscos.
+   - Cada Grupo de Exposição Similar (**GES**) agora realiza quebra de página controlada, preservando a identidade visual, o cabeçalho de lotação e os detalhes físicos do ambiente juntos.
+
+2. **AJ-V2-02: Ordem Normativa Rígida dos 5 Grupos Ocupacionais:**
+   - Garantida a sequência imutável de apresentação dos riscos em todo o sistema, tabelas e relatórios:
+     - **1º Riscos Físicos** ➔ **2º Riscos Químicos** ➔ **3º Riscos Biológicos** ➔ **4º Riscos Ergonômicos** ➔ **5º Riscos de Acidentes**.
+   - A função de agrupamento `groupInventoryByGhe` (`src/lib/pgr-groups.ts`) agora ordena deterministicamente todos os agentes por categoria e por nome.
+
+3. **AJ-V2-03: Cartão Condensado de Linha Única para "Não há exposição / Não se Aplica (NAP)":**
+   - Eliminação de cartões gigantes de 14 linhas preenchidos com "NAP" quando não há exposição no GES.
+   - Implementação de faixa compacta de 1 linha (~8 mm de altura):
+     - Lado esquerdo: Faixa sólida colorida com o nome normativo (`RISCO QUÍMICO`, `RISCO BIOLÓGICO`, etc.);
+     - Lado direito: Declaração formal concisa `Agente: Não há exposição / Não se Aplica`.
+   - Disponível com fidelidade visual no PDF oficial, no visualizador web e no documento Word (.docx).
+
+4. **AJ-V2-04: Justificação Nativa e Precisa de Textos no jsPDF:**
+   - Aprimoramento da engine de renderização em PDF (`pdf-generator.ts`) para utilizar nativamente a propriedade `{ align: 'justify', maxWidth: contentWidth }` da API do jsPDF.
+   - Textos de introdução, objetivos, preâmbulos, histórico, disposições gerais e metodologia ficam 100% justificados com acabamento tipográfico profissional.
+
+---
+
+### [03/09/2026] Marco: Auditoria Completa de Persistência no Cloud Firestore & Deploy em Produção na Vercel
+
+1. **Auditoria em Tempo Real no Banco de Dados (Cloud Firestore):**
+   - Executada verificação direta via script automatizado contra o projeto Firebase `sistema-pgr`.
+   - Confirmação de integridade total das 12 coleções e da coleção de configurações do sistema:
+     - `companies` (Empresas)
+     - `establishments` (Estabelecimentos / Unidades)
+     - `sectors` (Setores e Ambientes Físicos)
+     - `positions` (Cargos com `activityDescription`, `cbo`, `workerCount`, `routineActivities`)
+     - `ghes` (Grupos de Exposição padronizados como `GES`, com cargos vinculados e contagem de expostos)
+     - `professionals` (Responsáveis Técnicos com múltiplas qualificações e CPF)
+     - `hazards_catalog` (Catálogo de Perigos eSocial Tabela 24)
+     - `pgr_documents` (Documentos do PGR)
+     - `risk_inventory` (Inventário de Riscos com todos os 31 campos mapeados, incluindo trajetória, via de penetração, matriz 5x5, medições ambientais e prazos 5W2H)
+     - `action_plans` (Plano de Ação 5W2H com metas, prazos, prioridades e responsáveis sincronizados)
+     - `pgr_templates` & `pgr_document_sections` (Modelos globais e textos customizados de seções)
+     - `system_settings/issuer_company` (Dados cadastrais e responsabilidade técnica da empresa emissora)
+   - Teste de leitura e escrita direta no Firestore executado com 100% de sucesso.
+
+2. **Proteção Contra Perda de Dados (Dual Layer Persistence):**
+   - Todas as operações utilizam atualização segura via `setDoc(..., { merge: true })` combinada com o sanitizador recursivo `cleanForFirestore`.
+   - Camada de contingência offline permanente em LocalStorage (chaves `_v2`) para resiliência caso ocorram quedas de conexão do usuário.
+
+3. **Sincronização em Background no Visualizador (`PgrViewerPage.tsx`):**
+   - Implementado hook assíncrono que consulta o Firestore no momento da abertura do visualizador. Se houver edições de seções feitas em outro dispositivo ou aba, os dados são sincronizados instantaneamente no cache local e refletidos na tela e no PDF.
+
+4. **Publicação Contínua em Produção (Vercel):**
+   - Repositório GitHub atualizado na branch `main` (`Rodolfo-UXDEV/sistema-pgr`).
+   - Deploy automático na Vercel finalizado com sucesso (`https://sistema-pgr.vercel.app`), com status HTTP 200 e bundle atualizado (`index-GbKHGnnc.js`).
+
