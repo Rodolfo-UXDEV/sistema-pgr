@@ -650,5 +650,7 @@ Implementação detalhada com base no documento `especificacao_ajustes_pgr_parte
       - **Visualizador Web (`PgrViewerPage.tsx`):** Exibe a 3ª coluna do card APR-HO formatada com a frequência informada.
       - **Planilha Excel (`excel-generator.ts`):** Exporta a célula com o regime complementado.
       - **Listagem do Inventário (`RiskInventoryTable.tsx`):** Tooltip informativa e exibição da observação na linha expandida de detalhes da NR-01.
+      - **Alinhamento e Harmonia Visual Pixel-Perfect:** Inclusão de contêineres de altura padronizada (`h-5 flex items-center justify-between`) em todos os rótulos do bloco de exposição, igualando com precisão milimétrica a linha de base dos rótulos e a altura/borda dos campos (`select` e `Input`), garantindo simetria perfeita em 2 colunas.
+
 
 
