@@ -878,7 +878,7 @@ export async function generatePgrDocx(rawCtx: PgrDocumentContext): Promise<void>
                     new TableCell({
                       columnSpan: 1,
                       shading: { fill: labelGray, type: ShadingType.CLEAR, color: 'auto' },
-                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações', bold: true })] })],
+                      children: [new Paragraph({ children: [new TextRun({ text: 'Recomendações:', bold: true })] })],
                       borders: cellBorder,
                     }),
                     new TableCell({

@@ -855,7 +855,7 @@ export async function generatePgrPdf(rawCtx: PgrDocumentContext): Promise<void> 
                   { content: prioridadeFinal, colSpan: 4, styles: { fontStyle: 'bold' } }
                 ],
                 [
-                  { content: 'Medidas de Controle Propostas:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
+                  { content: 'Recomendações:', styles: { fontStyle: 'bold', fillColor: labelGray, cellWidth: 38 } },
                   { content: item.recommendations || 'Manter o monitoramento contínuo das condições ambientais e o cumprimento dos procedimentos operacionais padrão.', colSpan: 4 }
                 ]
               ];
